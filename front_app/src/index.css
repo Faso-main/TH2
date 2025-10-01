@@ -7,10 +7,8 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background: #3F5EFB;
-  background: linear-gradient(274deg, rgba(63, 94, 251, 1) 0%, rgba(252, 70, 107, 1) 100%);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+background: #000000;
+background: radial-gradient(circle, rgba(0, 0, 0, 1) 0%, rgba(9, 9, 121, 1) 49%, rgba(0, 212, 255, 1) 100%);  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
