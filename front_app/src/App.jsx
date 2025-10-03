@@ -1,17 +1,56 @@
 // App.jsx
-import './App.css'
+import { useState } from 'react';
+import './App.css';
+import Modal from './modal/Modal';
+import LoginForm from './modal/LoginForm';
+import RegisterForm from './modal/RegisterForm';
 
 function App() {
+  const [activeModal, setActiveModal] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+
+  const openModal = (modalName) => {
+    setActiveModal(modalName);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  const switchAuthMode = (mode) => {
+    setAuthMode(mode);
+  };
+
   return (
     <div className="app">
-      <Header />
-      <Main />
+      <Header onOpenLogin={() => openModal('auth')} />
+      <Main onOpenAuth={() => openModal('auth')} />
       <Footer />
+
+      {/* Модальное окно авторизации/регистрации */}
+      <Modal
+        isOpen={activeModal === 'auth'}
+        onClose={closeModal}
+        title={authMode === 'login' ? 'Вход в аккаунт' : 'Создание аккаунта'}
+        size="small"
+      >
+        {authMode === 'login' ? (
+          <LoginForm 
+            onClose={closeModal}
+            onSwitchToRegister={() => switchAuthMode('register')}
+          />
+        ) : (
+          <RegisterForm 
+            onClose={closeModal}
+            onSwitchToLogin={() => switchAuthMode('login')}
+          />
+        )}
+      </Modal>
     </div>
-  )
+  );
 }
 
-function Header() {
+function Header({ onOpenLogin }) {
   return (
     <header className="header">
       <div className="header-container">
@@ -20,11 +59,17 @@ function Header() {
         </div>
         
         <div className="header-actions">
-          <button className="btn-secondary">Регистрация</button>
-          <button className="btn-primary">Войти</button>
+          <button className="btn-secondary" onClick={() => {
+            onOpenLogin('auth');
+            setTimeout(() => switchAuthMode('register'), 0);
+          }}>
+            Регистрация
+          </button>
+          <button className="btn-primary" onClick={onOpenLogin}>
+            Войти
+          </button>
         </div>
 
-        {/* Мобильное меню */}
         <button className="mobile-menu-btn">
           <span></span>
           <span></span>
@@ -32,88 +77,15 @@ function Header() {
         </button>
       </div>
     </header>
-  )
+  );
 }
 
 function Main() {
   return (
     <main className="main">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h2>Откройте мир современных покупок</h2>
-            <p>Более 10 000 товаров от проверенных продавцов с быстрой доставкой по всему миру</p>
-            <div className="hero-actions">
-              <button className="btn-hero-primary">Начать покупки</button>
-              <button className="btn-hero-secondary">Узнать больше</button>
-            </div>
-          </div>
-          <div className="hero-stats">
-            <div className="stat-item">
-              <div className="stat-number">10K+</div>
-              <div className="stat-label">Товаров</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">500+</div>
-              <div className="stat-label">Продавцов</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">50K+</div>
-              <div className="stat-label">Покупателей</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="features-section">
-        <div className="section-container">
-          <div className="section-header">
-            <h3>Почему выбирают нас</h3>
-            <p>Лучший сервис для ваших покупок</p>
-          </div>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
-              <h4>Гарантия качества</h4>
-              <p>Все товары проходят строгую проверку перед отправкой</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
-              <h4>Безопасная оплата</h4>
-              <p>Различные способы оплаты включая карты и электронные кошельки</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
-              <h4>Защита покупателя</h4>
-              <p>Возврат средств в случае проблем с заказом</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
-              <h4>Поддержка 24/7</h4>
-              <p>Круглосуточная поддержка по всем вопросам</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="section-container">
-          <div className="cta-content">
-            <h3>Готовы начать покупки?</h3>
-            <p>Присоединяйтесь к миллионам довольных покупателей</p>
-            <button className="btn-cta">Создать аккаунт</button>
-          </div>
-        </div>
-      </section>
+      <h1 className="mainplaceholder">Main Content</h1>
     </main>
-  )
+  );
 }
 
 function Footer() {
@@ -122,44 +94,44 @@ function Footer() {
       <div className="footer-container">
         <div className="footer-content">
           <div className="footer-section">
-            <h4>MarketPlace</h4>
-            <p>Ваш надежный партнер в покупках. Лучшие товары по выгодным ценам с гарантией качества.</p>
+            <h4>SpeedOfLight</h4>
+            <p>Современная платформа для бизнеса. Быстро, безопасно, эффективно.</p>
           </div>
           
           <div className="footer-section">
-            <h5>Магазин</h5>
-            <a href="#">Все товары</a>
-            <a href="#">Новинки</a>
-            <a href="#">Популярное</a>
+            <h5>Возможности</h5>
+            <a href="#">Автоматизация</a>
+            <a href="#">Аналитика</a>
+            <a href="#">Безопасность</a>
           </div>
           
           <div className="footer-section">
-            <h5>Информация</h5>
-            <a href="#">О компании</a>
-            <a href="#">Доставка</a>
-            <a href="#">Оплата</a>
+            <h5>Компания</h5>
+            <a href="#">О нас</a>
+            <a href="#">Контакты</a>
+            <a href="#">Вакансии</a>
           </div>
           
           <div className="footer-section">
-            <h5>Помощь</h5>
-            <a href="#">Центр поддержки</a>
-            <a href="#">Возвраты</a>
-            <a href="#">Статус заказа</a>
+            <h5>Поддержка</h5>
+            <a href="#">Помощь</a>
+            <a href="#">Документация</a>
+            <a href="#">Сообщество</a>
           </div>
           
           <div className="footer-section">
             <h5>Контакты</h5>
             <div className="contact-info">
               <p>🛡️ +7 (999) 999-99-99</p>
-              <p>🛡️ email@example.com</p>
-              <p>🛡️ Москва, ул. Примерная, 123</p>
+              <p>🛡️ hello@speedoflight.ru</p>
+              <p>🛡️ Москва, ул. мира, 42</p>
             </div>
           </div>
         </div>
         
         <div className="footer-bottom">
           <div className="footer-bottom-content">
-            <p>&copy; 2024 MarketPlace. Все права защищены.</p>
+            <p>&copy; 2024 SpeedOfLight. Все права защищены.</p>
             <div className="footer-links">
               <a href="#">Политика конфиденциальности</a>
               <a href="#">Условия использования</a>
@@ -169,7 +141,7 @@ function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
 
-export default App
+export default App;
