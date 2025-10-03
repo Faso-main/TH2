@@ -76,13 +76,13 @@ function Main() {
           
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">⭐</div>
+              <div className="feature-icon">🛡️</div>
               <h4>Гарантия качества</h4>
               <p>Все товары проходят строгую проверку перед отправкой</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">💳</div>
+              <div className="feature-icon">🛡️</div>
               <h4>Безопасная оплата</h4>
               <p>Различные способы оплаты включая карты и электронные кошельки</p>
             </div>
@@ -94,7 +94,7 @@ function Main() {
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">📞</div>
+              <div className="feature-icon">🛡️</div>
               <h4>Поддержка 24/7</h4>
               <p>Круглосуточная поддержка по всем вопросам</p>
             </div>
@@ -150,9 +150,9 @@ function Footer() {
           <div className="footer-section">
             <h5>Контакты</h5>
             <div className="contact-info">
-              <p>📞 +7 (999) 999-99-99</p>
-              <p>✉️ email@example.com</p>
-              <p>📍 Москва, ул. Примерная, 123</p>
+              <p>🛡️ +7 (999) 999-99-99</p>
+              <p>🛡️ email@example.com</p>
+              <p>🛡️ Москва, ул. Примерная, 123</p>
             </div>
           </div>
         </div>
