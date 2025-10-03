@@ -54,6 +54,23 @@ function App() {
 }
 
 function Header({ onOpenLogin }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    // Здесь будет логика поиска
+    console.log('Поиск:', searchQuery);
+    // Можно добавить фильтрацию товаров по поисковому запросу
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -63,24 +80,27 @@ function Header({ onOpenLogin }) {
         
         {/* Поисковая строка в шапке */}
         <div className="header-search">
-          <div className="search-bar">
+          <form className="search-bar" onSubmit={handleSearch}>
             <input 
               type="text" 
               placeholder="Поиск товаров..." 
               className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
             />
-            <button className="search-btn">
+            <button type="submit" className="search-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
             </button>
-          </div>
+          </form>
         </div>
 
         <div className="header-actions">
           {/* Иконка личного кабинета */}
-            <button className="user-icon-btn">
+        <button className="user-icon-btn">
             <svg 
               width="35" 
               height="35" 
@@ -147,10 +167,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Смартфон Apple iPhone 15 Pro</h3>
                   <p className="product-category">Электроника</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★★</span>
-                    <span className="rating-count">(128)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">89 999 ₽</span>
                     <span className="old-price">99 999 ₽</span>
@@ -174,10 +190,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Кроссовки Nike Air Max</h3>
                   <p className="product-category">Обувь</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★☆</span>
-                    <span className="rating-count">(64)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">12 499 ₽</span>
                     <span className="old-price">14 999 ₽</span>
@@ -201,10 +213,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Ноутбук MacBook Pro 16"</h3>
                   <p className="product-category">Электроника</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★★</span>
-                    <span className="rating-count">(89)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">199 999 ₽</span>
                     <span className="old-price">219 999 ₽</span>
@@ -228,10 +236,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Часы Apple Watch Series 9</h3>
                   <p className="product-category">Электроника</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★☆</span>
-                    <span className="rating-count">(156)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">34 999 ₽</span>
                     <span className="old-price">39 999 ₽</span>
@@ -255,10 +259,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Футболка хлопковая</h3>
                   <p className="product-category">Одежда</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★☆☆</span>
-                    <span className="rating-count">(42)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">1 499 ₽</span>
                     <span className="old-price">1 999 ₽</span>
@@ -282,10 +282,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Наушники Sony WH-1000XM4</h3>
                   <p className="product-category">Электроника</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★★</span>
-                    <span className="rating-count">(203)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">24 999 ₽</span>
                     <span className="old-price">29 999 ₽</span>
@@ -309,10 +305,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Планшет iPad Air 5</h3>
                   <p className="product-category">Электроника</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★☆</span>
-                    <span className="rating-count">(91)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">54 999 ₽</span>
                     <span className="old-price">59 999 ₽</span>
@@ -336,10 +328,6 @@ function Main() {
                 <div className="product-info">
                   <h3 className="product-title">Куртка зимняя</h3>
                   <p className="product-category">Одежда</p>
-                  <div className="product-rating">
-                    <span className="stars">★★★★☆</span>
-                    <span className="rating-count">(78)</span>
-                  </div>
                   <div className="product-price">
                     <span className="current-price">8 999 ₽</span>
                     <span className="old-price">11 999 ₽</span>

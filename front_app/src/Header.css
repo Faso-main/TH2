@@ -45,6 +45,11 @@
   transition: var(--transition);
 }
 
+.search-bar:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 .search-input {
   flex: 1;
   padding: 0.75rem 1.5rem;
@@ -53,6 +58,16 @@
   font-size: 1rem;
   background: transparent;
   min-width: 120px;
+  color: black;
+}
+
+.search-input::placeholder {
+  color: var(--text-light);
+  transition: var(--transition);
+}
+
+.search-input:focus::placeholder {
+  color: var(--text-secondary);
 }
 
 .search-btn {
@@ -63,10 +78,28 @@
   cursor: pointer;
   transition: var(--transition);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-btn:hover {
   background: var(--primary-hover);
+}
+
+.search-btn:active {
+  transform: scale(0.95);
+}
+
+/* Анимация при вводе текста */
+.search-input:not(:placeholder-shown) {
+  background-color: var(--accent-color);
+}
+
+/* Индикатор активности поиска */
+.searching .search-btn {
+  background-color: var(--primary-hover);
+  animation: pulse 1.5s infinite;
 }
 
 /* Header Actions */

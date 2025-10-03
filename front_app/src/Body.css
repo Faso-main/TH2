@@ -269,21 +269,6 @@
   font-size: 0.875rem;
 }
 
-.product-rating {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.stars {
-  color: #fbbf24;
-}
-
-.rating-count {
-  color: var(--text-light);
-  font-size: 0.875rem;
-}
-
 .product-price {
   display: flex;
   align-items: center;
