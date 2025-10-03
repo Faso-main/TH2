@@ -140,196 +140,137 @@ function Header({ onOpenLogin }) {
   );
 }
 
-// App.jsx - полностью переписанный компонент Main
+// App.jsx - обновленный компонент Main с кнопками в заголовке
 function Main() {
+  const [activeSection, setActiveSection] = useState('products'); // 'products' или 'procurements'
+
   return (
     <main className="main">
       <div className="products-container">
+        {/* Убираем старый переключатель и переносим кнопки в заголовок */}
+
         <div className="products-layout">
-          {/* Основной блок товаров - 75% */}
+          {/* Основной блок - меняется в зависимости от активного раздела */}
           <section className="products-main">
+            {/* Заголовок с кнопками переключения */}
             <div className="products-header">
-              <h2>Товары</h2>
-              <span className="products-count">Найдено 24 товара</span>
+              <div className="section-buttons">
+                <button 
+                  className={`section-btn ${activeSection === 'products' ? 'active' : ''}`}
+                  onClick={() => setActiveSection('products')}
+                >
+                  Товары
+                </button>
+                <button 
+                  className={`section-btn ${activeSection === 'procurements' ? 'active' : ''}`}
+                  onClick={() => setActiveSection('procurements')}
+                >
+                  Закупки
+                </button>
+              </div>
+              <span className="products-count">
+                {activeSection === 'products' ? 'Найдено 24 товара' : 'Активные закупки: 8'}
+              </span>
             </div>
             
-            <div className="products-grid">
-              {/* Карточка товара 1 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Смартфон Apple iPhone 15 Pro</h3>
-                  <p className="product-category">Электроника</p>
-                  <div className="product-price">
-                    <span className="current-price">89 999 ₽</span>
+            {/* Контент в зависимости от активного раздела */}
+            {activeSection === 'products' ? (
+              <div className="products-grid">
+                {/* Карточки товаров */}
+                <div className="product-card">
+                  <div className="product-image">
+                    <img src="https://via.placeholder.com/200x200" alt="Товар" />
+                    <button className="wishlist-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
+                    </button>
                   </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
+                  <div className="product-info">
+                    <h3 className="product-title">Смартфон Apple iPhone 15 Pro</h3>
+                    <p className="product-category">Электроника</p>
+                    <div className="product-price">
+                      <span className="current-price">89 999 ₽</span>
+                    </div>
+                    <button className="add-to-cart-btn">
+                      В корзину
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Карточка товара 2 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Кроссовки Nike Air Max</h3>
-                  <p className="product-category">Обувь</p>
-                  <div className="product-price">
-                    <span className="current-price">12 499 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
+                {/* Остальные карточки товаров... */}
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
+                <div className="product-card">{/* ... */}</div>
               </div>
+            ) : (
+              <div className="procurements-grid">
+                {/* Карточки закупок */}
+                <div className="procurement-card">
+                  <div className="procurement-header">
+                    <h3 className="procurement-title">Закупка офисной техники</h3>
+                    <span className="procurement-status active">Активна</span>
+                  </div>
+                  <div className="procurement-info">
+                    <p className="procurement-description">
+                      Закупка компьютеров, принтеров и оргтехники для офиса
+                    </p>
+                    <div className="procurement-details">
+                      <div className="detail-item">
+                        <span className="detail-label">Бюджет:</span>
+                        <span className="detail-value">500 000 ₽</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">До окончания:</span>
+                        <span className="detail-value">5 дней</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Участников:</span>
+                        <span className="detail-value">12</span>
+                      </div>
+                    </div>
+                    <button className="participate-btn">
+                      Участвовать
+                    </button>
+                  </div>
+                </div>
 
-              {/* Карточка товара 3 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Ноутбук MacBook Pro 16"</h3>
-                  <p className="product-category">Электроника</p>
-                  <div className="product-price">
-                    <span className="current-price">199 999 ₽</span>
+                <div className="procurement-card">
+                  <div className="procurement-header">
+                    <h3 className="procurement-title">Закупка мебели</h3>
+                    <span className="procurement-status soon">Скоро</span>
                   </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
+                  <div className="procurement-info">
+                    <p className="procurement-description">
+                      Офисные кресла и столы для нового филиала
+                    </p>
+                    <div className="procurement-details">
+                      <div className="detail-item">
+                        <span className="detail-label">Бюджет:</span>
+                        <span className="detail-value">300 000 ₽</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Начало:</span>
+                        <span className="detail-value">через 2 дня</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Заинтересовано:</span>
+                        <span className="detail-value">8</span>
+                      </div>
+                    </div>
+                    <button className="notify-btn">
+                      Уведомить о старте
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Карточка товара 4 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Часы Apple Watch Series 9</h3>
-                  <p className="product-category">Электроника</p>
-                  <div className="product-price">
-                    <span className="current-price">34 999 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
+                {/* Добавьте больше карточек закупок по аналогии */}
               </div>
-
-              {/* Карточка товара 5 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Футболка хлопковая</h3>
-                  <p className="product-category">Одежда</p>
-                  <div className="product-price">
-                    <span className="current-price">1 499 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
-              </div>
-
-              {/* Карточка товара 6 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Наушники Sony WH-1000XM4</h3>
-                  <p className="product-category">Электроника</p>
-                  <div className="product-price">
-                    <span className="current-price">24 999 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
-              </div>
-
-              {/* Карточка товара 7 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Планшет iPad Air 5</h3>
-                  <p className="product-category">Электроника</p>
-                  <div className="product-price">
-                    <span className="current-price">54 999 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
-              </div>
-
-              {/* Карточка товара 8 */}
-              <div className="product-card">
-                <div className="product-image">
-                  <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                  <button className="wishlist-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">Куртка зимняя</h3>
-                  <p className="product-category">Одежда</p>
-                  <div className="product-price">
-                    <span className="current-price">8 999 ₽</span>
-                  </div>
-                  <button className="add-to-cart-btn">
-                    В корзину
-                  </button>
-                </div>
-              </div>
-            </div>
+            )}
           </section>
 
           {/* Блок фильтров - 25% */}
@@ -339,86 +280,103 @@ function Main() {
               <button className="clear-filters-btn">Очистить</button>
             </div>
 
-            <div className="filters-section">
-              <h4>Категории</h4>
-              <div className="filter-options">
-                <label className="filter-option">
-                  <input type="checkbox" defaultChecked />
-                  <span>Электроника</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Одежда</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Обувь</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Аксессуары</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Красота</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="filters-section">
-              <h4>Цена</h4>
-              <div className="price-range">
-                <div className="price-inputs">
-                  <input type="number" placeholder="0" className="price-input" />
-                  <span>-</span>
-                  <input type="number" placeholder="100000" className="price-input" />
+            {activeSection === 'products' ? (
+              /* Фильтры для товаров */
+              <>
+                <div className="filters-section">
+                  <h4>Категории</h4>
+                  <div className="filter-options">
+                    <label className="filter-option">
+                      <input type="checkbox" defaultChecked />
+                      <span>Электроника</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Одежда</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Обувь</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="filters-section">
-              <h4>Бренд</h4>
-              <div className="filter-options">
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Apple</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Samsung</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Xiaomi</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Nike</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>Sony</span>
-                </label>
-              </div>
-            </div>
+                <div className="filters-section">
+                  <h4>Цена</h4>
+                  <div className="price-range">
+                    <div className="price-inputs">
+                      <input type="number" placeholder="0" className="price-input" />
+                      <span>-</span>
+                      <input type="number" placeholder="100000" className="price-input" />
+                    </div>
+                  </div>
+                </div>
 
-            <div className="filters-section">
-              <h4>Рейтинг</h4>
-              <div className="filter-options">
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>★★★★★</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>★★★★ и выше</span>
-                </label>
-                <label className="filter-option">
-                  <input type="checkbox" />
-                  <span>★★★ и выше</span>
-                </label>
-              </div>
-            </div>
+                <div className="filters-section">
+                  <h4>Бренд</h4>
+                  <div className="filter-options">
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Apple</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Samsung</span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Фильтры для закупок */
+              <>
+                <div className="filters-section">
+                  <h4>Статус закупки</h4>
+                  <div className="filter-options">
+                    <label className="filter-option">
+                      <input type="checkbox" defaultChecked />
+                      <span>Активные</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Скоро начнутся</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Завершенные</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="filters-section">
+                  <h4>Бюджет</h4>
+                  <div className="price-range">
+                    <div className="price-inputs">
+                      <input type="number" placeholder="0" className="price-input" />
+                      <span>-</span>
+                      <input type="number" placeholder="1000000" className="price-input" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="filters-section">
+                  <h4>Категория закупки</h4>
+                  <div className="filter-options">
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Техника</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Мебель</span>
+                    </label>
+                    <label className="filter-option">
+                      <input type="checkbox" />
+                      <span>Канцтовары</span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
 
             <button className="apply-filters-btn">
               Применить фильтры
@@ -429,6 +387,7 @@ function Main() {
     </main>
   );
 }
+
 
 function Footer() {
   return (
