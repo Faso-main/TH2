@@ -169,7 +169,6 @@ function Main() {
                   <p className="product-category">Электроника</p>
                   <div className="product-price">
                     <span className="current-price">89 999 ₽</span>
-                    <span className="old-price">99 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -192,7 +191,6 @@ function Main() {
                   <p className="product-category">Обувь</p>
                   <div className="product-price">
                     <span className="current-price">12 499 ₽</span>
-                    <span className="old-price">14 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -215,7 +213,6 @@ function Main() {
                   <p className="product-category">Электроника</p>
                   <div className="product-price">
                     <span className="current-price">199 999 ₽</span>
-                    <span className="old-price">219 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -238,7 +235,6 @@ function Main() {
                   <p className="product-category">Электроника</p>
                   <div className="product-price">
                     <span className="current-price">34 999 ₽</span>
-                    <span className="old-price">39 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -261,7 +257,6 @@ function Main() {
                   <p className="product-category">Одежда</p>
                   <div className="product-price">
                     <span className="current-price">1 499 ₽</span>
-                    <span className="old-price">1 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -284,7 +279,6 @@ function Main() {
                   <p className="product-category">Электроника</p>
                   <div className="product-price">
                     <span className="current-price">24 999 ₽</span>
-                    <span className="old-price">29 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -307,7 +301,6 @@ function Main() {
                   <p className="product-category">Электроника</p>
                   <div className="product-price">
                     <span className="current-price">54 999 ₽</span>
-                    <span className="old-price">59 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
@@ -330,7 +323,6 @@ function Main() {
                   <p className="product-category">Одежда</p>
                   <div className="product-price">
                     <span className="current-price">8 999 ₽</span>
-                    <span className="old-price">11 999 ₽</span>
                   </div>
                   <button className="add-to-cart-btn">
                     В корзину
