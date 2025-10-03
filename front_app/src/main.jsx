@@ -6,7 +6,5 @@ import Market from './App.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Market />
-    <Market />
-    <Market />
   </StrictMode>,
 )
