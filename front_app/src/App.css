@@ -127,7 +127,8 @@ body {
 /* Hero Section */
 .hero-section {
   width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #020024;
+  background: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%);
   padding: clamp(4rem, 10vw, 8rem) 2rem;
   color: var(--white);
 }
@@ -417,6 +418,10 @@ body {
     grid-template-columns: 1fr;
     gap: 3rem;
     text-align: center;
+  }
+
+  .hero-actions{
+    justify-content: center;
   }
   
   .hero-stats {
