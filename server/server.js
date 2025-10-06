@@ -6,6 +6,8 @@ const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
 
+RESOURCE = "py"
+
 // Middleware
 app.use(cors());
 app.use(express.json());
