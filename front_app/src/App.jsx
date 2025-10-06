@@ -87,7 +87,7 @@ function Header({ onOpenLogin }) {
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyUp ={handleKeyPress}
             />
             <button type="submit" className="search-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -102,8 +102,8 @@ function Header({ onOpenLogin }) {
           {/* Иконка личного кабинета */}
         <button className="user-icon-btn">
             <svg 
-              width="35" 
-              height="35" 
+              width="50" 
+              height="50" 
               viewBox="0 0 512 512" 
               fill="currentColor"
             >
@@ -140,17 +140,13 @@ function Header({ onOpenLogin }) {
   );
 }
 
-// App.jsx - обновленный компонент Main с кнопками в заголовке
 function Main() {
   const [activeSection, setActiveSection] = useState('products'); // 'products' или 'procurements'
 
   return (
     <main className="main">
       <div className="products-container">
-        {/* Убираем старый переключатель и переносим кнопки в заголовок */}
-
         <div className="products-layout">
-          {/* Основной блок - меняется в зависимости от активного раздела */}
           <section className="products-main">
             {/* Заголовок с кнопками переключения */}
             <div className="products-header">
@@ -176,7 +172,7 @@ function Main() {
             {/* Контент в зависимости от активного раздела */}
             {activeSection === 'products' ? (
               <div className="products-grid">
-                {/* Карточки товаров */}
+                {/* Карточки товаров остаются без изменений */}
                 <div className="product-card">
                   <div className="product-image">
                     <img src="https://via.placeholder.com/200x200" alt="Товар" />
@@ -209,57 +205,107 @@ function Main() {
               </div>
             ) : (
               <div className="procurements-grid">
-                {/* Карточки закупок */}
+                {/* Обновленные карточки закупок в формате котировочной сессии */}
                 <div className="procurement-card">
                   <div className="procurement-header">
-                    <h3 className="procurement-title">Закупка офисной техники</h3>
-                    <span className="procurement-status active">Активна</span>
+                    <div className="procurement-id-status">
+                      <span className="procurement-id">Котировочная сессия 10055209</span>
+                      <span className="procurement-status active">Активная</span>
+                    </div>
                   </div>
                   <div className="procurement-info">
-                    <p className="procurement-description">
-                      Закупка компьютеров, принтеров и оргтехники для офиса
-                    </p>
+                    <h3 className="procurement-title">
+                      Оказание услуг по проведению специальной оценки условий труда
+                    </h3>
+                    <div className="procurement-customer">
+                      <span className="customer-name">
+                        Государственное бюджетное общеобразовательное учреждение города Москвы «Школа № 1811 «Восточное Измайлово»
+                      </span>
+                    </div>
                     <div className="procurement-details">
                       <div className="detail-item">
-                        <span className="detail-label">Бюджет:</span>
-                        <span className="detail-value">500 000 ₽</span>
+                        <span className="detail-label">Начальная цена:</span>
+                        <span className="detail-value price">92 500,00 ₽</span>
                       </div>
                       <div className="detail-item">
-                        <span className="detail-label">До окончания:</span>
-                        <span className="detail-value">5 дней</span>
+                        <span className="detail-label">Осталось времени:</span>
+                        <span className="detail-value time">2 дня 5 часов</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Участников:</span>
-                        <span className="detail-value">12</span>
+                        <span className="detail-value">7</span>
                       </div>
                     </div>
                     <button className="participate-btn">
-                      Участвовать
+                      Участвовать в закупке
                     </button>
                   </div>
                 </div>
 
                 <div className="procurement-card">
                   <div className="procurement-header">
-                    <h3 className="procurement-title">Закупка мебели</h3>
-                    <span className="procurement-status soon">Скоро</span>
+                    <div className="procurement-id-status">
+                      <span className="procurement-id">Котировочная сессия 10055187</span>
+                      <span className="procurement-status active">Активная</span>
+                    </div>
                   </div>
                   <div className="procurement-info">
-                    <p className="procurement-description">
-                      Офисные кресла и столы для нового филиала
-                    </p>
+                    <h3 className="procurement-title">
+                      Поставка оргтехники и расходных материалов
+                    </h3>
+                    <div className="procurement-customer">
+                      <span className="customer-name">
+                        Муниципальное автономное учреждение «Центр развития предпринимательства»
+                      </span>
+                    </div>
                     <div className="procurement-details">
                       <div className="detail-item">
-                        <span className="detail-label">Бюджет:</span>
-                        <span className="detail-value">300 000 ₽</span>
+                        <span className="detail-label">Начальная цена:</span>
+                        <span className="detail-value price">156 200,00 ₽</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Осталось времени:</span>
+                        <span className="detail-value time">1 день 12 часов</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Участников:</span>
+                        <span className="detail-value">15</span>
+                      </div>
+                    </div>
+                    <button className="participate-btn">
+                      Участвовать в закупке
+                    </button>
+                  </div>
+                </div>
+
+                <div className="procurement-card">
+                  <div className="procurement-header">
+                    <div className="procurement-id-status">
+                      <span className="procurement-id">Котировочная сессия 10055245</span>
+                      <span className="procurement-status soon">Скоро начнется</span>
+                    </div>
+                  </div>
+                  <div className="procurement-info">
+                    <h3 className="procurement-title">
+                      Ремонт помещений и замена системы освещения
+                    </h3>
+                    <div className="procurement-customer">
+                      <span className="customer-name">
+                        Государственное казенное учреждение «Дирекция по строительству»
+                      </span>
+                    </div>
+                    <div className="procurement-details">
+                      <div className="detail-item">
+                        <span className="detail-label">Начальная цена:</span>
+                        <span className="detail-value price">875 000,00 ₽</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Начало:</span>
-                        <span className="detail-value">через 2 дня</span>
+                        <span className="detail-value time">через 3 дня</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Заинтересовано:</span>
-                        <span className="detail-value">8</span>
+                        <span className="detail-value">23</span>
                       </div>
                     </div>
                     <button className="notify-btn">
@@ -432,7 +478,7 @@ function Footer() {
         
         <div className="footer-bottom">
           <div className="footer-bottom-content">
-            <p>&copy; 2025 SpeedOfLight. Все права защищены.</p>
+            <p>&copy; 2025 SpeedOfLight</p>
             <div className="footer-links">
               <a href="#">Политика конфиденциальности</a>
               <a href="#">Условия использования</a>

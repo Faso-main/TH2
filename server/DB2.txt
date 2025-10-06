@@ -1,0 +1,8 @@
+CREATE DATABASE online_store 
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'C'
+    LC_CTYPE = 'C'
+    TEMPLATE = template0;
+
+-- Подключаемся к новой базе
+\c online_store
