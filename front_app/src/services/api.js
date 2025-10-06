@@ -1,5 +1,5 @@
 // src/services/api.js
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = ''; 
 
 // Утилиты для работы с localStorage
 const getSessionId = () => localStorage.getItem('sessionId');
@@ -8,7 +8,7 @@ const removeSessionId = () => localStorage.removeItem('sessionId');
 
 // Базовый запрос
 async function apiRequest(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `/api${endpoint}`;
   
   const config = {
     headers: {
@@ -16,6 +16,7 @@ async function apiRequest(endpoint, options = {}) {
       'Accept': 'application/json',
       ...options.headers,
     },
+    credentials: 'include',
     ...options,
   };
 

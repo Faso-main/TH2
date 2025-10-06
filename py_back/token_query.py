@@ -2,6 +2,7 @@ import requests
 import json
 import jwt
 from datetime import datetime
+import pandas as pd
 
 def check_token_details(token: str):
     """Детальная проверка токена"""
@@ -37,7 +38,7 @@ def check_token_details(token: str):
         print(f"❌ Ошибка проверки токена: {e}")
         return False
 
-class MosZakupkiIntegrationTester:
+class MosZakupkiAPITester:
     
     def __init__(self, api_key: str):
         self.base_url = "https://api.zakupki.mos.ru/api/v1"
@@ -49,35 +50,47 @@ class MosZakupkiIntegrationTester:
             'Authorization': f'Bearer {api_key}'
         })
 
-    def test_all_endpoints(self):
-        """Тестируем все возможные endpoints"""
+    def test_comprehensive_endpoints(self):
+        """Комплексное тестирование всех возможных endpoints"""
         print("\n" + "=" * 60)
-        print("ТЕСТИРОВАНИЕ ENDPOINTS")
+        print("КОМПЛЕКСНОЕ ТЕСТИРОВАНИЕ ENDPOINTS")
         print("=" * 60)
         
         endpoints_to_test = [
-            # Основные queries
-            ("/queries/GetSkus", "Товары (СТЕ)", {"take": 5}),
-            ("/queries/GetContracts", "Контракты", {"take": 5}),
-            ("/queries/GetSuppliers", "Поставщики", {"take": 5}),
-            ("/queries/GetTenders", "Закупки", {"take": 5}),
-            ("/queries/GetOffers", "Оферты", {"take": 5}),
+            # Основные queries - данные
+            ("/queries/GetSkus", "Товары (СТЕ)", {"take": 5, "skip": 0}),
+            ("/queries/GetContracts", "Контракты", {"take": 5, "skip": 0}),
+            ("/queries/GetSuppliers", "Поставщики", {"take": 5, "skip": 0}),
+            ("/queries/GetTenders", "Закупки", {"take": 5, "skip": 0}),
+            ("/queries/GetOffers", "Оферты", {"take": 5, "skip": 0}),
+            ("/queries/GetCustomers", "Заказчики", {"take": 5, "skip": 0}),
+            
+            # Статистика
             ("/queries/GetStatistics", "Статистика", {}),
             ("/queries/GetContractStats", "Статистика контрактов", {}),
             
-            # References (справочники - обычно публичные)
+            # Справочники
             ("/references/GetOkpdReference", "Справочник ОКПД2", {}),
             ("/references/GetRegionsReference", "Справочник регионов", {}),
             ("/references/GetProductionDirectoryReference", "Категории товаров", {}),
             ("/references/GetProductionReference", "Справочник продукции", {}),
             
-            # External queries (внешние запросы)
+            # Внешние запросы
             ("/queries/GetExternalSkus", "Внешние СТЕ", {"take": 5}),
             ("/queries/GetExternalSkuChangeRequests", "Заявки на СТЕ", {"take": 5}),
             
-            # Команды
+            # Команды интеграции
             ("/commands/SyncWithEis", "Синхронизация с ЕИС", {}),
             ("/commands/ProcessIntegrationQueue", "Очередь интеграции", {}),
+            ("/commands/AddExternalIntegrationQueue", "Добавление в очередь", {}),
+            
+            # Внешние команды
+            ("/externalCommands/ReceiveNotification", "Получение уведомлений", {}),
+            ("/externalCommands/CreateNeed", "Создание потребности", {}),
+            
+            # Token endpoints
+            ("/Token/CheckToken", "Проверка токена", {}),
+            ("/Token/CreateToken", "Создание токена", {}),
         ]
         
         available_endpoints = []
@@ -88,14 +101,15 @@ class MosZakupkiIntegrationTester:
             print(f"   URL: {endpoint}")
             
             try:
+                # Пробуем POST запрос
                 response = self.session.post(url, json=params, timeout=10)
-                print(f"   Статус: {response.status_code}")
+                print(f"   POST статус: {response.status_code}")
                 
                 if response.status_code == 200:
                     data = response.json()
                     count = data.get('count', len(data.get('items', [])))
                     print(f"   ✅ ДОСТУПЕН - записей: {count}")
-                    available_endpoints.append((endpoint, description, count))
+                    available_endpoints.append((endpoint, description, count, 'POST'))
                     
                     # Сохраняем пример данных
                     filename = f"available_{description.replace(' ', '_').lower()}.json"
@@ -105,7 +119,7 @@ class MosZakupkiIntegrationTester:
                     
                 elif response.status_code == 400:
                     print(f"   ⚠️  Требуются корректные параметры")
-                    available_endpoints.append((endpoint, description, "needs_params"))
+                    available_endpoints.append((endpoint, description, "needs_params", 'POST'))
                     
                 elif response.status_code == 403:
                     print(f"   ❌ ДОСТУП ЗАПРЕЩЕН")
@@ -116,6 +130,18 @@ class MosZakupkiIntegrationTester:
                 elif response.status_code == 401:
                     print(f"   ❌ НЕАВТОРИЗОВАН")
                     
+                elif response.status_code == 405:
+                    # Пробуем GET если POST не поддерживается
+                    print(f"   ⚠️  POST не поддерживается, пробуем GET...")
+                    get_response = self.session.get(url, timeout=10)
+                    print(f"   GET статус: {get_response.status_code}")
+                    
+                    if get_response.status_code == 200:
+                        data = get_response.json()
+                        count = len(data) if isinstance(data, list) else len(data.get('items', []))
+                        print(f"   ✅ ДОСТУПЕН через GET - записей: {count}")
+                        available_endpoints.append((endpoint, description, count, 'GET'))
+                    
             except requests.exceptions.Timeout:
                 print(f"   ⏰ ТАЙМАУТ")
             except Exception as e:
@@ -123,13 +149,13 @@ class MosZakupkiIntegrationTester:
         
         return available_endpoints
 
-    def get_available_data(self, available_endpoints):
-        """Получение данных с доступных endpoints"""
+    def get_detailed_data(self, available_endpoints):
+        """Получение детальных данных с доступных endpoints"""
         print("\n" + "=" * 60)
-        print("ПОЛУЧЕНИЕ ДАННЫХ С ДОСТУПНЫХ ENDPOINTS")
+        print("ПОЛУЧЕНИЕ ДЕТАЛЬНЫХ ДАННЫХ")
         print("=" * 60)
         
-        for endpoint, description, count in available_endpoints:
+        for endpoint, description, count, method in available_endpoints:
             if count == "needs_params":
                 continue
                 
@@ -137,20 +163,32 @@ class MosZakupkiIntegrationTester:
             url = f"{self.base_url}{endpoint}"
             
             try:
-                # Получаем больше данных для доступных endpoints
-                params = {"take": 100, "skip": 0, "withCount": True}
-                response = self.session.post(url, json=params, timeout=15)
+                # Получаем больше данных
+                if method == 'POST':
+                    params = {"take": 50, "skip": 0, "withCount": True}
+                    response = self.session.post(url, json=params, timeout=15)
+                else:
+                    response = self.session.get(url, timeout=15)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    total_count = data.get('count', 0)
-                    items_count = len(data.get('items', []))
                     
-                    print(f"   ✅ Получено: {items_count} из {total_count} записей")
+                    if isinstance(data, dict):
+                        total_count = data.get('count', 0)
+                        items = data.get('items', [])
+                    else:
+                        items = data
+                        total_count = len(items)
+                    
+                    print(f"   ✅ Получено: {len(items)} из {total_count} записей")
                     
                     # Сохраняем в CSV если есть данные
-                    if data.get('items'):
-                        self.save_to_csv(data['items'], description)
+                    if items:
+                        self.save_to_csv(items, description)
+                        
+                    # Анализируем структуру данных
+                    if items and isinstance(items[0], dict):
+                        print(f"   📊 Структура: {list(items[0].keys())[:5]}...")
                         
             except Exception as e:
                 print(f"   ❌ Ошибка: {e}")
@@ -160,24 +198,79 @@ class MosZakupkiIntegrationTester:
         try:
             if data and isinstance(data[0], dict):
                 df = pd.DataFrame(data)
-                filename = f"{description.replace(' ', '_').lower()}.csv"
+                filename = f"{description.replace(' ', '_').lower()}_detailed.csv"
                 df.to_csv(filename, index=False, encoding='utf-8-sig')
                 print(f"   💾 CSV сохранен: {filename}")
-                print(f"   📊 Колонки: {list(df.columns)[:5]}...")
+                
+                # Показываем базовую статистику
+                numeric_cols = df.select_dtypes(include=['number']).columns
+                if len(numeric_cols) > 0:
+                    print(f"   📈 Числовые колонки: {list(numeric_cols)}")
+                    
         except Exception as e:
             print(f"   ❌ Ошибка сохранения CSV: {e}")
 
+    def test_specific_filters(self):
+        """Тестирование специфических фильтров для доступных endpoints"""
+        print("\n" + "=" * 60)
+        print("ТЕСТИРОВАНИЕ ФИЛЬТРОВ")
+        print("=" * 60)
+        
+        filter_tests = [
+            {
+                "endpoint": "/queries/GetSkus",
+                "description": "Товары с фильтрами",
+                "filters": [
+                    {"hasOffers": True},
+                    {"offerType": "referencePrice"},
+                    {"kpgzCode": {"values": ["01"]}}
+                ]
+            },
+            {
+                "endpoint": "/queries/GetContracts", 
+                "description": "Контракты с фильтрами",
+                "filters": [
+                    {"status": "ACTIVE"},
+                    {"conclusionDate": {"from": "2024-01-01", "to": "2024-12-31"}}
+                ]
+            }
+        ]
+        
+        for test in filter_tests:
+            url = f"{self.base_url}{test['endpoint']}"
+            print(f"\n🔍 Тест фильтров: {test['description']}")
+            
+            for filter_obj in test['filters']:
+                params = {
+                    "take": 10,
+                    "skip": 0, 
+                    "withCount": True,
+                    "filter": filter_obj
+                }
+                
+                try:
+                    response = self.session.post(url, json=params, timeout=10)
+                    print(f"   Фильтр {filter_obj}: статус {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        count = data.get('count', 0)
+                        print(f"   ✅ Найдено: {count} записей")
+                        
+                except Exception as e:
+                    print(f"   ❌ Ошибка: {e}")
+
 def main():
-    # Ваш токен
-    API_KEY = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwbDgxLVYyWUNyQ1V0bmVRTWxxRUNmSVluS1Z3VExnQVIwZXhiTkF1SF9nIn0.eyJleHAiOjIwNzQ4MzM1MTcsImlhdCI6MTc1OTQ3NTIyMCwiYXV0aF90aW1lIjoxNzU5NDczNTE3LCJqdGkiOiIyNThmYTAzZi1jNTk5LTQ5MTUtOWUzYS0yMDdhMmYxOWVmNjYiLCJpc3MiOiJodHRwczovL3pha3Vwa2kubW9zLnJ1L2F1dGgvcmVhbG1zL1BwUmVhbG0iLCJhdWQiOiJJbnRlZ3JhdGlvbkFwcCIsInN1YiI6IjdlMjhiZTU5LWYyNjYtNGNkZi05OWJhLTMzYzJmYTFmZWY4ZSIsInR5cCI6IkJlYXJlciIsImF6cCI6IlBwQXBwIiwic2Vzc2lvbl9zdGF0ZSI6IjNkOTc1N2FhLTNlNjEtNGY5Ni1hNGIzLWE4NjMxNTk3YjVkMiIsInNjb3BlIjoiSW50ZWdyYXRpb25TY29wZSIsInNpZCI6IjNkOTc1N2FhLTNlNjEtNGY5Ni1hNGIzLWE4NjMxNTk3YjVkMiJ9.CREupv9Bav92I17mb62RwVqYIWH2kwaHGL4W9kNDXmvKSvK2jSio1skOGe_UjsmIzTrusEU4h8L9XuPZB-ILBDe3GANNsT4fF5WUWjHWjpeULpSa5Z7SijcPAQ-0S1tX734ysPwfT4N4_bsOzew-h7eMYaxTfH5PvXvI8ht73UCC0m8yKL_pufHt1y7HvjZ6ZpuW4AnyBnQdcmULMS9ufzU6KnH7QkDSiAUF-Xajpe-N2AyWBwdunmMtQ9sSGPPExYVzmqHzKWGdrQuqRmymAyvRfs9Cx12Sf7jpD4-aOwwu7gKfMaE6-2GypETFglGXPr3Y6EEUMpxyTbWljFP-rg"
+    # Ваш новый токен
+    API_KEY = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwbDgxLVYyWUNyQ1V0bmVRTWxxRUNmSVluS1Z3VExnQVIwZXhiTkF1SF9nIn0.eyJleHAiOjIwNzUxMzc3NDcsImlhdCI6MTc1OTc3NzgxOCwiYXV0aF90aW1lIjoxNzU5Nzc3NzQ3LCJqdGkiOiJlZjYzNzcwYi03YjcyLTQ1M2UtYWFiMS0wZDYwMzY0YjBiNTQiLCJpc3MiOiJodHRwczovL3pha3Vwa2kubW9zLnJ1L2F1dGgvcmVhbG1zL1BwUmVhbG0iLCJhdWQiOiJJbnRlZ3JhdGlvbkFwcCIsInN1YiI6IjdlMjhiZTU5LWYyNjYtNGNkZi05OWJhLTMzYzJmYTFmZWY4ZSIsInR5cCI6IkJlYXJlciIsImF6cCI6IlBwQXBwIiwic2Vzc2lvbl9zdGF0ZSI6ImViMGNmYzIzLWJjYmQtNDg1NS05OWRlLTkyNmY1Y2VkNmEyZiIsInNjb3BlIjoiSW50ZWdyYXRpb25TY29wZSIsInNpZCI6ImViMGNmYzIzLWJjYmQtNDg1NS05OWRlLTkyNmY1Y2VkNmEyZiJ9.ZJT5EnlbNip9C3yp_nCOmUfXPETQACO3v-1_FUAFZSTrjlc6F8PBRPpRToerFT4EWD1yndB5mkeMQ4XeYSEhvJ4ysDO4UUWSNPtQKDgHuBR03NbGOROKomI1YQq4-hHS5r_-O5bAsHEqWuSQTpvTDGhnns51IsQwo9FI56y26DS73j4NXSWl5OF1riQ0djahXTsB-psWVzvIsJrhNuvNOuDHyDElpBOiMLas6tjMfCVmL9fxrS5h4I4gKPLHmFaamdcy8Nl054gi6q9jFAppyZSjxIJdu7f9QgZc2CjxYenp7eOqkQzL_ThAoMPfvwExvBgoGWHh3i6pPnubkVOwPw"
     
     # Проверяем токен
     if not check_token_details(API_KEY):
         return
     
     # Тестируем endpoints
-    tester = MosZakupkiIntegrationTester(API_KEY)
-    available_endpoints = tester.test_all_endpoints()
+    tester = MosZakupkiAPITester(API_KEY)
+    available_endpoints = tester.test_comprehensive_endpoints()
     
     # Выводим результаты
     print("\n" + "=" * 60)
@@ -186,17 +279,21 @@ def main():
     
     if available_endpoints:
         print(f"✅ ДОСТУПНЫХ ENDPOINTS: {len(available_endpoints)}")
-        for endpoint, description, count in available_endpoints:
-            print(f"   📍 {description}: {endpoint} ({count})")
+        for endpoint, description, count, method in available_endpoints:
+            print(f"   📍 {description}: {endpoint} ({method}) - {count}")
         
-        # Получаем данные с доступных endpoints
-        tester.get_available_data(available_endpoints)
+        # Получаем детальные данные
+        tester.get_detailed_data(available_endpoints)
+        
+        # Тестируем фильтры
+        tester.test_specific_filters()
+        
     else:
         print("❌ Нет доступных endpoints")
         print("\nРЕКОМЕНДАЦИИ:")
-        print("1. Обратитесь к администратору для получения прав")
+        print("1. IntegrationScope имеет ограниченные права")
         print("2. Запросите токен с scope 'read' или 'public'")
-        print("3. Используйте веб-интерфейс портала")
+        print("3. Обратитесь к администратору портала")
 
 if __name__ == "__main__":
     main()

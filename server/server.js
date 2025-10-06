@@ -7,9 +7,8 @@ const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
 
-// Настройка CORS
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Адреса фронтенда
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -31,7 +30,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Обработка OPTIONS запросов для CORS preflight
-app.options('*', cors(corsOptions));
+app.options('/api/*', cors(corsOptions));
 
 // Логирование входящих запросов
 app.use((req, res, next) => {
@@ -39,8 +38,15 @@ app.use((req, res, next) => {
   console.log('Headers:', {
     'content-type': req.headers['content-type'],
     'user-agent': req.headers['user-agent'],
-    'session-id': req.headers['session-id']
+    'session-id': req.headers['session-id'],
+    'origin': req.headers['origin']
   });
+  next();
+});
+
+// Префикс API
+app.use('/api', (req, res, next) => {
+  console.log('API request:', req.path);
   next();
 });
 
@@ -90,11 +96,6 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     console.log('Register request body:', req.body);
     
-    // Проверка Content-Type
-    if (req.headers['content-type'] !== 'application/json') {
-      return res.status(400).json({ error: 'Неверный Content-Type. Ожидается application/json' });
-    }
-
     const { name, email, password, INN, company_name, location, phone_number } = req.body;
 
     if (!name || !email || !password || !INN) {
@@ -140,11 +141,6 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     console.log('Login request body:', req.body);
-    
-    // Проверка Content-Type
-    if (req.headers['content-type'] !== 'application/json') {
-      return res.status(400).json({ error: 'Неверный Content-Type. Ожидается application/json' });
-    }
 
     const { email, password } = req.body;
 
@@ -406,9 +402,9 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
-// Обработка 404
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Маршрут не найден' });
+// Обработка 404 для API
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API маршрут не найден' });
 });
 
 app.listen(PORT, () => {
@@ -416,5 +412,4 @@ app.listen(PORT, () => {
   console.log(`База данных: online_store1`);
   console.log(`Пользователь БД: store_app1`);
   console.log(`API доступно: http://localhost:${PORT}/api`);
-  console.log(`CORS настроен для: http://localhost:3000`);
 });
