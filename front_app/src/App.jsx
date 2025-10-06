@@ -1,16 +1,42 @@
-// App.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import './Body.css';
 import './Header.css';
 import Modal from './modal/Modal';
 import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
+import { authAPI, productsAPI, procurementsAPI} from './services/api';
 
-// И обновим вызов Header в компоненте App
 function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [authMode, setAuthMode] = useState('login');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [procurements, setProcurements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Загрузка данных при старте
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      // Загружаем товары и закупки параллельно
+      const [productsResponse, procurementsResponse] = await Promise.all([
+        productsAPI.getProducts({ limit: 20 }),
+        procurementsAPI.getProcurements({ limit: 10 })
+      ]);
+      
+      setProducts(productsResponse.products);
+      setProcurements(procurementsResponse.procurements);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openModal = (modalName) => {
     setActiveModal(modalName);
@@ -24,13 +50,69 @@ function App() {
     setAuthMode(mode);
   };
 
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    closeModal();
+  };
+
+  const handleLogout = () => {
+    authAPI.logout();
+    setCurrentUser(null);
+  };
+
+  const handleSearch = async (searchQuery) => {
+    try {
+      setLoading(true);
+      const response = await productsAPI.getProducts({ search: searchQuery });
+      setProducts(response.products);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParticipate = async (procurementId, proposedPrice) => {
+    if (!currentUser) {
+      openModal('auth');
+      return;
+    }
+
+    try {
+      await procurementsAPI.participate(procurementId, {
+        proposed_price: proposedPrice,
+        proposal_text: `Готов поставить товары по указанной цене`
+      });
+      alert('Заявка на участие отправлена!');
+      // Обновляем данные закупок
+      const response = await procurementsAPI.getProcurements();
+      setProcurements(response.procurements);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   return (
     <div className="app">
-      <Header onOpenLogin={() => openModal('auth')} />
-      <Main onOpenAuth={() => openModal('auth')} />
+      <Header 
+        onOpenLogin={() => openModal('auth')} 
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onSearch={handleSearch}
+      />
+      
+      <Main 
+        products={products}
+        procurements={procurements}
+        loading={loading}
+        currentUser={currentUser}
+        onParticipate={handleParticipate}
+        onOpenAuth={() => openModal('auth')}
+      />
+      
       <Footer />
 
-      {/* Модальное окно авторизации/регистрации */}
+      {/* Модальное окно авторизации */}
       <Modal
         isOpen={activeModal === 'auth'}
         onClose={closeModal}
@@ -41,11 +123,13 @@ function App() {
           <LoginForm 
             onClose={closeModal}
             onSwitchToRegister={() => switchAuthMode('register')}
+            onLoginSuccess={handleLoginSuccess}
           />
         ) : (
           <RegisterForm 
             onClose={closeModal}
             onSwitchToLogin={() => switchAuthMode('login')}
+            onLoginSuccess={handleLoginSuccess}
           />
         )}
       </Modal>
@@ -140,15 +224,24 @@ function Header({ onOpenLogin }) {
   );
 }
 
-function Main() {
-  const [activeSection, setActiveSection] = useState('products'); // 'products' или 'procurements'
+function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth }) {
+  const [activeSection, setActiveSection] = useState('products');
+
+  if (loading) {
+    return (
+      <main className="main">
+        <div className="products-container">
+          <div className="loading">Загрузка...</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="main">
       <div className="products-container">
         <div className="products-layout">
           <section className="products-main">
-            {/* Заголовок с кнопками переключения */}
             <div className="products-header">
               <div className="section-buttons">
                 <button 
@@ -165,275 +258,217 @@ function Main() {
                 </button>
               </div>
               <span className="products-count">
-                {activeSection === 'products' ? 'Найдено 24 товара' : 'Активные закупки: 8'}
+                {activeSection === 'products' 
+                  ? `Найдено ${products.length} товаров` 
+                  : `Активные закупки: ${procurements.length}`
+                }
               </span>
             </div>
             
-            {/* Контент в зависимости от активного раздела */}
             {activeSection === 'products' ? (
-              <div className="products-grid">
-                {/* Карточки товаров остаются без изменений */}
-                <div className="product-card">
-                  <div className="product-image">
-                    <img src="https://via.placeholder.com/200x200" alt="Товар" />
-                    <button className="wishlist-btn">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="product-info">
-                    <h3 className="product-title">Смартфон Apple iPhone 15 Pro</h3>
-                    <p className="product-category">Электроника</p>
-                    <div className="product-price">
-                      <span className="current-price">89 999 ₽</span>
-                    </div>
-                    <button className="add-to-cart-btn">
-                      В корзину
-                    </button>
-                  </div>
-                </div>
-
-                {/* Остальные карточки товаров... */}
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-                <div className="product-card">{/* ... */}</div>
-              </div>
+              <ProductsGrid products={products} />
             ) : (
-              <div className="procurements-grid">
-                {/* Обновленные карточки закупок в формате котировочной сессии */}
-                <div className="procurement-card">
-                  <div className="procurement-header">
-                    <div className="procurement-id-status">
-                      <span className="procurement-id">Котировочная сессия 10055209</span>
-                      <span className="procurement-status active">Активная</span>
-                    </div>
-                  </div>
-                  <div className="procurement-info">
-                    <h3 className="procurement-title">
-                      Оказание услуг по проведению специальной оценки условий труда
-                    </h3>
-                    <div className="procurement-customer">
-                      <span className="customer-name">
-                        Государственное бюджетное общеобразовательное учреждение города Москвы «Школа № 1811 «Восточное Измайлово»
-                      </span>
-                    </div>
-                    <div className="procurement-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Начальная цена:</span>
-                        <span className="detail-value price">92 500,00 ₽</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Осталось времени:</span>
-                        <span className="detail-value time">2 дня 5 часов</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Участников:</span>
-                        <span className="detail-value">7</span>
-                      </div>
-                    </div>
-                    <button className="participate-btn">
-                      Участвовать в закупке
-                    </button>
-                  </div>
-                </div>
-
-                <div className="procurement-card">
-                  <div className="procurement-header">
-                    <div className="procurement-id-status">
-                      <span className="procurement-id">Котировочная сессия 10055187</span>
-                      <span className="procurement-status active">Активная</span>
-                    </div>
-                  </div>
-                  <div className="procurement-info">
-                    <h3 className="procurement-title">
-                      Поставка оргтехники и расходных материалов
-                    </h3>
-                    <div className="procurement-customer">
-                      <span className="customer-name">
-                        Муниципальное автономное учреждение «Центр развития предпринимательства»
-                      </span>
-                    </div>
-                    <div className="procurement-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Начальная цена:</span>
-                        <span className="detail-value price">156 200,00 ₽</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Осталось времени:</span>
-                        <span className="detail-value time">1 день 12 часов</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Участников:</span>
-                        <span className="detail-value">15</span>
-                      </div>
-                    </div>
-                    <button className="participate-btn">
-                      Участвовать в закупке
-                    </button>
-                  </div>
-                </div>
-
-                <div className="procurement-card">
-                  <div className="procurement-header">
-                    <div className="procurement-id-status">
-                      <span className="procurement-id">Котировочная сессия 10055245</span>
-                      <span className="procurement-status soon">Скоро начнется</span>
-                    </div>
-                  </div>
-                  <div className="procurement-info">
-                    <h3 className="procurement-title">
-                      Ремонт помещений и замена системы освещения
-                    </h3>
-                    <div className="procurement-customer">
-                      <span className="customer-name">
-                        Государственное казенное учреждение «Дирекция по строительству»
-                      </span>
-                    </div>
-                    <div className="procurement-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Начальная цена:</span>
-                        <span className="detail-value price">875 000,00 ₽</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Начало:</span>
-                        <span className="detail-value time">через 3 дня</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Заинтересовано:</span>
-                        <span className="detail-value">23</span>
-                      </div>
-                    </div>
-                    <button className="notify-btn">
-                      Уведомить о старте
-                    </button>
-                  </div>
-                </div>
-
-                {/* Добавьте больше карточек закупок по аналогии */}
-              </div>
+              <ProcurementsGrid 
+                procurements={procurements}
+                currentUser={currentUser}
+                onParticipate={onParticipate}
+                onOpenAuth={onOpenAuth}
+              />
             )}
           </section>
 
-          {/* Блок фильтров - 25% */}
-          <aside className="filters-sidebar">
-            <div className="filters-header">
-              <h3>Фильтры</h3>
-              <button className="clear-filters-btn">Очистить</button>
-            </div>
-
-            {activeSection === 'products' ? (
-              /* Фильтры для товаров */
-              <>
-                <div className="filters-section">
-                  <h4>Категории</h4>
-                  <div className="filter-options">
-                    <label className="filter-option">
-                      <input type="checkbox" defaultChecked />
-                      <span>Электроника</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Одежда</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Обувь</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="filters-section">
-                  <h4>Цена</h4>
-                  <div className="price-range">
-                    <div className="price-inputs">
-                      <input type="number" placeholder="0" className="price-input" />
-                      <span>-</span>
-                      <input type="number" placeholder="100000" className="price-input" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="filters-section">
-                  <h4>Бренд</h4>
-                  <div className="filter-options">
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Apple</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Samsung</span>
-                    </label>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Фильтры для закупок */
-              <>
-                <div className="filters-section">
-                  <h4>Статус закупки</h4>
-                  <div className="filter-options">
-                    <label className="filter-option">
-                      <input type="checkbox" defaultChecked />
-                      <span>Активные</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Скоро начнутся</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Завершенные</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="filters-section">
-                  <h4>Бюджет</h4>
-                  <div className="price-range">
-                    <div className="price-inputs">
-                      <input type="number" placeholder="0" className="price-input" />
-                      <span>-</span>
-                      <input type="number" placeholder="1000000" className="price-input" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="filters-section">
-                  <h4>Категория закупки</h4>
-                  <div className="filter-options">
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Техника</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Мебель</span>
-                    </label>
-                    <label className="filter-option">
-                      <input type="checkbox" />
-                      <span>Канцтовары</span>
-                    </label>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <button className="apply-filters-btn">
-              Применить фильтры
-            </button>
-          </aside>
+          <FiltersSidebar activeSection={activeSection} />
         </div>
       </div>
     </main>
   );
 }
 
+// Компонент сетки товаров
+function ProductsGrid({ products }) {
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU').format(price);
+  };
+
+  return (
+    <div className="products-grid">
+      {products.map(product => (
+        <div key={product.id} className="product-card">
+          <div className="product-image">
+            <img 
+              src={`https://via.placeholder.com/200x200/007bff/ffffff?text=${encodeURIComponent(product.name.substring(0, 20))}`} 
+              alt={product.name} 
+            />
+            <button className="wishlist-btn">♥</button>
+          </div>
+          <div className="product-info">
+            <h3 className="product-title">{product.name}</h3>
+            <p className="product-category">{product.category_name}</p>
+            <div className="product-price">
+              <span className="current-price">{formatPrice(product.price_per_item)} ₽</span>
+            </div>
+            <p className="product-stock">В наличии: {product.amount} шт.</p>
+            <button className="add-to-cart-btn">
+              В корзину
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Компонент сетки закупок
+function ProcurementsGrid({ procurements, onParticipate }) {
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU').format(price);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('ru-RU');
+  };
+
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'active': return { class: 'active', text: 'Активна' };
+      case 'soon': return { class: 'soon', text: 'Скоро' };
+      case 'completed': return { class: 'completed', text: 'Завершена' };
+      default: return { class: 'active', text: status };
+    }
+  };
+
+  return (
+    <div className="procurements-grid">
+      {procurements.map(procurement => {
+        const statusInfo = getStatusInfo(procurement.status);
+        
+        return (
+          <div key={procurement.id} className="procurement-card">
+            <div className="procurement-header">
+              <h3 className="procurement-title">{procurement.title}</h3>
+              <span className={`procurement-status ${statusInfo.class}`}>
+                {statusInfo.text}
+              </span>
+            </div>
+            
+            <div className="procurement-info">
+              <p className="procurement-description">
+                {procurement.description}
+              </p>
+              
+              <div className="procurement-details">
+                <div className="detail-item">
+                  <span className="detail-label">Текущая цена:</span>
+                  <span className="detail-value">{formatPrice(procurement.current_price)} ₽</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Заказчик:</span>
+                  <span className="detail-value">{procurement.customer_name}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Даты проведения:</span>
+                  <span className="detail-value">
+                    {formatDate(procurement.start_date)} - {formatDate(procurement.end_date)}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Участников:</span>
+                  <span className="detail-value">{procurement.participants_count}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Товаров в закупке:</span>
+                  <span className="detail-value">{procurement.products?.length || 0}</span>
+                </div>
+              </div>
+
+              {/* Товары в закупке */}
+              {procurement.products && procurement.products.length > 0 && (
+                <div className="procurement-products">
+                  <h4>Товары в закупке:</h4>
+                  {procurement.products.map(product => (
+                    <div key={product.id} className="procurement-product-item">
+                      <span>{product.product_name}</span>
+                      <span>{product.required_quantity} шт.</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Кнопки действий */}
+              {procurement.status === 'active' && (
+                <button 
+                  className="participate-btn"
+                  onClick={() => onParticipate(procurement.id, procurement.current_price * 0.95)}
+                >
+                  Участвовать
+                </button>
+              )}
+              
+              {procurement.status === 'soon' && (
+                <button className="notify-btn">
+                  Уведомить о старте
+                </button>
+              )}
+              
+              {procurement.status === 'completed' && (
+                <button className="view-results-btn">
+                  Посмотреть результаты
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Компонент фильтров (упрощенный)
+function FiltersSidebar({ activeSection }) {
+  return (
+    <aside className="filters-sidebar">
+      <div className="filters-header">
+        <h3>Фильтры</h3>
+        <button className="clear-filters-btn">Очистить</button>
+      </div>
+      
+      {activeSection === 'products' ? (
+        <>
+          <div className="filters-section">
+            <h4>Цена, ₽</h4>
+            <div className="price-range">
+              <div className="price-inputs">
+                <input type="number" placeholder="0" className="price-input" />
+                <span>-</span>
+                <input type="number" placeholder="100000" className="price-input" />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="filters-section">
+            <h4>Статус закупки</h4>
+            <div className="filter-options">
+              <label className="filter-option">
+                <input type="checkbox" defaultChecked />
+                <span>Активные</span>
+              </label>
+              <label className="filter-option">
+                <input type="checkbox" />
+                <span>Скоро начнутся</span>
+              </label>
+            </div>
+          </div>
+        </>
+      )}
+      
+      <button className="apply-filters-btn">
+        Применить фильтры
+      </button>
+    </aside>
+  );
+}
 
 function Footer() {
   return (
