@@ -1,3 +1,4 @@
+// src/services/api.js
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Утилиты для работы с localStorage
@@ -12,6 +13,7 @@ async function apiRequest(endpoint, options = {}) {
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...options.headers,
     },
     ...options,
@@ -28,16 +30,37 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   try {
-    const response = await fetch(url, config);
-    const data = await response.json();
+    console.log(`API Request: ${config.method || 'GET'} ${url}`, {
+      headers: config.headers,
+      body: config.body
+    });
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Произошла ошибка');
+    const response = await fetch(url, config);
+    
+    // Проверяем Content-Type ответа
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(`Неверный Content-Type ответа: ${contentType}. Ответ: ${text}`);
     }
 
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    console.log(`API Response: ${response.status}`, data);
     return data;
+
   } catch (error) {
-    console.error('API request error:', error);
+    console.error('API request error:', {
+      url,
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
@@ -70,8 +93,16 @@ export const authAPI = {
     return response;
   },
 
-  logout() {
-    removeSessionId();
+  async logout() {
+    try {
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.warn('Logout error (might be expected):', error.message);
+    } finally {
+      removeSessionId();
+    }
   },
 
   isAuthenticated() {
@@ -82,21 +113,16 @@ export const authAPI = {
 // Products API
 export const productsAPI = {
   async getProducts(filters = {}) {
-    return apiRequest(`/products?${new URLSearchParams(filters)}`);
-  },
-};
-
-// Categories API
-export const categoriesAPI = {
-  async getCategories() {
-    return apiRequest('/categories');
+    const queryString = new URLSearchParams(filters).toString();
+    return apiRequest(`/products?${queryString}`);
   },
 };
 
 // Procurements API
 export const procurementsAPI = {
   async getProcurements(filters = {}) {
-    return apiRequest(`/procurements?${new URLSearchParams(filters)}`);
+    const queryString = new URLSearchParams(filters).toString();
+    return apiRequest(`/procurements?${queryString}`);
   },
 
   async participate(procurementId, data) {
@@ -105,4 +131,11 @@ export const procurementsAPI = {
       body: data,
     });
   },
+};
+
+// Test connection
+export const testAPI = {
+  async health() {
+    return apiRequest('/health');
+  }
 };

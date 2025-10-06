@@ -7,9 +7,42 @@ const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
 
+// Настройка CORS
+const corsOptions = {
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Адреса фронтенда
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'session-id',
+    'Referer',
+    'sec-ch-ua',
+    'sec-ch-ua-mobile', 
+    'sec-ch-ua-platform',
+    'User-Agent'
+  ],
+  exposedHeaders: ['session-id']
+};
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Обработка OPTIONS запросов для CORS preflight
+app.options('*', cors(corsOptions));
+
+// Логирование входящих запросов
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Headers:', {
+    'content-type': req.headers['content-type'],
+    'user-agent': req.headers['user-agent'],
+    'session-id': req.headers['session-id']
+  });
+  next();
+});
 
 // PostgreSQL connection
 const pool = new Pool({
@@ -27,14 +60,14 @@ const generateSessionId = () => Math.random().toString(36).substring(2) + Date.n
 // Auth middleware
 const checkSession = (req, res, next) => {
   const sessionId = req.headers['session-id'];
+  console.log('Session check:', { sessionId, hasSession: sessions.has(sessionId) });
+  
   if (!sessionId || !sessions.has(sessionId)) {
     return res.status(401).json({ error: 'Неавторизован' });
   }
   req.user = sessions.get(sessionId);
   next();
 };
-
-// Routes
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -43,9 +76,11 @@ app.get('/api/health', async (req, res) => {
     res.json({ 
       status: 'OK', 
       database: 'online_store1',
-      time: result.rows[0].time 
+      time: result.rows[0].time,
+      sessions: sessions.size
     });
   } catch (error) {
+    console.error('Health check error:', error);
     res.status(500).json({ error: 'Database connection error' });
   }
 });
@@ -53,6 +88,13 @@ app.get('/api/health', async (req, res) => {
 // Регистрация
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('Register request body:', req.body);
+    
+    // Проверка Content-Type
+    if (req.headers['content-type'] !== 'application/json') {
+      return res.status(400).json({ error: 'Неверный Content-Type. Ожидается application/json' });
+    }
+
     const { name, email, password, INN, company_name, location, phone_number } = req.body;
 
     if (!name || !email || !password || !INN) {
@@ -80,7 +122,9 @@ app.post('/api/auth/register', async (req, res) => {
     const sessionId = generateSessionId();
     sessions.set(sessionId, { userId: user.id, email: user.email, role: user.role });
 
-    res.status(201).json({
+    console.log('User registered:', { userId: user.id, email: user.email });
+
+    res.json({
       message: 'Пользователь успешно зарегистрирован',
       user: user,
       sessionId
@@ -95,6 +139,13 @@ app.post('/api/auth/register', async (req, res) => {
 // Авторизация
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('Login request body:', req.body);
+    
+    // Проверка Content-Type
+    if (req.headers['content-type'] !== 'application/json') {
+      return res.status(400).json({ error: 'Неверный Content-Type. Ожидается application/json' });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -123,6 +174,8 @@ app.post('/api/auth/login', async (req, res) => {
     const sessionId = generateSessionId();
     sessions.set(sessionId, { userId: user.id, email: user.email, role: user.role });
 
+    console.log('User logged in:', { userId: user.id, email: user.email });
+
     res.json({
       message: 'Успешный вход',
       user: {
@@ -138,6 +191,14 @@ app.post('/api/auth/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Ошибка при авторизации' });
   }
+});
+
+// Выход
+app.post('/api/auth/logout', checkSession, (req, res) => {
+  const sessionId = req.headers['session-id'];
+  sessions.delete(sessionId);
+  console.log('User logged out:', { sessionId });
+  res.json({ message: 'Успешный выход' });
 });
 
 // Получение категорий
@@ -161,6 +222,8 @@ app.get('/api/categories', async (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { category, minPrice, maxPrice, search, limit = 50 } = req.query;
+    
+    console.log('Products request query:', { category, minPrice, maxPrice, search, limit });
     
     let query = `
       SELECT 
@@ -204,6 +267,8 @@ app.get('/api/products', async (req, res) => {
 
     const result = await pool.query(query, params);
     
+    console.log(`Found ${result.rows.length} products`);
+    
     res.json({
       products: result.rows,
       total: result.rows.length
@@ -219,6 +284,8 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/procurements', async (req, res) => {
   try {
     const { status, limit = 20 } = req.query;
+    
+    console.log('Procurements request query:', { status, limit });
     
     let query = `
       SELECT 
@@ -273,6 +340,8 @@ app.get('/api/procurements', async (req, res) => {
       })
     );
 
+    console.log(`Found ${procurementsWithProducts.length} procurements`);
+    
     res.json({
       procurements: procurementsWithProducts,
       total: procurementsWithProducts.length
@@ -290,6 +359,8 @@ app.post('/api/procurements/:id/participate', checkSession, async (req, res) => 
     const { id } = req.params;
     const { proposed_price, proposal_text } = req.body;
     const userId = req.user.userId;
+
+    console.log('Participation request:', { procurementId: id, userId, proposed_price });
 
     // Проверяем существование закупки
     const procurementResult = await pool.query(
@@ -319,6 +390,8 @@ app.post('/api/procurements/:id/participate', checkSession, async (req, res) => 
       [id, userId, proposed_price, proposal_text]
     );
 
+    console.log('Participation added:', { procurementId: id, userId });
+
     res.json({ message: 'Заявка на участие отправлена' });
 
   } catch (error) {
@@ -327,9 +400,21 @@ app.post('/api/procurements/:id/participate', checkSession, async (req, res) => 
   }
 });
 
+// Обработка ошибок
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+});
+
+// Обработка 404
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Маршрут не найден' });
+});
+
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   console.log(`База данных: online_store1`);
   console.log(`Пользователь БД: store_app1`);
   console.log(`API доступно: http://localhost:${PORT}/api`);
+  console.log(`CORS настроен для: http://localhost:3000`);
 });
