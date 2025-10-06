@@ -6,6 +6,7 @@ import Modal from './modal/Modal';
 import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
 import { authAPI, productsAPI, procurementsAPI} from './services/api';
+import { generateProductImage, getCategoryColor } from './utils/productImages';
 
 function App() {
   const [activeModal, setActiveModal] = useState(null);
@@ -292,28 +293,41 @@ function ProductsGrid({ products }) {
 
   return (
     <div className="products-grid">
-      {products.map(product => (
-        <div key={product.id} className="product-card">
-          <div className="product-image">
-            <img 
-              src={`https://via.placeholder.com/200x200/007bff/ffffff?text=${encodeURIComponent(product.name.substring(0, 20))}`} 
-              alt={product.name} 
-            />
-            <button className="wishlist-btn">♥</button>
-          </div>
-          <div className="product-info">
-            <h3 className="product-title">{product.name}</h3>
-            <p className="product-category">{product.category_name}</p>
-            <div className="product-price">
-              <span className="current-price">{formatPrice(product.price_per_item)} ₽</span>
+      {products.map(product => {
+        const categoryColor = getCategoryColor(product.category_name);
+        const imageUrl = generateProductImage(product.name, categoryColor);
+        
+        return (
+          <div key={product.id} className="product-card">
+            <div className="product-image">
+              <img 
+                src={imageUrl}
+                alt={product.name}
+                onError={(e) => {
+                  // Fallback на CSS placeholder если SVG не загрузится
+                  e.target.style.display = 'none';
+                  e.target.nextElementSibling.style.display = 'flex';
+                }}
+              />
+              <div className="product-image-fallback" style={{display: 'none'}}>
+                {product.name}
+              </div>
+              <button className="wishlist-btn">♥</button>
             </div>
-            <p className="product-stock">В наличии: {product.amount} шт.</p>
-            <button className="add-to-cart-btn">
-              В корзину
-            </button>
+            <div className="product-info">
+              <h3 className="product-title">{product.name}</h3>
+              <p className="product-category">{product.category_name}</p>
+              <div className="product-price">
+                <span className="current-price">{formatPrice(product.price_per_item)} ₽</span>
+              </div>
+              <p className="product-stock">В наличии: {product.amount} шт.</p>
+              <button className="add-to-cart-btn">
+                В корзину
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
