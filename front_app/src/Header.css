@@ -132,21 +132,6 @@
   transform: translateY(-1px);
 }
 
-.mobile-menu-btn {
-  display: none;
-  flex-direction: column;
-  background: none;
-  border: none;
-  cursor: pointer;
-  gap: 4px;
-}
-
-.mobile-menu-btn span {
-  width: 25px;
-  height: 3px;
-  background-color: var(--text-primary);
-  transition: var(--transition);
-}
 
 /* Products Container */
 .products-container {
@@ -193,10 +178,7 @@
   .search-bar {
     max-width: 100%;
   }
-  
-  .mobile-menu-btn {
-    display: flex;
-  }
+
   
   .products-container {
     padding: 1rem;

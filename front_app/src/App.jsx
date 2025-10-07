@@ -214,12 +214,6 @@ function Header({ onOpenLogin }) {
             </svg>
           </button>
         </div>
-
-        <button className="mobile-menu-btn">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
       </div>
     </header>
   );
