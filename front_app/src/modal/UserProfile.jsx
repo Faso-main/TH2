@@ -172,7 +172,6 @@ function UserProfile({ user,  onCreateProcurement }) {
         {activeTab === 'profile' && (
           <form className="profile-form" onSubmit={handleProfileUpdate}>
             <div className="form-section">
-              <h4>Основная информация</h4>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="name">Имя *</label>
@@ -202,7 +201,6 @@ function UserProfile({ user,  onCreateProcurement }) {
             </div>
 
             <div className="form-section">
-              <h4>Реквизиты компании</h4>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="INN">ИНН</label>
@@ -216,7 +214,6 @@ function UserProfile({ user,  onCreateProcurement }) {
                     placeholder="ИНН загружается..."
                     title="ИНН нельзя изменить после регистрации"
                   />
-                  <div className="field-note">ИНН нельзя изменить после регистрации</div>
                 </div>
                 <div className="form-group">
                   <label htmlFor="phone_number">Телефон</label>

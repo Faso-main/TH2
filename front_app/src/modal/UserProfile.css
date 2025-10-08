@@ -4,7 +4,7 @@
 }
 
 .profile-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .user-welcome {
@@ -83,9 +83,7 @@
 }
 
 .form-section {
-  margin-bottom: 0.2rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0.1rem;
 }
 
 .form-section h4 {
@@ -116,7 +114,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  font-size: 1rem;
+  font-size: 0.8rem;
   transition: var(--transition);
   background: var(--white);
 }
@@ -132,13 +130,6 @@
   color: var(--text-secondary);
   cursor: not-allowed;
   opacity: 0.7;
-}
-
-.field-note {
-  font-size: 0.8rem;
-  color: var(--text-light);
-  margin-top: 0.25rem;
-  font-style: italic;
 }
 
 .btn-full {
