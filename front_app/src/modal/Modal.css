@@ -99,7 +99,7 @@
 /* Responsive */
 @media (max-width: 768px) {
   .modal-content {
-    margin: 1rem;
+    margin: 0.1rem;
     max-height: 95vh;
   }
   

@@ -12,8 +12,8 @@
 }
 
 .form-section {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
+  margin-bottom: 0.4rem;
+  padding: .3rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   background: var(--white);
@@ -21,7 +21,7 @@
 
 .form-section h4 {
   color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.3rem;
   font-weight: 600;
 }
 
