@@ -574,7 +574,6 @@ function Footer() {
             <div className="footer-links">
               <a href="#">Политика конфиденциальности</a>
               <a href="#">Условия использования</a>
-              <a href="#">Карта сайта</a>
             </div>
           </div>
         </div>
