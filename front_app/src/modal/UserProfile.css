@@ -48,7 +48,7 @@
 .profile-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1rem;
+  margin-bottom: 0.1rem;
 }
 
 .tab-btn {
