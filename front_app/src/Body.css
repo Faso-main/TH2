@@ -1,5 +1,4 @@
 /* Body.css */
-/* App.css - обновленные стили для разделения 3:1 */
 
 /* Products Container */
 .products-container {
@@ -269,7 +268,7 @@
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: var(--white);
+  background: var(--primary-color);
   border: none;
   border-radius: 50%;
   width: 36px;
