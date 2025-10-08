@@ -256,6 +256,7 @@
   font-weight: 600;
   transition: var(--transition);
   white-space: nowrap;
+  margin-top: 0.2rem;
   margin-bottom: 0.4rem;
 }
 
