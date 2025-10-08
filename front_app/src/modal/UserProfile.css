@@ -74,6 +74,7 @@
 .profile-content {
   gap: 4px;
   min-height: 200px;
+  padding: 5px;
 }
 
 /* Формы */

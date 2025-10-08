@@ -268,7 +268,7 @@
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: var(--primary-color);
+  background: var(--white);
   border: none;
   border-radius: 50%;
   width: 36px;
