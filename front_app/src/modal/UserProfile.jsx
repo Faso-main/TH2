@@ -128,7 +128,7 @@ function UserProfile({ user }) {
             
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="INN">ИНН</label>
+                <label htmlFor="INN">inn</label>
                 <input
                   type="text"
                   id="INN"
