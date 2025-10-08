@@ -7,8 +7,8 @@ import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
 import UserProfile from './modal/UserProfile';
 import { authAPI, productsAPI, procurementsAPI } from './services/api';
+import CreateProcurement from './modal/CreateProcurement';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
-
 
 function App() {
   const [activeModal, setActiveModal] = useState(null);
@@ -31,15 +31,58 @@ function App() {
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      
+      // Тестовые данные для демонстрации
+      const testProducts = [
+        {
+          id: 1,
+          name: 'Смартфон Apple iPhone 15 Pro',
+          category_name: 'Электроника',
+          price_per_item: 89999,
+          amount: 10,
+          company: 'Apple'
+        },
+        {
+          id: 2,
+          name: 'Ноутбук Dell XPS 13',
+          category_name: 'Компьютеры',
+          price_per_item: 129999,
+          amount: 5,
+          company: 'Dell'
+        }
+      ];
 
+      const testProcurements = [
+        {
+          id: 1,
+          session_number: '10055209',
+          title: 'Оказание услуг по проведению специальной оценки условий труда',
+          status: 'active',
+          current_price: 92500,
+          description: 'Закупка услуг по специальной оценке условий труда для образовательного учреждения',
+          customer_name: 'Государственное бюджетное общеобразовательное учреждение города Москвы «Школа № 1811 «Восточное Измайлово»',
+          customer_inn: '7719894832',
+          start_date: '2024-01-15T00:00:00Z',
+          end_date: '2024-02-15T23:59:59Z',
+          participants_count: 7,
+          products: []
+        }
+      ];
 
-      const [productsResponse, procurementsResponse] = await Promise.all([
+      try {
+        const [productsResponse, procurementsResponse] = await Promise.all([
           productsAPI.getProducts({ limit: 20 }),
           procurementsAPI.getProcurements({ limit: 10 })
         ]);
         
-      setProducts(productsResponse.products);
-      setProcurements(procurementsResponse.procurements);
+        setProducts(productsResponse.products || testProducts);
+        setProcurements(procurementsResponse.procurements || testProcurements);
+      // eslint-disable-next-line no-unused-vars
+      } catch (apiError) {
+        console.warn('API недоступно, используем тестовые данные');
+        setProducts(testProducts);
+        setProcurements(testProcurements);
+      }
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -64,7 +107,6 @@ function App() {
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     closeModal();
-    // Показываем уведомление об успешной авторизации
     setTimeout(() => {
       alert(`Добро пожаловать, ${user.name}!`);
     }, 100);
@@ -73,7 +115,6 @@ function App() {
   const handleRegisterSuccess = (user) => {
     setCurrentUser(user);
     closeModal();
-    // Показываем уведомление об успешной регистрации
     setTimeout(() => {
       alert(`Регистрация успешна! Добро пожаловать, ${user.name}!`);
     }, 100);
@@ -87,7 +128,6 @@ function App() {
       alert('Вы успешно вышли из системы');
     } catch (error) {
       console.error('Logout error:', error);
-      // Все равно сбрасываем состояние, даже если запрос не удался
       setCurrentUser(null);
     } finally {
       setAuthLoading(false);
@@ -99,6 +139,32 @@ function App() {
       openModal('profile');
     } else {
       openModal('auth');
+    }
+  };
+
+  const handleCreateProcurement = async (procurementData) => {
+    try {
+      console.log('Creating procurement:', procurementData);
+      
+      // Временно добавляем закупку в состояние
+      const newProcurement = {
+        id: Date.now(),
+        ...procurementData,
+        status: 'active',
+        participants_count: 0,
+        created_at: new Date().toISOString(),
+        products: procurementData.products || [],
+        customer_name: procurementData.customer_name || currentUser?.company_name || 'Моя компания'
+      };
+      
+      setProcurements(prev => [newProcurement, ...prev]);
+      
+      // Если API готово, используйте:
+      // const response = await procurementsAPI.create(procurementData);
+      // setProcurements(prev => [response.procurement, ...prev]);
+      
+    } catch (error) {
+      throw new Error(error.message || 'Ошибка при создании закупки');
     }
   };
 
@@ -114,7 +180,6 @@ function App() {
         proposal_text: `Готов поставить товары по цене ${proposedPrice} ₽`
       });
       alert('Заявка на участие отправлена!');
-      // Обновляем данные закупок
       const response = await procurementsAPI.getProcurements();
       setProcurements(response.procurements);
     } catch (error) {
@@ -164,6 +229,19 @@ function App() {
         )}
       </Modal>
 
+      {/* Модальное окно создания закупки */}
+      <Modal
+        isOpen={activeModal === 'create-procurement'}
+        onClose={closeModal}
+        title="Создание закупки"
+        size="large"
+      >
+        <CreateProcurement 
+          onClose={closeModal}
+          onCreate={handleCreateProcurement}
+        />
+      </Modal>
+
       {/* Модальное окно личного кабинета */}
       <Modal
         isOpen={activeModal === 'profile'}
@@ -174,6 +252,7 @@ function App() {
         <UserProfile 
           user={currentUser} 
           onClose={closeModal}
+          onCreateProcurement={() => openModal('create-procurement')}
         />
       </Modal>
     </div>
