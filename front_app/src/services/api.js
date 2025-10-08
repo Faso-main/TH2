@@ -139,6 +139,10 @@ export const productsAPI = {
 
   async getProduct(id) {
     return apiRequest(`/products/${id}`);
+  },
+
+  async searchProducts(query) {
+    return apiRequest(`/products/search?q=${encodeURIComponent(query)}`);
   }
 };
 
@@ -153,12 +157,36 @@ export const procurementsAPI = {
     return apiRequest(`/procurements/${id}`);
   },
 
+  async create(procurementData) {
+    return apiRequest('/procurements', {
+      method: 'POST',
+      body: procurementData,
+    });
+  },
+
+  async update(id, procurementData) {
+    return apiRequest(`/procurements/${id}`, {
+      method: 'PUT',
+      body: procurementData,
+    });
+  },
+
+  async delete(id) {
+    return apiRequest(`/procurements/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async participate(procurementId, data) {
     return apiRequest(`/procurements/${procurementId}/participate`, {
       method: 'POST',
       body: data,
     });
   },
+
+  async getParticipants(procurementId) {
+    return apiRequest(`/procurements/${procurementId}/participants`);
+  }
 };
 
 // User Profile API
@@ -186,6 +214,13 @@ export const userAPI = {
 
   async getMyParticipations() {
     return apiRequest('/user/my-participations');
+  },
+
+  async changePassword(passwordData) {
+    return apiRequest('/user/change-password', {
+      method: 'POST',
+      body: passwordData,
+    });
   }
 };
 
