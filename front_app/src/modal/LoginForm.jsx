@@ -1,18 +1,33 @@
-// components/LoginForm.jsx
+// modal/LoginForm.jsx
 import { useState } from 'react';
+import { authAPI } from '../services/api';
 import './AuthForms.css';
 
-function LoginForm({ onClose, onSwitchToRegister }) {
+function LoginForm({ onSwitchToRegister, onLoginSuccess }) {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login data:', formData);
-    // Здесь будет логика авторизации
-    onClose();
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await authAPI.login({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      onLoginSuccess(result.user);
+    } catch (error) {
+      setError(error.message || 'Ошибка при входе. Проверьте email и пароль.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -20,10 +35,13 @@ function LoginForm({ onClose, onSwitchToRegister }) {
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
+      {error && <div className="auth-error">{error}</div>}
+      
       <div className="form-group">
         <label htmlFor="email">Email</label>
         <input
@@ -34,6 +52,7 @@ function LoginForm({ onClose, onSwitchToRegister }) {
           onChange={handleChange}
           placeholder="Введите ваш email"
           required
+          disabled={loading}
         />
       </div>
       
@@ -47,11 +66,16 @@ function LoginForm({ onClose, onSwitchToRegister }) {
           onChange={handleChange}
           placeholder="Введите ваш пароль"
           required
+          disabled={loading}
         />
       </div>
       
-      <button type="submit" className="btn-primary btn-full">
-        Войти
+      <button 
+        type="submit" 
+        className="btn-primary btn-full"
+        disabled={loading}
+      >
+        {loading ? 'Вход...' : 'Войти'}
       </button>
       
       <div className="auth-switch">

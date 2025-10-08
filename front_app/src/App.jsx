@@ -5,8 +5,10 @@ import './Header.css';
 import Modal from './modal/Modal';
 import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
-import { authAPI, productsAPI, procurementsAPI} from './services/api';
+import UserProfile from './modal/UserProfile';
+import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
+
 
 function App() {
   const [activeModal, setActiveModal] = useState(null);
@@ -15,23 +17,30 @@ function App() {
   const [products, setProducts] = useState([]);
   const [procurements, setProcurements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Загрузка данных при старте
   useEffect(() => {
+    const user = authAPI.getCurrentUser();
+    if (user && authAPI.isAuthenticated()) {
+      setCurrentUser(user);
+    }
     loadInitialData();
   }, []);
 
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      // Загружаем товары и закупки параллельно
+
+
       const [productsResponse, procurementsResponse] = await Promise.all([
-        productsAPI.getProducts({ limit: 20 }),
-        procurementsAPI.getProcurements({ limit: 10 })
-      ]);
-      
+          productsAPI.getProducts({ limit: 20 }),
+          procurementsAPI.getProcurements({ limit: 10 })
+        ]);
+        
       setProducts(productsResponse.products);
       setProcurements(procurementsResponse.procurements);
+
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -45,6 +54,7 @@ function App() {
 
   const closeModal = () => {
     setActiveModal(null);
+    setAuthMode('login');
   };
 
   const switchAuthMode = (mode) => {
@@ -54,22 +64,41 @@ function App() {
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     closeModal();
+    // Показываем уведомление об успешной авторизации
+    setTimeout(() => {
+      alert(`Добро пожаловать, ${user.name}!`);
+    }, 100);
   };
 
-  const handleLogout = () => {
-    authAPI.logout();
-    setCurrentUser(null);
+  const handleRegisterSuccess = (user) => {
+    setCurrentUser(user);
+    closeModal();
+    // Показываем уведомление об успешной регистрации
+    setTimeout(() => {
+      alert(`Регистрация успешна! Добро пожаловать, ${user.name}!`);
+    }, 100);
   };
 
-  const handleSearch = async (searchQuery) => {
+  const handleLogout = async () => {
     try {
-      setLoading(true);
-      const response = await productsAPI.getProducts({ search: searchQuery });
-      setProducts(response.products);
+      setAuthLoading(true);
+      await authAPI.logout();
+      setCurrentUser(null);
+      alert('Вы успешно вышли из системы');
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('Logout error:', error);
+      // Все равно сбрасываем состояние, даже если запрос не удался
+      setCurrentUser(null);
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
+    }
+  };
+
+  const handleUserProfileClick = () => {
+    if (currentUser) {
+      openModal('profile');
+    } else {
+      openModal('auth');
     }
   };
 
@@ -82,24 +111,24 @@ function App() {
     try {
       await procurementsAPI.participate(procurementId, {
         proposed_price: proposedPrice,
-        proposal_text: `Готов поставить товары по указанной цене`
+        proposal_text: `Готов поставить товары по цене ${proposedPrice} ₽`
       });
       alert('Заявка на участие отправлена!');
       // Обновляем данные закупок
       const response = await procurementsAPI.getProcurements();
       setProcurements(response.procurements);
     } catch (error) {
-      alert(error.message);
+      alert(`Ошибка: ${error.message}`);
     }
   };
 
   return (
     <div className="app">
       <Header 
-        onOpenLogin={() => openModal('auth')} 
         currentUser={currentUser}
         onLogout={handleLogout}
-        onSearch={handleSearch}
+        onUserProfileClick={handleUserProfileClick}
+        authLoading={authLoading}
       />
       
       <Main 
@@ -130,24 +159,34 @@ function App() {
           <RegisterForm 
             onClose={closeModal}
             onSwitchToLogin={() => switchAuthMode('login')}
-            onLoginSuccess={handleLoginSuccess}
+            onRegisterSuccess={handleRegisterSuccess}
           />
         )}
+      </Modal>
+
+      {/* Модальное окно личного кабинета */}
+      <Modal
+        isOpen={activeModal === 'profile'}
+        onClose={closeModal}
+        title="Личный кабинет"
+        size="large"
+      >
+        <UserProfile 
+          user={currentUser} 
+          onClose={closeModal}
+        />
       </Modal>
     </div>
   );
 }
 
-function Header({ onOpenLogin }) {
+// Header компонент
+function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
-    if (e) {
-      e.preventDefault();
-    }
-    // Здесь будет логика поиска
+    if (e) e.preventDefault();
     console.log('Поиск:', searchQuery);
-    // Можно добавить фильтрацию товаров по поисковому запросу
   };
 
   const handleKeyPress = (e) => {
@@ -163,7 +202,6 @@ function Header({ onOpenLogin }) {
           <h1>SpeedOfLight</h1>
         </div>
         
-        {/* Поисковая строка в шапке */}
         <div className="header-search">
           <form className="search-bar" onSubmit={handleSearch}>
             <input 
@@ -172,7 +210,7 @@ function Header({ onOpenLogin }) {
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyUp ={handleKeyPress}
+              onKeyPress={handleKeyPress}
             />
             <button type="submit" className="search-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -185,40 +223,64 @@ function Header({ onOpenLogin }) {
 
         <div className="header-actions">
           {/* Иконка личного кабинета */}
-        <button className="user-icon-btn">
-            <svg 
-              width="50" 
-              height="50" 
-              viewBox="0 0 512 512" 
-              fill="currentColor"
-            >
-              <path d="M395.636,279.273h-23.273h-31.03v186.182v23.273V512h54.303c12.853,0,23.273-10.422,23.273-23.273V279.273H395.636z"/>
-              <polygon points="217.212,279.273 217.212,465.455 217.212,488.727 217.212,512 294.788,512 294.788,488.727 294.788,465.455 294.788,279.273"/>
-              <path d="M139.636,279.273h-23.273H93.091v209.455c0,12.851,10.42,23.273,23.273,23.273h54.303v-23.273v-23.273V279.273H139.636z"/>
-              <path d="M442.182,186.182h-23.273v-69.818c0-12.853-10.42-23.273-23.273-23.273h-38.788V23.273C356.849,10.42,346.429,0,333.576,0H178.424c-12.853,0-23.273,10.42-23.273,23.273v69.818h-38.788c-12.853,0-23.273,10.42-23.273,23.273v69.818H69.818c-12.853,0-23.273,10.418-23.273,23.273c0,12.851,10.42,23.273,23.273,23.273h23.273h23.273h23.273h31.03h46.545h77.576h46.545h31.03h23.273h23.273h23.273c12.853,0,23.273-10.422,23.273-23.273C465.455,196.6,455.035,186.182,442.182,186.182z M310.303,93.091H201.697V46.545h108.606V93.091z"/>
-            </svg>
+          <button 
+            className="user-icon-btn" 
+            onClick={onUserProfileClick} 
+            title={currentUser ? 'Личный кабинет' : 'Войти'}
+            disabled={authLoading}
+          >
+            {currentUser ? (
+              <div className="user-avatar-small">
+                {currentUser.name.charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <svg 
+                width="35"
+                height="35" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            )}
           </button>
-          <button className="user-icon-btn" onClick={onOpenLogin}>
-            <svg 
-              width="35"
-              height="35" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
+
+          {/* Кнопка выхода, если пользователь авторизован */}
+          {currentUser && (
+            <button 
+              className="user-icon-btn" 
+              onClick={onLogout} 
+              title="Выйти"
+              disabled={authLoading}
             >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </button>
+              {authLoading ? (
+                <div className="loading-spinner-small"></div>
+              ) : (
+                <svg 
+                  width="35"
+                  height="35" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </header>
   );
 }
-
 function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth }) {
   const [activeSection, setActiveSection] = useState('products');
 
