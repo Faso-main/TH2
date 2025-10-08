@@ -119,6 +119,8 @@
   font-size: 0.8rem;
   transition: var(--transition);
   background: var(--white);
+  flex: 1 1 0%;
+  min-width: 100px;
 }
 
 .form-group input:focus {
