@@ -133,7 +133,7 @@ function UserProfile({ user }) {
                   type="text"
                   id="INN"
                   name="INN"
-                  value={profileData.inn}
+                  value={profileData.inn || ''}
                   onChange={handleInputChange}
                   required
                   disabled
