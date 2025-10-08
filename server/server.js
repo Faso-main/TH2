@@ -75,6 +75,103 @@ const checkSession = (req, res, next) => {
   next();
 };
 
+// Получить профиль пользователя
+app.get('/api/user/profile', checkSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, INN, company_name, phone_number, location, role, created_at FROM store.users WHERE id = $1',
+      [req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Ошибка при получении профиля' });
+  }
+});
+
+// Обновить профиль пользователя
+app.put('/api/user/profile', checkSession, async (req, res) => {
+  try {
+    const { name, email, company_name, phone_number, location } = req.body;
+    
+    const result = await pool.query(
+      `UPDATE store.users 
+       SET name = $1, email = $2, company_name = $3, phone_number = $4, location = $5, updated_at = NOW()
+       WHERE id = $6
+       RETURNING id, name, email, INN, company_name, phone_number, location, role, created_at`,
+      [name, email, company_name, phone_number, location, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Обновляем данные в сессии
+    const sessionId = req.headers['session-id'];
+    if (sessions.has(sessionId)) {
+      sessions.set(sessionId, { ...sessions.get(sessionId), ...result.rows[0] });
+    }
+    
+    res.json({ user: result.rows[0], message: 'Профиль успешно обновлен' });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    
+    if (error.code === '23505') { // unique violation
+      return res.status(400).json({ error: 'Email уже используется' });
+    }
+    
+    res.status(500).json({ error: 'Ошибка при обновлении профиля' });
+  }
+});
+
+// Получить закупки пользователя
+app.get('/api/user/my-procurements', checkSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.session_number, p.title, p.status, p.current_price, 
+              p.customer_name, p.customer_inn, p.start_date, p.end_date,
+              p.created_at, p.updated_at,
+              COUNT(pp.id) as participants_count
+       FROM store.procurements p
+       LEFT JOIN store.procurement_participants pp ON p.id = pp.procurement_id
+       WHERE p.created_by = $1
+       GROUP BY p.id
+       ORDER BY p.created_at DESC`,
+      [req.user.id]
+    );
+    
+    res.json({ procurements: result.rows });
+  } catch (error) {
+    console.error('Get my procurements error:', error);
+    res.status(500).json({ error: 'Ошибка при получении закупок' });
+  }
+});
+
+// Получить участия пользователя в закупках
+app.get('/api/user/my-participations', checkSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pp.id, pp.proposed_price, pp.status, pp.proposal_text, pp.created_at,
+              p.title as procurement_title, p.session_number, p.customer_name, p.customer_inn
+       FROM store.procurement_participants pp
+       JOIN store.procurements p ON pp.procurement_id = p.id
+       WHERE pp.user_id = $1
+       ORDER BY pp.created_at DESC`,
+      [req.user.id]
+    );
+    
+    res.json({ participations: result.rows });
+  } catch (error) {
+    console.error('Get my participations error:', error);
+    res.status(500).json({ error: 'Ошибка при получении участий' });
+  }
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
