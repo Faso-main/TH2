@@ -5,19 +5,19 @@
 }
 
 .profile-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .profile-header h2 {
   color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .user-welcome {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
   background: var(--accent-color);
   border-radius: var(--border-radius);
 }
@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
 }
 
@@ -49,11 +49,11 @@
 .profile-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .tab-btn {
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -79,13 +79,13 @@
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.4rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.4rem;
 }
 
 @media (max-width: 768px) {
@@ -98,12 +98,12 @@
 .participations-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.4rem;
 }
 
 .procurement-item,
 .participation-item {
-  padding: 1rem;
+  padding: 0.4rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   background: var(--white);
@@ -111,7 +111,7 @@
 
 .procurement-item h4,
 .participation-item h4 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.4rem 0;
   color: var(--text-primary);
 }
 
@@ -124,7 +124,7 @@
 
 .empty-state {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem;
   color: var(--text-light);
 }
 
@@ -134,6 +134,6 @@
 
 .loading {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem;
   color: var(--text-light);
 }

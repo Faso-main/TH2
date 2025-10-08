@@ -65,7 +65,6 @@ function UserProfile({ user }) {
   return (
     <div className="user-profile">
       <div className="profile-header">
-        <h2>Личный кабинет</h2>
         <div className="user-welcome">
           <div className="user-avatar">
             {user.name.charAt(0).toUpperCase()}
