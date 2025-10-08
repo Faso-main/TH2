@@ -241,3 +241,117 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Header.css - добавьте эти стили */
+
+.user-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.user-icon-btn:hover {
+  background-color: var(--accent-color);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* Стиль для авторизованного пользователя */
+.user-icon-btn.user-authenticated {
+  color: #10b981; /* Зеленый цвет */
+  background-color: rgba(16, 185, 129, 0.1); /* Светло-зеленый фон */
+}
+
+.user-icon-btn.user-authenticated:hover {
+  color: #059669; /* Темно-зеленый при наведении */
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Стиль для кнопки выхода */
+.user-icon-btn.logout-btn {
+  color: #ef4444; /* Красный цвет */
+  background-color: rgba(239, 68, 68, 0.1); /* Светло-красный фон */
+}
+
+.user-icon-btn.logout-btn:hover {
+  color: #dc2626; /* Темно-красный при наведении */
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Индикатор онлайн-статуса */
+.user-icon-btn.user-authenticated::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+}
+
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-icon-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .user-icon-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0.5rem;
+  }
+  
+  .user-icon-btn.user-authenticated::after {
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .user-icon-btn svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .user-icon-btn.user-authenticated::after {
+    top: 5px;
+    right: 5px;
+    width: 5px;
+    height: 5px;
+  }
+}

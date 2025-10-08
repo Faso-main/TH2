@@ -180,7 +180,6 @@ function App() {
   );
 }
 
-// Header компонент
 function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -224,36 +223,30 @@ function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
         <div className="header-actions">
           {/* Иконка личного кабинета */}
           <button 
-            className="user-icon-btn" 
+            className={`user-icon-btn ${currentUser ? 'user-authenticated' : ''}`} 
             onClick={onUserProfileClick} 
             title={currentUser ? 'Личный кабинет' : 'Войти'}
             disabled={authLoading}
           >
-            {currentUser ? (
-              <div className="user-avatar-small">
-                {currentUser.name.charAt(0).toUpperCase()}
-              </div>
-            ) : (
-              <svg 
-                width="35"
-                height="35" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            )}
+            <svg 
+              width="35"
+              height="35" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
           </button>
 
           {/* Кнопка выхода, если пользователь авторизован */}
           {currentUser && (
             <button 
-              className="user-icon-btn" 
+              className="user-icon-btn logout-btn" 
               onClick={onLogout} 
               title="Выйти"
               disabled={authLoading}
@@ -281,6 +274,7 @@ function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
     </header>
   );
 }
+
 function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth }) {
   const [activeSection, setActiveSection] = useState('products');
 
@@ -562,13 +556,6 @@ function Footer() {
             <a href="#">О нас</a>
             <a href="#">Контакты</a>
             <a href="#">Вакансии</a>
-          </div>
-          
-          <div className="footer-section">
-            <h4>Поддержка</h4>
-            <a href="#">Помощь</a>
-            <a href="#">Документация</a>
-            <a href="#">Сообщество</a>
           </div>
           
           <div className="footer-section">
