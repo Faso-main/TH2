@@ -128,12 +128,12 @@ function UserProfile({ user }) {
             
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="INN">inn</label>
+                <label htmlFor="INN">ИНН</label>
                 <input
                   type="text"
                   id="INN"
                   name="INN"
-                  value={profileData.INN}
+                  value={profileData.inn}
                   onChange={handleInputChange}
                   required
                   disabled
