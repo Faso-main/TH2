@@ -147,38 +147,6 @@ function CreateProcurement({ onClose, onCreate }) {
         </div>
 
         <div className="form-section">
-          <h4>Информация о заказчике</h4>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="customer_name">Наименование заказчика *</label>
-              <input
-                type="text"
-                id="customer_name"
-                name="customer_name"
-                value={formData.customer_name}
-                onChange={handleChange}
-                required
-                placeholder="Полное наименование организации"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="customer_inn">ИНН заказчика</label>
-              <input
-                type="text"
-                id="customer_inn"
-                name="customer_inn"
-                value={formData.customer_inn}
-                onChange={handleChange}
-                placeholder="10 или 12 цифр"
-                maxLength="12"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
           <h4>Сроки проведения</h4>
           
           <div className="form-row">
