@@ -142,8 +142,10 @@ app.get('/api/user/my-procurements', checkSession, async (req, res) => {
        WHERE p.created_by = $1
        GROUP BY p.id
        ORDER BY p.created_at DESC`,
-      [req.user.id]
+      [req.user.userId]
     );
+    
+    console.log('My procurements for user:', req.user.userId, 'count:', result.rows.length);
     
     res.json({ procurements: result.rows });
   } catch (error) {
