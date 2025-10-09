@@ -531,7 +531,7 @@ function ProcurementsGrid({ procurements, onParticipate }) {
                   <h4>Товары в закупке:</h4>
                   {procurement.products.map(product => (
                     <div key={product.id} className="procurement-product-item">
-                      <span>{product.product_name}</span>
+                      <span>{product.product_name}</span><span> </span>
                       <span>{product.required_quantity} шт.</span>
                     </div>
                   ))}
