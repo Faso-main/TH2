@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';
 import './UserProfile.css';
 
-function UserProfile({ user,  onCreateProcurement }) {
+// eslint-disable-next-line no-unused-vars
+function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) { // Добавьте onProcurementCreated
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
     name: '',
@@ -36,15 +37,25 @@ function UserProfile({ user,  onCreateProcurement }) {
     }
   }, [activeTab]);
 
+  // Добавьте этот useEffect для обновления при создании новой закупки
+  useEffect(() => {
+    if (activeTab === 'my-procurements') {
+      loadMyProcurements();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onProcurementCreated]); // Срабатывает при изменении onProcurementCreated
+
   const loadMyProcurements = async () => {
     try {
       setLoading(true);
       try {
         const data = await userAPI.getMyProcurements();
-        setMyProcurements(data.procurements);
+        setMyProcurements(data.procurements || []);
       // eslint-disable-next-line no-unused-vars
       } catch (error) {
         console.warn('API недоступно, используем тестовые данные');
+        // Можно добавить тестовые данные для демонстрации
+        setMyProcurements([]);
       }
     } catch (error) {
       console.error('Error loading procurements:', error);
@@ -60,10 +71,11 @@ function UserProfile({ user,  onCreateProcurement }) {
       
       try {
         const data = await userAPI.getMyParticipations();
-        setMyParticipations(data.participations);
+        setMyParticipations(data.participations || []);
       // eslint-disable-next-line no-unused-vars
       } catch (error) {
         console.warn('API недоступно, используем тестовые данные');
+        setMyParticipations([]);
       }
     } catch (error) {
       console.error('Error loading participations:', error);
@@ -73,6 +85,7 @@ function UserProfile({ user,  onCreateProcurement }) {
     }
   };
 
+  // Остальной код остается без изменений...
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {

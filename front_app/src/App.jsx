@@ -149,8 +149,16 @@ const handleCreateProcurement = async (procurementData) => {
     // Отправляем закупку на сервер
     const response = await procurementsAPI.create(procurementData);
     
-    // Добавляем закупку в состояние
+    // Обновляем общий список закупок
     setProcurements(prev => [response.procurement, ...prev]);
+    
+    // Закрываем модальное окно создания
+    closeModal();
+    
+    // Показываем уведомление
+    setTimeout(() => {
+      alert('Закупка успешно создана!');
+    }, 100);
     
     return response;
     
@@ -245,6 +253,7 @@ const handleCreateProcurement = async (procurementData) => {
           user={currentUser} 
           onClose={closeModal}
           onCreateProcurement={() => openModal('create-procurement')}
+          onProcurementCreated={loadInitialData} 
         />
       </Modal>
     </div>
