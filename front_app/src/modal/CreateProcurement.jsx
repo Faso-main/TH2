@@ -240,18 +240,6 @@ function CreateProcurement({ onClose, onCreate }) {
                 </div>
                 
                 <div className="form-group">
-                  <label>Макс. цена, ₽</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={product.max_price}
-                    onChange={(e) => updateProduct(index, 'max_price', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
                   <label>&nbsp;</label>
                   <button 
                     type="button" 
