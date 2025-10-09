@@ -255,34 +255,6 @@ function CreateProcurement({ onClose, onCreate }) {
           ))}
         </div>
 
-        <div className="form-section">
-          <h4>Дополнительные условия</h4>
-          
-          <div className="form-group">
-            <label htmlFor="contract_terms">Условия исполнения контракта</label>
-            <textarea
-              id="contract_terms"
-              name="contract_terms"
-              value={formData.contract_terms}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Сроки поставки, условия оплаты и другие требования..."
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="contract_security">Обеспечение исполнения контракта</label>
-            <textarea
-              id="contract_security"
-              name="contract_security"
-              value={formData.contract_security}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Размер обеспечения, форма предоставления..."
-            />
-          </div>
-        </div>
-
         <div className="form-actions">
           <button type="button" className="btn-outline" onClick={onClose}>
             Отмена
