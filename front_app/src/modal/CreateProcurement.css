@@ -2,7 +2,6 @@
 .create-procurement {
   max-height: 80vh;
   padding: 0.5rem;
-  color: var(--text-primary);
 }
 
 .form-section {
@@ -62,6 +61,7 @@
   font-size: 1rem;
   transition: var(--transition);
   background: var(--white);
+  color: var(--text-primary);
 }
 
 .form-group input:focus,
