@@ -146,22 +146,11 @@ function App() {
     try {
       console.log('Creating procurement:', procurementData);
       
-      // Временно добавляем закупку в состояние
-      const newProcurement = {
-        id: Date.now(),
-        ...procurementData,
-        status: 'active',
-        participants_count: 0,
-        created_at: new Date().toISOString(),
-        products: procurementData.products || [],
-        customer_name: procurementData.customer_name || currentUser?.company_name || 'Моя компания'
-      };
-      
-      setProcurements(prev => [newProcurement, ...prev]);
+
       
       // Если API готово, используйте:
-      // const response = await procurementsAPI.create(procurementData);
-      // setProcurements(prev => [response.procurement, ...prev]);
+      const response = await procurementsAPI.create(procurementData);
+      setProcurements(prev => [response.procurement, ...prev]);
       
     } catch (error) {
       throw new Error(error.message || 'Ошибка при создании закупки');
