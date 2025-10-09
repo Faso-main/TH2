@@ -129,7 +129,7 @@
   border: 1px solid var(--border-color);
   height: fit-content;
   position: sticky;
-  top: 1rem;
+  top: 6rem;
 }
 
 .filters-header {

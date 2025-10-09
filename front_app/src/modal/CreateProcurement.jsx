@@ -70,12 +70,9 @@ function CreateProcurement({ onClose, onCreate }) {
   };
 
   return (
-    <div className="create-procurement">
-      <h3>Создание новой закупки</h3>
-      
+    <div className="create-procurement">      
       <form onSubmit={handleSubmit}>
         <div className="form-section">
-          <h4>Основная информация</h4>
           
           <div className="form-row">
             <div className="form-group">
