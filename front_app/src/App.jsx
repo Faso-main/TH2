@@ -451,7 +451,7 @@ function ProductsGrid({ products }) {
               </div>
               <p className="product-stock">В наличии: {product.amount} шт.</p>
               <button className="add-to-cart-btn">
-                В корзину
+                В закупку
               </button>
             </div>
           </div>
