@@ -447,49 +447,116 @@ app.get('/api/procurements', async (req, res) => {
 });
 
 // Участие в закупке
-app.post('/api/procurements/:id/participate', checkSession, async (req, res) => {
+app.post('/api/procurements', checkSession, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { proposed_price, proposal_text } = req.body;
-    const userId = req.user.userId;
+    const {
+      title,
+      description,
+      session_number,
+      customer_name,
+      customer_inn,
+      current_price,
+      start_date,
+      end_date,
+      law_type = '44-ФЗ',
+      contract_terms,
+      contract_security,
+      products = []
+    } = req.body;
 
-    console.log('Participation request:', { procurementId: id, userId, proposed_price });
+    console.log('Create procurement request:', req.body);
 
-    // Проверяем существование закупки
+    // Валидация обязательных полей
+    if (!title || !session_number || !current_price || !start_date || !end_date) {
+      return res.status(400).json({ error: 'Заполните все обязательные поля: название, номер сессии, цена, даты начала и окончания' });
+    }
+
+    // Создаем закупку
     const procurementResult = await pool.query(
-      'SELECT * FROM store.procurements WHERE id = $1 AND is_active = true',
-      [id]
+      `INSERT INTO store.procurements 
+       (title, description, session_number, customer_name, customer_inn, 
+        current_price, start_date, end_date, law_type, contract_terms, 
+        contract_security, created_by, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
+       RETURNING *`,
+      [
+        title,
+        description,
+        session_number,
+        customer_name,
+        customer_inn,
+        parseFloat(current_price),
+        new Date(start_date),
+        new Date(end_date),
+        law_type,
+        contract_terms,
+        contract_security,
+        req.user.userId
+      ]
     );
 
-    if (procurementResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Закупка не найдена' });
+    const procurement = procurementResult.rows[0];
+    console.log('Procurement created:', procurement);
+
+    // Добавляем товары в закупку
+    if (products && products.length > 0) {
+      for (const product of products) {
+        if (product.product_id && product.required_quantity > 0) {
+          await pool.query(
+            `INSERT INTO store.procurement_products 
+             (procurement_id, product_id, required_quantity, max_price)
+             VALUES ($1, $2, $3, $4)`,
+            [
+              procurement.id,
+              product.product_id,
+              product.required_quantity,
+              product.max_price ? parseFloat(product.max_price) : null
+            ]
+          );
+        }
+      }
     }
 
-    // Проверяем, не участвует ли уже пользователь
-    const existingParticipation = await pool.query(
-      'SELECT id FROM store.procurement_participants WHERE procurement_id = $1 AND user_id = $2',
-      [id, userId]
+    // Получаем полные данные закупки для ответа
+    const fullProcurementResult = await pool.query(
+      `SELECT p.*, u.name as created_by_name, u.company_name as created_by_company
+       FROM store.procurements p
+       LEFT JOIN store.users u ON p.created_by = u.id
+       WHERE p.id = $1`,
+      [procurement.id]
     );
 
-    if (existingParticipation.rows.length > 0) {
-      return res.status(400).json({ error: 'Вы уже участвуете в этой закупке' });
-    }
-
-    // Добавляем участника
-    await pool.query(
-      `INSERT INTO store.procurement_participants 
-       (procurement_id, user_id, proposed_price, proposal_text, status) 
-       VALUES ($1, $2, $3, $4, 'pending')`,
-      [id, userId, proposed_price, proposal_text]
+    const productsResult = await pool.query(
+      `SELECT pp.*, p.name as product_name
+       FROM store.procurement_products pp
+       JOIN store.products p ON pp.product_id = p.id
+       WHERE pp.procurement_id = $1`,
+      [procurement.id]
     );
 
-    console.log('Participation added:', { procurementId: id, userId });
+    const participantsResult = await pool.query(
+      `SELECT COUNT(*) as participants_count 
+       FROM store.procurement_participants 
+       WHERE procurement_id = $1`,
+      [procurement.id]
+    );
 
-    res.json({ message: 'Заявка на участие отправлена' });
+    const procurementWithProducts = {
+      ...fullProcurementResult.rows[0],
+      products: productsResult.rows,
+      participants_count: parseInt(participantsResult.rows[0].participants_count)
+    };
+
+    console.log('Final procurement data:', procurementWithProducts);
+
+    res.json({ 
+      message: 'Закупка успешно создана',
+      procurement: procurementWithProducts 
+    });
 
   } catch (error) {
-    console.error('Participation error:', error);
-    res.status(500).json({ error: 'Ошибка при отправке заявки' });
+    console.error('Create procurement error:', error);
+    res.status(500).json({ error: 'Ошибка при создании закупки: ' + error.message });
   }
 });
 

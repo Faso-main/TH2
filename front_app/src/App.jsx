@@ -142,20 +142,23 @@ function App() {
     }
   };
 
-  const handleCreateProcurement = async (procurementData) => {
-    try {
-      console.log('Creating procurement:', procurementData);
-      
-
-      
-      // Если API готово, используйте:
-      const response = await procurementsAPI.create(procurementData);
-      setProcurements(prev => [response.procurement, ...prev]);
-      
-    } catch (error) {
-      throw new Error(error.message || 'Ошибка при создании закупки');
-    }
-  };
+const handleCreateProcurement = async (procurementData) => {
+  try {
+    console.log('Creating procurement:', procurementData);
+    
+    // Отправляем закупку на сервер
+    const response = await procurementsAPI.create(procurementData);
+    
+    // Добавляем закупку в состояние
+    setProcurements(prev => [response.procurement, ...prev]);
+    
+    return response;
+    
+  } catch (error) {
+    console.error('Create procurement error:', error);
+    throw new Error(error.message || 'Ошибка при создании закупки');
+  }
+};
 
   const handleParticipate = async (procurementId, proposedPrice) => {
     if (!currentUser) {
