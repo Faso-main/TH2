@@ -4,17 +4,18 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const path = require('path');
 const { Transform } = require('stream');
+const crypto = require('crypto');
 
 class ProcurementDataImporter {
     constructor() {
         this.client = new Client({
-            user: 'store_app1',
+            user: 'user1',
             host: 'localhost',
             database: 'pc_db',
             password: '1234',
             port: 5432,
             // Лучшие практики для подключения
-            max: 20, // максимальное количество клиентов в пуле
+            max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000
         });
@@ -35,6 +36,7 @@ class ProcurementDataImporter {
         };
 
         this.errors = [];
+        this.productIdMap = new Map(); // Для отслеживания существующих product_id
     }
 
     async connect() {
@@ -42,11 +44,25 @@ class ProcurementDataImporter {
             await this.client.connect();
             console.log('✅ Подключение к БД установлено');
             
+            // Загружаем существующие product_id для избежания дубликатов
+            await this.loadExistingProductIds();
             // Проверяем существование таблиц
             await this.validateDatabaseStructure();
         } catch (error) {
             console.error('❌ Ошибка подключения к БД:', error.message);
             throw error;
+        }
+    }
+
+    async loadExistingProductIds() {
+        try {
+            const result = await this.client.query('SELECT product_id FROM products');
+            result.rows.forEach(row => {
+                this.productIdMap.set(row.product_id, true);
+            });
+            console.log(`✅ Загружено ${this.productIdMap.size} существующих product_id`);
+        } catch (error) {
+            console.warn('⚠️ Не удалось загрузить существующие product_id:', error.message);
         }
     }
 
@@ -110,29 +126,105 @@ class ProcurementDataImporter {
         console.error(`❌ Ошибка в ${operation}:`, error.message);
     }
 
-    // Валидация данных
-    validateProduct(row) {
-        if (!row.product_id && !row.id) {
-            throw new Error('Отсутствует product_id');
+    // Улучшенная валидация данных с автоматической генерацией product_id
+    validateProduct(row, rowNumber) {
+        // Определяем возможные названия колонок для product_id
+        const possibleIdColumns = ['product_id', 'id', 'код', 'code', 'артикул', 'article', 'uid'];
+        
+        let productId = null;
+        let foundColumn = null;
+
+        // Ищем существующий product_id в различных колонках
+        for (const column of possibleIdColumns) {
+            if (row[column] && row[column].toString().trim()) {
+                productId = row[column].toString().trim();
+                foundColumn = column;
+                break;
+            }
         }
 
-        const productId = row.product_id || row.id;
+        // Если product_id не найден, генерируем его на основе данных
+        if (!productId) {
+            productId = this.generateProductId(row, rowNumber);
+            console.log(`⚠️ Сгенерирован product_id для строки ${rowNumber}: ${productId}`);
+        }
+
+        // Проверяем длину product_id
         if (productId.length > 100) {
-            throw new Error(`Слишком длинный product_id: ${productId}`);
+            productId = productId.substring(0, 100);
+            console.warn(`⚠️ Усечен product_id для строки ${rowNumber}`);
+        }
+
+        // Проверяем дубликаты
+        if (this.productIdMap.has(productId)) {
+            const originalId = productId;
+            productId = this.generateUniqueProductId(productId, rowNumber);
+            console.warn(`⚠️ Обнаружен дубликат product_id '${originalId}', сгенерирован новый: ${productId}`);
+        }
+
+        this.productIdMap.set(productId, true);
+
+        // Определяем название товара
+        const possibleNameColumns = ['name', 'product_name', 'наименование', 'название', 'товар', 'product'];
+        let productName = 'Неизвестный товар';
+
+        for (const column of possibleNameColumns) {
+            if (row[column] && row[column].toString().trim()) {
+                productName = row[column].toString().trim();
+                break;
+            }
         }
 
         return {
             productId: productId,
-            name: (row.name || row.product_name || `Товар ${productId}`).substring(0, 1000),
-            description: row.description || null,
+            name: productName.substring(0, 1000),
+            description: row.description || row.описание || null,
             categoryId: row.category_id || null,
-            manufacturer: (row.manufacturer || '').substring(0, 500),
-            unitOfMeasure: (row.unit_of_measure || '').substring(0, 50),
-            specifications: this.parseSpecifications(row.specifications),
-            averagePrice: this.parsePrice(row.average_price),
+            manufacturer: (row.manufacturer || row.производитель || '').substring(0, 500),
+            unitOfMeasure: (row.unit_of_measure || row.единица_измерения || '').substring(0, 50),
+            specifications: this.parseSpecifications(row.specifications || row.спецификации),
+            averagePrice: this.parsePrice(row.average_price || row.цена || row.средняя_цена),
             isAvailable: true,
             sourceSystem: 'catalog'
         };
+    }
+
+    generateProductId(row, rowNumber) {
+        // Генерируем product_id на основе доступных данных
+        const name = row.name || row.product_name || row.наименование || '';
+        const manufacturer = row.manufacturer || row.производитель || '';
+        
+        if (name && manufacturer) {
+            const baseId = `${manufacturer.substring(0, 20)}_${name.substring(0, 30)}`
+                .replace(/[^a-zA-Z0-9_]/g, '_')
+                .toLowerCase();
+            return `gen_${baseId}_${rowNumber}`;
+        } else if (name) {
+            const baseId = name.substring(0, 50)
+                .replace(/[^a-zA-Z0-9_]/g, '_')
+                .toLowerCase();
+            return `gen_${baseId}_${rowNumber}`;
+        } else {
+            // Если нет никаких данных, генерируем случайный ID
+            return `auto_${crypto.randomBytes(8).toString('hex')}_${rowNumber}`;
+        }
+    }
+
+    generateUniqueProductId(baseId, rowNumber) {
+        let counter = 1;
+        let newId = `${baseId}_${counter}`;
+        
+        while (this.productIdMap.has(newId) && counter < 1000) {
+            counter++;
+            newId = `${baseId}_${counter}`;
+        }
+        
+        if (counter >= 1000) {
+            // Если не удалось найти уникальный ID, генерируем полностью случайный
+            newId = `unique_${crypto.randomBytes(12).toString('hex')}_${rowNumber}`;
+        }
+        
+        return newId;
     }
 
     parseSpecifications(specs) {
@@ -140,19 +232,28 @@ class ProcurementDataImporter {
         
         try {
             if (typeof specs === 'string') {
-                return JSON.parse(specs);
+                // Пытаемся распарсить JSON
+                if (specs.trim().startsWith('{') || specs.trim().startsWith('[')) {
+                    return JSON.parse(specs);
+                } else {
+                    // Если это не JSON, создаем объект с одним полем
+                    return { raw_specifications: specs.substring(0, 1000) };
+                }
             }
             return specs;
         } catch (error) {
-            console.warn('⚠️ Некорректные спецификации:', specs);
-            return null;
+            console.warn('⚠️ Некорректные спецификации, сохраняем как текст');
+            return { raw_specifications: (specs.toString() || '').substring(0, 1000) };
         }
     }
 
     parsePrice(price) {
         if (!price) return null;
         
-        const parsed = parseFloat(price);
+        // Обрабатываем различные форматы цен
+        const priceStr = price.toString().replace(/,/g, '.').replace(/\s/g, '');
+        const parsed = parseFloat(priceStr);
+        
         return isNaN(parsed) || parsed < 0 ? null : Math.round(parsed * 100) / 100;
     }
 
@@ -208,8 +309,6 @@ class ProcurementDataImporter {
     }
 
     generateDeterministicUUID(key) {
-        // Простой детерминированный UUID на основе ключа
-        const crypto = require('crypto');
         const hash = crypto.createHash('md5').update(key).digest('hex');
         return `${hash.substring(0, 8)}-${hash.substring(8, 12)}-${hash.substring(12, 16)}-${hash.substring(16, 20)}-${hash.substring(20, 32)}`;
     }
@@ -220,6 +319,7 @@ class ProcurementDataImporter {
         return new Promise((resolve, reject) => {
             const products = [];
             let processedCount = 0;
+            let rowNumber = 0;
 
             const processBatch = async () => {
                 if (products.length === 0) return;
@@ -240,8 +340,10 @@ class ProcurementDataImporter {
             const batchProcessor = new Transform({
                 objectMode: true,
                 transform: (row, encoding, callback) => {
+                    rowNumber++;
+                    
                     try {
-                        const productData = this.validateProduct(row);
+                        const productData = this.validateProduct(row, rowNumber);
                         products.push([
                             productData.productId,
                             productData.name,
@@ -262,7 +364,7 @@ class ProcurementDataImporter {
                         }
                     } catch (error) {
                         this.stats.products.error++;
-                        this.logError('importProducts validation', error, row);
+                        this.logError('importProducts validation', error, { rowNumber, row });
                         callback(); // Продолжаем обработку несмотря на ошибки
                     }
                 },
@@ -273,19 +375,62 @@ class ProcurementDataImporter {
                 }
             });
 
-            fs.createReadStream('344608_СТЕ.csv')
-                .on('error', (error) => {
-                    console.error('❌ Ошибка чтения файла товаров:', error.message);
-                    reject(error);
-                })
+            // Сначала посмотрим на структуру CSV файла
+            this.analyzeCSVStructure('344608_СТЕ.csv').then(() => {
+                fs.createReadStream('344608_СТЕ.csv')
+                    .on('error', (error) => {
+                        console.error('❌ Ошибка чтения файла товаров:', error.message);
+                        reject(error);
+                    })
+                    .pipe(csv({
+                        mapHeaders: ({ header, index }) => {
+                            // Нормализуем названия колонок
+                            return header.trim().toLowerCase();
+                        },
+                        mapValues: ({ value, header }) => {
+                            return value ? value.toString().trim() : '';
+                        },
+                        skipEmptyLines: true,
+                        strict: false // Разрешаем строки с разным количеством колонок
+                    }))
+                    .pipe(batchProcessor)
+                    .on('finish', () => {
+                        console.log(`✅ Импорт товаров завершен. Успешно: ${this.stats.products.success}, Ошибок: ${this.stats.products.error}`);
+                        resolve();
+                    })
+                    .on('error', reject);
+            }).catch(reject);
+        });
+    }
+
+    async analyzeCSVStructure(filename) {
+        return new Promise((resolve, reject) => {
+            const headers = new Set();
+            let sampleRows = [];
+            let rowCount = 0;
+
+            fs.createReadStream(filename)
                 .pipe(csv({
                     mapHeaders: ({ header }) => header.trim(),
                     mapValues: ({ value }) => value.trim(),
                     skipEmptyLines: true
                 }))
-                .pipe(batchProcessor)
-                .on('finish', () => {
-                    console.log(`✅ Импорт товаров завершен. Успешно: ${this.stats.products.success}, Ошибок: ${this.stats.products.error}`);
+                .on('headers', (fileHeaders) => {
+                    fileHeaders.forEach(header => headers.add(header));
+                    console.log('📋 Структура CSV файла:');
+                    console.log('   Колонки:', Array.from(headers).join(', '));
+                })
+                .on('data', (row) => {
+                    if (rowCount < 3) { // Берем только первые 3 строки для анализа
+                        sampleRows.push(row);
+                    }
+                    rowCount++;
+                })
+                .on('end', () => {
+                    console.log(`   Всего строк в файле: ${rowCount}`);
+                    if (sampleRows.length > 0) {
+                        console.log('   Пример данных первой строки:', JSON.stringify(sampleRows[0], null, 2));
+                    }
                     resolve();
                 })
                 .on('error', reject);
