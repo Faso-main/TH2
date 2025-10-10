@@ -145,35 +145,9 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
               />
             </div>
             
-            <div className="form-group">
-              <label htmlFor="session_number">Номер котировочной сессии *</label>
-              <input
-                type="text"
-                id="session_number"
-                name="session_number"
-                value={formData.session_number}
-                onChange={handleChange}
-                required
-                placeholder="Например: 10055209"
-              />
-            </div>
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="current_price">Начальная цена, ₽</label>
-              <input
-                type="number"
-                id="current_price"
-                name="current_price"
-                value={formData.current_price}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                placeholder={formatPrice(calculateTotalPrice())}
-              />
-              <small className="hint">Оставьте пустым для автоматического расчета ({formatPrice(calculateTotalPrice())} ₽)</small>
-            </div>
             
             <div className="form-group">
               <label htmlFor="law_type">Тип закупки</label>
@@ -204,37 +178,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         </div>
 
         <div className="form-section">
-          <h4>Информация о заказчике</h4>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="customer_name">Наименование заказчика *</label>
-              <input
-                type="text"
-                id="customer_name"
-                name="customer_name"
-                value={formData.customer_name}
-                onChange={handleChange}
-                required
-                placeholder="ООО 'Компания'"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="customer_inn">ИНН заказчика</label>
-              <input
-                type="text"
-                id="customer_inn"
-                name="customer_inn"
-                value={formData.customer_inn}
-                onChange={handleChange}
-                placeholder="1234567890"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
           <h4>Сроки проведения</h4>
           
           <div className="form-row">
@@ -261,34 +204,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 required
               />
             </div>
-          </div>
-        </div>
-
-        <div className="form-section">
-          <h4>Дополнительные условия</h4>
-          
-          <div className="form-group">
-            <label htmlFor="contract_terms">Условия исполнения контракта</label>
-            <textarea
-              id="contract_terms"
-              name="contract_terms"
-              value={formData.contract_terms}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Сроки поставки, гарантийные обязательства, условия оплаты..."
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="contract_security">Обеспечение исполнения контракта</label>
-            <textarea
-              id="contract_security"
-              name="contract_security"
-              value={formData.contract_security}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Размер обеспечения, срок предоставления..."
-            />
           </div>
         </div>
 
