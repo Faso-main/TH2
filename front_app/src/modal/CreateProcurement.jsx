@@ -144,11 +144,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 placeholder="Например: Поставка офисной техники"
               />
             </div>
-            
-          </div>
-
-          <div className="form-row">
-            
             <div className="form-group">
               <label htmlFor="law_type">Тип закупки</label>
               <select
