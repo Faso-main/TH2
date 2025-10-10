@@ -1,0 +1,17 @@
+{
+  "name": "procurement-data-importer",
+  "version": "1.0.0",
+  "description": "Data importer for procurement recommendation system",
+  "main": "data-importer.js",
+  "scripts": {
+    "import": "node data-importer.js",
+    "start": "node data-importer.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "csv-parser": "^3.0.0"
+  },
+  "keywords": ["postgres", "import", "procurement", "recommendation"],
+  "author": "Your Name",
+  "license": "MIT"
+}
