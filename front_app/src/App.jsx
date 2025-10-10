@@ -253,6 +253,7 @@ const handleCreateProcurement = async (procurementData) => {
         <UserProfile 
           user={currentUser} 
           onClose={closeModal}
+          onCreateProcurement={() => openModal('create-procurement')}
           onProcurementCreated={loadInitialData} 
         />
       </Modal>
