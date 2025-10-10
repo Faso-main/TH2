@@ -78,7 +78,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         session_number: formData.session_number,
         customer_name: formData.customer_name,
         customer_inn: formData.customer_inn,
-        current_price: totalPrice,
+        current_price: totalPrice, // Автоматически рассчитывается из товаров
         start_date: formData.start_date,
         end_date: formData.end_date,
         law_type: formData.law_type,
@@ -263,54 +263,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           </div>
         </div>
 
-        {/* Автоматически заполненная информация (только для просмотра) */}
-        <div className="form-section">
-          <h4>Автоматически заполненные данные</h4>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>Номер котировочной сессии</label>
-              <input
-                type="text"
-                value={formData.session_number}
-                readOnly
-                className="readonly-field"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Заказчик</label>
-              <input
-                type="text"
-                value={formData.customer_name}
-                readOnly
-                className="readonly-field"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>ИНН заказчика</label>
-              <input
-                type="text"
-                value={formData.customer_inn}
-                readOnly
-                className="readonly-field"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Начальная цена</label>
-              <input
-                type="text"
-                value={`${formatPrice(calculateTotalPrice())} ₽`}
-                readOnly
-                className="readonly-field"
-              />
-            </div>
-          </div>
-        </div>
 
         <div className="form-actions">
           <button type="button" className="btn-outline" onClick={onClose}>
