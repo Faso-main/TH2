@@ -676,3 +676,47 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Body.css - добавляем стили для поиска */
+
+.search-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-results-count {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.products-count {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+/* Подсветка найденных результатов */
+.product-card.highlight,
+.procurement-card.highlight {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Состояние "ничего не найдено" */
+.no-results {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-light);
+}
+
+.no-results-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-results h3 {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}

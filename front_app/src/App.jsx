@@ -10,6 +10,7 @@ import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import CreateProcurement from './modal/CreateProcurement';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
 
+
 function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [authMode, setAuthMode] = useState('login');
@@ -18,6 +19,9 @@ function App() {
   const [procurements, setProcurements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({ products: [], procurements: [] });
+  const [isSearching, setIsSearching] = useState(false);
 
   // Загрузка данных при старте
   useEffect(() => {
@@ -49,6 +53,22 @@ function App() {
           price_per_item: 129999,
           amount: 5,
           company: 'Dell'
+        },
+        {
+          id: 3,
+          name: 'Холодильник Samsung',
+          category_name: 'Бытовая техника',
+          price_per_item: 54999,
+          amount: 8,
+          company: 'Samsung'
+        },
+        {
+          id: 4,
+          name: 'Диван угловой',
+          category_name: 'Мебель',
+          price_per_item: 32999,
+          amount: 3,
+          company: 'Ikea'
         }
       ];
 
@@ -65,6 +85,20 @@ function App() {
           start_date: '2024-01-15T00:00:00Z',
           end_date: '2024-02-15T23:59:59Z',
           participants_count: 7,
+          products: []
+        },
+        {
+          id: 2,
+          session_number: '10055210',
+          title: 'Поставка компьютерной техники для офиса',
+          status: 'active',
+          current_price: 450000,
+          description: 'Закупка компьютеров, мониторов и периферии для оснащения рабочего места',
+          customer_name: 'ООО «ТехноПарк»',
+          customer_inn: '7734567890',
+          start_date: '2024-01-20T00:00:00Z',
+          end_date: '2024-02-10T23:59:59Z',
+          participants_count: 3,
           products: []
         }
       ];
@@ -89,6 +123,66 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Функция поиска
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults({ products: [], procurements: [] });
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const searchLower = query.toLowerCase().trim();
+      
+      const foundProducts = products.filter(product => 
+        product.name.toLowerCase().includes(searchLower) ||
+        product.category_name?.toLowerCase().includes(searchLower) ||
+        product.company?.toLowerCase().includes(searchLower) ||
+        product.description?.toLowerCase().includes(searchLower)
+      );
+
+      const foundProcurements = procurements.filter(procurement =>
+        procurement.title.toLowerCase().includes(searchLower) ||
+        procurement.description?.toLowerCase().includes(searchLower) ||
+        procurement.customer_name?.toLowerCase().includes(searchLower) ||
+        procurement.session_number?.toLowerCase().includes(searchLower)
+      );
+
+      setSearchResults({
+        products: foundProducts,
+        procurements: foundProcurements
+      });
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults({ products: [], procurements: [] });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Обработчик изменения поискового запроса
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
+
+  // Очистка поиска
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults({ products: [], procurements: [] });
+  };
+
+  // Получаем данные для отображения
+  const getDisplayProducts = () => {
+    return searchQuery ? searchResults.products : products;
+  };
+
+  const getDisplayProcurements = () => {
+    return searchQuery ? searchResults.procurements : procurements;
   };
 
   const openModal = (modalName) => {
@@ -142,31 +236,27 @@ function App() {
     }
   };
 
-const handleCreateProcurement = async (procurementData) => {
-  try {
-    console.log('Creating procurement:', procurementData);
-    
-    // Отправляем закупку на сервер
-    const response = await procurementsAPI.create(procurementData);
-    
-    // Обновляем общий список закупок
-    setProcurements(prev => [response.procurement, ...prev]);
-    
-    // Закрываем модальное окно создания
-    closeModal();
-    
-    // Показываем уведомление
-    setTimeout(() => {
-      alert('Закупка успешно создана!');
-    }, 100);
-    
-    return response;
-    
-  } catch (error) {
-    console.error('Create procurement error:', error);
-    throw new Error(error.message || 'Ошибка при создании закупки');
-  }
-};
+  const handleCreateProcurement = async (procurementData) => {
+    try {
+      console.log('Creating procurement:', procurementData);
+      
+      const response = await procurementsAPI.create(procurementData);
+      
+      setProcurements(prev => [response.procurement, ...prev]);
+      
+      closeModal();
+      
+      setTimeout(() => {
+        alert('Закупка успешно создана!');
+      }, 100);
+      
+      return response;
+      
+    } catch (error) {
+      console.error('Create procurement error:', error);
+      throw new Error(error.message || 'Ошибка при создании закупки');
+    }
+  };
 
   const handleParticipate = async (procurementId, proposedPrice) => {
     if (!currentUser) {
@@ -195,15 +285,22 @@ const handleCreateProcurement = async (procurementData) => {
         onUserProfileClick={handleUserProfileClick}
         onCreateProcurement={() => openModal('create-procurement')}
         authLoading={authLoading}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        onClearSearch={clearSearch}
+        isSearching={isSearching}
       />
       
       <Main 
-        products={products}
-        procurements={procurements}
+        products={getDisplayProducts()}
+        procurements={getDisplayProcurements()}
         loading={loading}
         currentUser={currentUser}
         onParticipate={handleParticipate}
         onOpenAuth={() => openModal('auth')}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        isSearching={isSearching}
       />
       
       <Footer />
@@ -253,26 +350,34 @@ const handleCreateProcurement = async (procurementData) => {
         <UserProfile 
           user={currentUser} 
           onClose={closeModal}
-          onCreateProcurement={() => openModal('create-procurement')}
-          onProcurementCreated={loadInitialData} 
         />
       </Modal>
     </div>
   );
 }
 
-function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement, authLoading }) {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (e) => {
-    if (e) e.preventDefault();
-    console.log('Поиск:', searchQuery);
+function Header({ 
+  currentUser, 
+  onLogout, 
+  onUserProfileClick, 
+  onCreateProcurement, 
+  authLoading,
+  searchQuery,
+  onSearchChange,
+  onClearSearch,
+  isSearching 
+}) {
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    // Поиск уже происходит при вводе, так что просто предотвращаем перезагрузку
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  const handleInputChange = (e) => {
+    onSearchChange(e.target.value);
+  };
+
+  const handleClearClick = () => {
+    onClearSearch();
   };
 
   return (
@@ -283,26 +388,50 @@ function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement
         </div>
         
         <div className="header-search">
-          <form className="search-bar" onSubmit={handleSearch}>
+          <form className={`search-bar ${isSearching ? 'searching' : ''}`} onSubmit={handleSearchSubmit}>
             <input 
               type="text" 
-              placeholder="Поиск товаров..." 
+              placeholder="Поиск товаров и закупок..." 
               className="search-input"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onChange={handleInputChange}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchSubmit(e);
+                }
+              }}
             />
-            <button type="submit" className="search-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </svg>
+            
+            {/* Кнопка очистки */}
+            {searchQuery && (
+              <button 
+                type="button"
+                className="clear-search-btn"
+                onClick={handleClearClick}
+                title="Очистить поиск"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+            
+            <button type="submit" className="search-btn" disabled={isSearching}>
+              {isSearching ? (
+                <div className="loading-spinner-small"></div>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              )}
             </button>
           </form>
         </div>
 
         <div className="header-actions">
-          {/* Кнопка создания закупки - показываем только авторизованным пользователям */}
+          {/* Кнопка создания закупки */}
           {currentUser && (
             <button 
               className="user-icon-btn create-procurement-btn" 
@@ -347,7 +476,7 @@ function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement
             </svg>
           </button>
 
-          {/* Кнопка выхода, если пользователь авторизован */}
+          {/* Кнопка выхода */}
           {currentUser && (
             <button 
               className="user-icon-btn logout-btn" 
@@ -382,8 +511,7 @@ function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement
 
 
 // Обновляем Main компонент в App.jsx
-
-function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth }) {
+function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth, searchQuery, isSearching }) {
   const [activeSection, setActiveSection] = useState('products');
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
@@ -394,8 +522,6 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
     
     // Фильтр по категориям
     if (filters.categories.length > 0) {
-      // Здесь должна быть логика сопоставления товаров с категориями верхнего уровня
-      // Для демо просто фильтруем по названию категории
       filtered = filtered.filter(product => 
         filters.categories.some(catId => 
           product.category_name?.toLowerCase().includes(
@@ -455,6 +581,25 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
     setFilteredProcurements(procurements);
   }, [products, procurements]);
 
+  // Получаем данные для отображения с учетом поиска
+  const getDisplayProducts = () => {
+    return searchQuery ? filteredProducts.filter(product => 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : filteredProducts;
+  };
+
+  const getDisplayProcurements = () => {
+    return searchQuery ? filteredProcurements.filter(procurement =>
+      procurement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      procurement.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      procurement.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      procurement.session_number?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : filteredProcurements;
+  };
+
   if (loading) {
     return (
       <main className="main">
@@ -464,6 +609,9 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
       </main>
     );
   }
+
+  const displayProducts = getDisplayProducts();
+  const displayProcurements = getDisplayProcurements();
 
   return (
     <main className="main">
@@ -485,22 +633,41 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
                   Закупки
                 </button>
               </div>
-              <span className="products-count">
-                {activeSection === 'products' 
-                  ? `Найдено ${filteredProducts.length} товаров` 
-                  : `Активные закупки: ${filteredProcurements.length}`
-                }
-              </span>
+              <div className="search-info">
+                {searchQuery && (
+                  <span className="search-results-count">
+                    {activeSection === 'products' 
+                      ? `Найдено товаров: ${displayProducts.length}` 
+                      : `Найдено закупок: ${displayProcurements.length}`
+                    }
+                    {isSearching && ' (поиск...)'}
+                  </span>
+                )}
+                {!searchQuery && (
+                  <span className="products-count">
+                    {activeSection === 'products' 
+                      ? `Всего товаров: ${displayProducts.length}` 
+                      : `Всего закупок: ${displayProcurements.length}`
+                    }
+                  </span>
+                )}
+              </div>
             </div>
             
             {activeSection === 'products' ? (
-              <ProductsGrid products={filteredProducts} />
+              <ProductsGrid 
+                products={displayProducts} 
+                searchQuery={searchQuery}
+                isSearching={isSearching}
+              />
             ) : (
               <ProcurementsGrid 
-                procurements={filteredProcurements}
+                procurements={displayProcurements}
                 currentUser={currentUser}
                 onParticipate={onParticipate}
                 onOpenAuth={onOpenAuth}
+                searchQuery={searchQuery}
+                isSearching={isSearching}
               />
             )}
           </section>
@@ -516,7 +683,6 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
     </main>
   );
 }
-
 // Компонент сетки товаров
 function ProductsGrid({ products }) {
   const formatPrice = (price) => {
@@ -565,11 +731,27 @@ function ProductsGrid({ products }) {
 }
 
 // Компонент сетки закупок
-function ProcurementsGrid({ procurements, onParticipate }) {
+function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearching }) {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
+  if (isSearching) {
+    return (
+      <div className="procurements-grid">
+        <div className="loading">Поиск...</div>
+      </div>
+    );
+  }
 
+  if (searchQuery && procurements.length === 0) {
+    return (
+      <div className="no-results">
+        <div className="no-results-icon">🔍</div>
+        <h3>Закупки не найдены</h3>
+        <p>Попробуйте изменить поисковый запрос</p>
+      </div>
+    );
+  }
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('ru-RU');
   };
