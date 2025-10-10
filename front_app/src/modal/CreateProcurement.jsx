@@ -34,7 +34,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     setLoading(true);
 
     try {
-      if (!formData.title || !formData.session_number) {
+      if (!formData.title) {
         alert('Заполните обязательные поля: название и номер сессии');
         return;
       }
