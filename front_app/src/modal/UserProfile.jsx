@@ -280,12 +280,7 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           <div className="procurements-list">
             <div className="section-header">
               <h3>Мои созданные закупки</h3>
-              <button 
-                className="btn-primary"
-                onClick={onCreateProcurement}
-              >
-                + Создать закупку
-              </button>
+
             </div>
             
             {loading ? (
@@ -324,12 +319,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
                 <div className="empty-icon">📋</div>
                 <h4>Закупок пока нет</h4>
                 <p>Создайте свою первую закупку и начните привлекать поставщиков</p>
-                <button 
-                  className="btn-primary"
-                  onClick={onCreateProcurement}
-                >
-                  Создать первую закупку
-                </button>
               </div>
             )}
           </div>

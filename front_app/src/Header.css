@@ -355,3 +355,50 @@
     height: 5px;
   }
 }
+
+/* Header.css - добавляем эти стили */
+
+/* Стиль для кнопки создания закупки */
+.user-icon-btn.create-procurement-btn {
+  color: #8b5cf6; /* Фиолетовый цвет */
+  background-color: rgba(139, 92, 246, 0.1); /* Светло-фиолетовый фон */
+}
+
+.user-icon-btn.create-procurement-btn:hover {
+  color: #7c3aed; /* Темно-фиолетовый при наведении */
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+/* Адаптивность для новых кнопок */
+@media (max-width: 768px) {
+  .header-actions {
+    gap: 0.5rem;
+  }
+  
+  .user-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .user-icon-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    gap: 0.25rem;
+  }
+  
+  .user-icon-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0.4rem;
+  }
+  
+  .user-icon-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+}

@@ -193,6 +193,7 @@ const handleCreateProcurement = async (procurementData) => {
         currentUser={currentUser}
         onLogout={handleLogout}
         onUserProfileClick={handleUserProfileClick}
+        onCreateProcurement={() => openModal('create-procurement')}
         authLoading={authLoading}
       />
       
@@ -252,7 +253,6 @@ const handleCreateProcurement = async (procurementData) => {
         <UserProfile 
           user={currentUser} 
           onClose={closeModal}
-          onCreateProcurement={() => openModal('create-procurement')}
           onProcurementCreated={loadInitialData} 
         />
       </Modal>
@@ -260,7 +260,7 @@ const handleCreateProcurement = async (procurementData) => {
   );
 }
 
-function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
+function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement, authLoading }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
@@ -301,6 +301,29 @@ function Header({ currentUser, onLogout, onUserProfileClick, authLoading }) {
         </div>
 
         <div className="header-actions">
+          {/* Кнопка создания закупки - показываем только авторизованным пользователям */}
+          {currentUser && (
+            <button 
+              className="user-icon-btn create-procurement-btn" 
+              onClick={onCreateProcurement}
+              title="Создать закупку"
+            >
+              <svg 
+                width="35"
+                height="35" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          )}
+
           {/* Иконка личного кабинета */}
           <button 
             className={`user-icon-btn ${currentUser ? 'user-authenticated' : ''}`} 
