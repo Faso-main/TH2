@@ -1,2 +1,7 @@
 node_modules
 py_back/token_query.py
+node_modules
+recommendation_results__/
+ML/
+old/
+*.csv

@@ -1,0 +1,531 @@
+{
+  "dataset_info": {
+    "total_products": 50000,
+    "recommendation_categories_count": 17,
+    "similarity_matrix_shape": [
+      50000,
+      50000
+    ]
+  },
+  "category_stats": {
+    "Разное": 25040,
+    "Ноутбуки": 7027,
+    "Аудиотехника": 4323,
+    "Мобильные устройства": 2930,
+    "Компьютерная периферия": 2009,
+    "Расходники для печати": 1875,
+    "Комплектующие ПК": 1686,
+    "Мониторы": 1503,
+    "Сетевое оборудование": 1319,
+    "Принтеры и МФУ": 677,
+    "Кабели и адаптеры": 397,
+    "Бумажная продукция": 395,
+    "Офисная мебель": 288,
+    "Письменные принадлежности": 202,
+    "Моющие средства": 149,
+    "Мебель для хранения": 108,
+    "Серверное оборудование": 72
+  },
+  "user_recommendations": {
+    "office_manager": [
+      {
+        "product_id": 0,
+        "product_name": "Программа автоматизации сметных расчетов в строительстве «ГОССТРОЙСМЕТА» версия 3",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "программное обеспечение",
+        "price": 0.0
+      },
+      {
+        "product_id": 1,
+        "product_name": "Наушники Ritmix RH-411BTH",
+        "score": 0.0,
+        "recommendation_category": "Аудиотехника",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 2,
+        "product_name": "\"Телевизор Hyundai H-LED22V13 22\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 3,
+        "product_name": "Кабель на основе витой пары для прокладки вне зданий Cabeus UTP-4P-Cat.5e-SOLID-ST-OUT",
+        "score": 0.0,
+        "recommendation_category": "Кабели и адаптеры",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 4,
+        "product_name": "Карта памяти Londisk Extreme microSDHC Class 10 UHS-I U1 32GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "спецодежда",
+        "price": 0.0
+      },
+      {
+        "product_id": 5,
+        "product_name": "\"Ноутбук HP PAVILION g7-1352sr (Core i5 2450M 2500 Mhz/17.3\"\"/1600x900/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 7 HB)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 6,
+        "product_name": "\"Ноутбук HP Envy m6-1241er (A8 4500M 1900 Mhz/15.6\"\"/1366x768/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 8 64)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 7,
+        "product_name": "\"Телевизор Arvin AR2012A 20\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 8,
+        "product_name": "\"Ноутбук Lenovo G780 (Core i3 2350M 2300 Mhz/17.3\"\"/1600x900/4096Mb/750Gb/DVD-RW/NVIDIA GeForce GT 630M/Wi-Fi/Bluetooth/DOS)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 9,
+        "product_name": "Клавиатура Ritmix RKB-104 Black USB 95 клавиши",
+        "score": 0.0,
+        "recommendation_category": "Компьютерная периферия",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 10,
+        "product_name": "Флешка Baolifeng BLF-A 735 8GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 11,
+        "product_name": "Флешка Tribe Lisa Simpson",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 12,
+        "product_name": "Аккумулятор внешний Ritmix Ritmix10400 мАч Black/Red (RPB-10407LT)",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 13,
+        "product_name": "Планшет Ferguson S8",
+        "score": 0.0,
+        "recommendation_category": "Мобильные устройства",
+        "smart_category": "техника",
+        "price": 0.0
+      },
+      {
+        "product_id": 14,
+        "product_name": "Тонер-картридж TARGET совместимый HP CE311A (№126A)/Canon Cartridge 729 Cyan для LJ CP1025/LBP-7010/7018, 1k\tTR-CE311A/729C\t (производство РОССИЯ)",
+        "score": 0.0,
+        "recommendation_category": "Расходники для печати",
+        "smart_category": "расходные материалы -> для печати",
+        "price": 0.0
+      }
+    ],
+    "it_specialist": [
+      {
+        "product_id": 0,
+        "product_name": "Программа автоматизации сметных расчетов в строительстве «ГОССТРОЙСМЕТА» версия 3",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "программное обеспечение",
+        "price": 0.0
+      },
+      {
+        "product_id": 1,
+        "product_name": "Наушники Ritmix RH-411BTH",
+        "score": 0.0,
+        "recommendation_category": "Аудиотехника",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 2,
+        "product_name": "\"Телевизор Hyundai H-LED22V13 22\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 3,
+        "product_name": "Кабель на основе витой пары для прокладки вне зданий Cabeus UTP-4P-Cat.5e-SOLID-ST-OUT",
+        "score": 0.0,
+        "recommendation_category": "Кабели и адаптеры",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 4,
+        "product_name": "Карта памяти Londisk Extreme microSDHC Class 10 UHS-I U1 32GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "спецодежда",
+        "price": 0.0
+      },
+      {
+        "product_id": 5,
+        "product_name": "\"Ноутбук HP PAVILION g7-1352sr (Core i5 2450M 2500 Mhz/17.3\"\"/1600x900/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 7 HB)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 6,
+        "product_name": "\"Ноутбук HP Envy m6-1241er (A8 4500M 1900 Mhz/15.6\"\"/1366x768/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 8 64)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 7,
+        "product_name": "\"Телевизор Arvin AR2012A 20\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 8,
+        "product_name": "\"Ноутбук Lenovo G780 (Core i3 2350M 2300 Mhz/17.3\"\"/1600x900/4096Mb/750Gb/DVD-RW/NVIDIA GeForce GT 630M/Wi-Fi/Bluetooth/DOS)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 9,
+        "product_name": "Клавиатура Ritmix RKB-104 Black USB 95 клавиши",
+        "score": 0.0,
+        "recommendation_category": "Компьютерная периферия",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 10,
+        "product_name": "Флешка Baolifeng BLF-A 735 8GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 11,
+        "product_name": "Флешка Tribe Lisa Simpson",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 12,
+        "product_name": "Аккумулятор внешний Ritmix Ritmix10400 мАч Black/Red (RPB-10407LT)",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 13,
+        "product_name": "Планшет Ferguson S8",
+        "score": 0.0,
+        "recommendation_category": "Мобильные устройства",
+        "smart_category": "техника",
+        "price": 0.0
+      },
+      {
+        "product_id": 14,
+        "product_name": "Тонер-картридж TARGET совместимый HP CE311A (№126A)/Canon Cartridge 729 Cyan для LJ CP1025/LBP-7010/7018, 1k\tTR-CE311A/729C\t (производство РОССИЯ)",
+        "score": 0.0,
+        "recommendation_category": "Расходники для печати",
+        "smart_category": "расходные материалы -> для печати",
+        "price": 0.0
+      }
+    ],
+    "cleaner": [
+      {
+        "product_id": 0,
+        "product_name": "Программа автоматизации сметных расчетов в строительстве «ГОССТРОЙСМЕТА» версия 3",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "программное обеспечение",
+        "price": 0.0
+      },
+      {
+        "product_id": 1,
+        "product_name": "Наушники Ritmix RH-411BTH",
+        "score": 0.0,
+        "recommendation_category": "Аудиотехника",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 2,
+        "product_name": "\"Телевизор Hyundai H-LED22V13 22\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 3,
+        "product_name": "Кабель на основе витой пары для прокладки вне зданий Cabeus UTP-4P-Cat.5e-SOLID-ST-OUT",
+        "score": 0.0,
+        "recommendation_category": "Кабели и адаптеры",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 4,
+        "product_name": "Карта памяти Londisk Extreme microSDHC Class 10 UHS-I U1 32GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "спецодежда",
+        "price": 0.0
+      },
+      {
+        "product_id": 5,
+        "product_name": "\"Ноутбук HP PAVILION g7-1352sr (Core i5 2450M 2500 Mhz/17.3\"\"/1600x900/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 7 HB)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 6,
+        "product_name": "\"Ноутбук HP Envy m6-1241er (A8 4500M 1900 Mhz/15.6\"\"/1366x768/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 8 64)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 7,
+        "product_name": "\"Телевизор Arvin AR2012A 20\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 8,
+        "product_name": "\"Ноутбук Lenovo G780 (Core i3 2350M 2300 Mhz/17.3\"\"/1600x900/4096Mb/750Gb/DVD-RW/NVIDIA GeForce GT 630M/Wi-Fi/Bluetooth/DOS)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 9,
+        "product_name": "Клавиатура Ritmix RKB-104 Black USB 95 клавиши",
+        "score": 0.0,
+        "recommendation_category": "Компьютерная периферия",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 10,
+        "product_name": "Флешка Baolifeng BLF-A 735 8GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 11,
+        "product_name": "Флешка Tribe Lisa Simpson",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 12,
+        "product_name": "Аккумулятор внешний Ritmix Ritmix10400 мАч Black/Red (RPB-10407LT)",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 13,
+        "product_name": "Планшет Ferguson S8",
+        "score": 0.0,
+        "recommendation_category": "Мобильные устройства",
+        "smart_category": "техника",
+        "price": 0.0
+      },
+      {
+        "product_id": 14,
+        "product_name": "Тонер-картридж TARGET совместимый HP CE311A (№126A)/Canon Cartridge 729 Cyan для LJ CP1025/LBP-7010/7018, 1k\tTR-CE311A/729C\t (производство РОССИЯ)",
+        "score": 0.0,
+        "recommendation_category": "Расходники для печати",
+        "smart_category": "расходные материалы -> для печати",
+        "price": 0.0
+      }
+    ],
+    "hr_manager": [
+      {
+        "product_id": 0,
+        "product_name": "Программа автоматизации сметных расчетов в строительстве «ГОССТРОЙСМЕТА» версия 3",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "программное обеспечение",
+        "price": 0.0
+      },
+      {
+        "product_id": 1,
+        "product_name": "Наушники Ritmix RH-411BTH",
+        "score": 0.0,
+        "recommendation_category": "Аудиотехника",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 2,
+        "product_name": "\"Телевизор Hyundai H-LED22V13 22\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 3,
+        "product_name": "Кабель на основе витой пары для прокладки вне зданий Cabeus UTP-4P-Cat.5e-SOLID-ST-OUT",
+        "score": 0.0,
+        "recommendation_category": "Кабели и адаптеры",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 4,
+        "product_name": "Карта памяти Londisk Extreme microSDHC Class 10 UHS-I U1 32GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "спецодежда",
+        "price": 0.0
+      },
+      {
+        "product_id": 5,
+        "product_name": "\"Ноутбук HP PAVILION g7-1352sr (Core i5 2450M 2500 Mhz/17.3\"\"/1600x900/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 7 HB)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 6,
+        "product_name": "\"Ноутбук HP Envy m6-1241er (A8 4500M 1900 Mhz/15.6\"\"/1366x768/6144Mb/750Gb/DVD-RW/Wi-Fi/Bluetooth/Win 8 64)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 7,
+        "product_name": "\"Телевизор Arvin AR2012A 20\"\"\"",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "электроника -> видеотехника",
+        "price": 0.0
+      },
+      {
+        "product_id": 8,
+        "product_name": "\"Ноутбук Lenovo G780 (Core i3 2350M 2300 Mhz/17.3\"\"/1600x900/4096Mb/750Gb/DVD-RW/NVIDIA GeForce GT 630M/Wi-Fi/Bluetooth/DOS)\"",
+        "score": 0.0,
+        "recommendation_category": "Ноутбуки",
+        "smart_category": "техника -> сетевое оборудование",
+        "price": 0.0
+      },
+      {
+        "product_id": 9,
+        "product_name": "Клавиатура Ritmix RKB-104 Black USB 95 клавиши",
+        "score": 0.0,
+        "recommendation_category": "Компьютерная периферия",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 10,
+        "product_name": "Флешка Baolifeng BLF-A 735 8GB",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 11,
+        "product_name": "Флешка Tribe Lisa Simpson",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 12,
+        "product_name": "Аккумулятор внешний Ritmix Ritmix10400 мАч Black/Red (RPB-10407LT)",
+        "score": 0.0,
+        "recommendation_category": "Разное",
+        "smart_category": "Другое",
+        "price": 0.0
+      },
+      {
+        "product_id": 13,
+        "product_name": "Планшет Ferguson S8",
+        "score": 0.0,
+        "recommendation_category": "Мобильные устройства",
+        "smart_category": "техника",
+        "price": 0.0
+      },
+      {
+        "product_id": 14,
+        "product_name": "Тонер-картридж TARGET совместимый HP CE311A (№126A)/Canon Cartridge 729 Cyan для LJ CP1025/LBP-7010/7018, 1k\tTR-CE311A/729C\t (производство РОССИЯ)",
+        "score": 0.0,
+        "recommendation_category": "Расходники для печати",
+        "smart_category": "расходные материалы -> для печати",
+        "price": 0.0
+      }
+    ]
+  },
+  "category_recommendations": {
+    "Ноутбуки": [],
+    "Принтеры и МФУ": [],
+    "Офисная мебель": [],
+    "Моющие средства": []
+  },
+  "test_users": {
+    "office_manager": 6,
+    "it_specialist": 5,
+    "cleaner": 3,
+    "hr_manager": 3
+  }
+}
