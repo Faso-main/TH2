@@ -9,7 +9,7 @@ class ProcurementDataImporter {
         this.client = new Client({
             user: 'store_app1',
             host: 'localhost',
-            database: 'pc_db1',
+            database: 'template0',
             password: '1234',
             port: 5432,
         });
