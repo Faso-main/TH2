@@ -129,8 +129,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       console.log('Sending procurement data:', procurementData);
       await onCreate(procurementData);
       
-    } catch (error) {
-      console.error('Create procurement error:', error);
     } finally {
       setLoading(false);
     }
