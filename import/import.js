@@ -8,7 +8,7 @@ const { Transform } = require('stream');
 class ProcurementDataImporter {
     constructor() {
         this.client = new Client({
-            user: 'user1',
+            user: 'store_app1',
             host: 'localhost',
             database: 'pc_db',
             password: '1234',
