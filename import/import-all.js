@@ -245,7 +245,7 @@ class ProcurementDataImporter {
     async importTemplates() {
         console.log('📁 Импорт шаблонов...');
         
-        const templates = JSON.parse(fs.readFileSync('clean_data/procurement_templates.json', 'utf8'));
+        const templates = JSON.parse(fs.readFileSync('procurement_templates.json', 'utf8'));
         const templatesData = [];
         const templateProductsData = [];
 
@@ -361,18 +361,18 @@ class ProcurementDataImporter {
 async function main() {
     // Проверяем существование файлов
     const requiredFiles = [
-        'clean_data/procurement_templates.json',
-        'clean_data/categorized_products.csv', 
-        'clean_data/cleaned_procurement_data.csv'
+        'procurement_templates.json',
+        '344608_СТЕ.csv', 
+        'cleaned_procurement_data.csv'
     ];
 
     for (const file of requiredFiles) {
         if (!fs.existsSync(file)) {
             console.error(`❌ Файл не найден: ${file}`);
             console.log('Убедитесь, что файлы находятся в правильных папках:');
-            console.log('- clean_data/procurement_templates.json');
-            console.log('- clean_data/categorized_products.csv');
-            console.log('- clean_data/cleaned_procurement_data.csv');
+            console.log('- procurement_templates.json');
+            console.log('- 344608_СТЕ.csv');
+            console.log('- cleaned_procurement_data.csv');
             process.exit(1);
         }
     }
