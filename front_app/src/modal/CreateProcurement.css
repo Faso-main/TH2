@@ -77,10 +77,10 @@
   min-height: 80px;
 }
 
-.hint {
-  color: var(--text-light);
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
+.readonly-field {
+  background-color: var(--accent-color) !important;
+  color: var(--text-secondary) !important;
+  cursor: not-allowed !important;
 }
 
 /* Стили для выбранных товаров */

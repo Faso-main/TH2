@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 // modal/CreateProcurement.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './CreateProcurement.css';
 
-
-function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuantity, onRemoveProduct }) {
+function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuantity, onRemoveProduct, currentUser }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -15,9 +16,35 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     end_date: '',
     law_type: '44-ФЗ',
     contract_terms: '',
-    contract_security: ''
+    location: ''
   });
   const [loading, setLoading] = useState(false);
+
+  // Генерация номера сессии при монтировании
+  useEffect(() => {
+    generateSessionNumber();
+    setDefaultCustomerInfo();
+  }, []);
+
+  // Генерация номера котировочной сессии
+  const generateSessionNumber = () => {
+    const timestamp = new Date().getTime();
+    const random = Math.floor(Math.random() * 1000);
+    const sessionNumber = `КОТ-${timestamp}-${random}`;
+    setFormData(prev => ({ ...prev, session_number: sessionNumber }));
+  };
+
+  // Установка данных заказчика из профиля пользователя
+  const setDefaultCustomerInfo = () => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        customer_name: currentUser.company_name || '',
+        customer_inn: currentUser.INN || '',
+        location: currentUser.location || ''
+      }));
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
@@ -34,8 +61,8 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     setLoading(true);
 
     try {
-      if (!formData.title) {
-        alert('Заполните обязательные поля: название и номер сессии');
+      if (!formData.title || !formData.start_date || !formData.end_date) {
+        alert('Заполните обязательные поля: название закупки и сроки проведения');
         return;
       }
 
@@ -46,8 +73,17 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
 
       const totalPrice = calculateTotalPrice();
       const procurementData = {
-        ...formData,
-        current_price: parseFloat(formData.current_price) || totalPrice,
+        title: formData.title,
+        description: formData.description,
+        session_number: formData.session_number,
+        customer_name: formData.customer_name,
+        customer_inn: formData.customer_inn,
+        current_price: totalPrice, // Автоматически рассчитывается из товаров
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        law_type: formData.law_type,
+        contract_terms: formData.contract_terms,
+        location: formData.location,
         products: selectedProducts.map(product => ({
           product_id: product.id,
           required_quantity: product.quantity,
@@ -68,6 +104,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Генерация описания на основе выбранных товаров
+  const generateDescription = () => {
+    if (selectedProducts.length === 0) return '';
+    
+    const productNames = selectedProducts.map(p => p.name).join(', ');
+    return `Закупка ${selectedProducts.length} товаров: ${productNames}. ${formData.description}`;
   };
 
   return (
@@ -144,13 +188,15 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 placeholder="Например: Поставка офисной техники"
               />
             </div>
+            
             <div className="form-group">
-              <label htmlFor="law_type">Тип закупки</label>
+              <label htmlFor="law_type">Тип закупки *</label>
               <select
                 id="law_type"
                 name="law_type"
                 value={formData.law_type}
                 onChange={handleChange}
+                required
               >
                 <option value="44-ФЗ">44-ФЗ</option>
                 <option value="223-ФЗ">223-ФЗ</option>
@@ -160,20 +206,33 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Описание закупки</label>
+            <label htmlFor="description">Дополнительная информация</label>
             <textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows="3"
-              placeholder="Подробное описание требований и условий закупки..."
+              placeholder="Дополнительные условия, требования к поставщикам, особые условия..."
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="location">Регион поставки *</label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              placeholder="Например: Москва, Московская область"
             />
           </div>
         </div>
 
         <div className="form-section">
-          <h4>Сроки проведения</h4>
+          <h4>Сроки проведения *</h4>
           
           <div className="form-row">
             <div className="form-group">
@@ -185,6 +244,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 value={formData.start_date}
                 onChange={handleChange}
                 required
+                min={new Date().toISOString().slice(0, 16)}
               />
             </div>
             
@@ -197,6 +257,56 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 value={formData.end_date}
                 onChange={handleChange}
                 required
+                min={formData.start_date || new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Автоматически заполненная информация (только для просмотра) */}
+        <div className="form-section">
+          <h4>Автоматически заполненные данные</h4>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Номер котировочной сессии</label>
+              <input
+                type="text"
+                value={formData.session_number}
+                readOnly
+                className="readonly-field"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Заказчик</label>
+              <input
+                type="text"
+                value={formData.customer_name}
+                readOnly
+                className="readonly-field"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>ИНН заказчика</label>
+              <input
+                type="text"
+                value={formData.customer_inn}
+                readOnly
+                className="readonly-field"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Начальная цена</label>
+              <input
+                type="text"
+                value={`${formatPrice(calculateTotalPrice())} ₽`}
+                readOnly
+                className="readonly-field"
               />
             </div>
           </div>
