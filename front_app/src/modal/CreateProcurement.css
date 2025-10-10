@@ -77,21 +77,99 @@
   min-height: 80px;
 }
 
-/* Стили для строк с товарами */
-.product-row {
-  padding: 1rem;
-  background: var(--accent-color);
-  border-radius: var(--border-radius);
+.hint {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+/* Стили для выбранных товаров */
+.selected-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.product-row:last-child {
-  margin-bottom: 0;
+.selected-product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--accent-color);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
 }
 
-.product-row .form-row {
-  grid-template-columns: 2fr 1fr 1fr auto;
-  align-items: end;
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.product-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.product-category {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.product-price {
+  color: var(--text-light);
+  font-size: 0.85rem;
+}
+
+.product-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--white);
+  border-radius: var(--border-radius);
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: var(--transition);
+}
+
+.quantity-btn:hover {
+  background: var(--primary-hover);
+}
+
+.quantity-display {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: center;
+}
+
+.product-total {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 1rem;
 }
 
 .btn-remove {
@@ -99,23 +177,29 @@
   color: white;
   border: none;
   border-radius: var(--border-radius);
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 1.2rem;
+  font-weight: bold;
   transition: var(--transition);
 }
 
-.btn-remove:hover:not(:disabled) {
+.btn-remove:hover {
   background: #dc2626;
 }
 
-.btn-remove:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.selected-products-total {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  text-align: right;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  background: var(--white);
+  border-radius: var(--border-radius);
 }
 
 /* Кнопки действий */
@@ -170,9 +254,14 @@
     grid-template-columns: 1fr;
   }
   
-  .product-row .form-row {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+  .selected-product-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .product-controls {
+    justify-content: space-between;
   }
   
   .form-actions {

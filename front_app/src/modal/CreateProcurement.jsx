@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import './CreateProcurement.css';
 
-function CreateProcurement({ onClose, onCreate }) {
+
+function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuantity, onRemoveProduct }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,29 +17,45 @@ function CreateProcurement({ onClose, onCreate }) {
     contract_terms: '',
     contract_security: ''
   });
-  const [products, setProducts] = useState([{ product_id: '', required_quantity: 1, max_price: '' }]);
   const [loading, setLoading] = useState(false);
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU').format(price);
+  };
+
+  const calculateTotalPrice = () => {
+    return selectedProducts.reduce((total, product) => {
+      return total + (product.price_per_item * product.quantity);
+    }, 0);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Валидация
-      if (!formData.title || !formData.session_number || !formData.current_price) {
-        alert('Заполните обязательные поля: название, номер сессии и начальная цена');
+      if (!formData.title || !formData.session_number) {
+        alert('Заполните обязательные поля: название и номер сессии');
         return;
       }
 
+      if (selectedProducts.length === 0) {
+        alert('Добавьте хотя бы один товар в закупку');
+        return;
+      }
+
+      const totalPrice = calculateTotalPrice();
       const procurementData = {
         ...formData,
-        current_price: parseFloat(formData.current_price),
-        products: products.filter(p => p.product_id && p.required_quantity > 0)
+        current_price: parseFloat(formData.current_price) || totalPrice,
+        products: selectedProducts.map(product => ({
+          product_id: product.id,
+          required_quantity: product.quantity,
+          max_price: product.price_per_item
+        }))
       };
 
       await onCreate(procurementData);
-      alert('Закупка успешно создана!');
-      onClose();
     } catch (error) {
       alert('Ошибка при создании закупки: ' + error.message);
     } finally {
@@ -53,26 +70,66 @@ function CreateProcurement({ onClose, onCreate }) {
     });
   };
 
-  const addProduct = () => {
-    setProducts([...products, { product_id: '', required_quantity: 1, max_price: '' }]);
-  };
-
-  const removeProduct = (index) => {
-    if (products.length > 1) {
-      setProducts(products.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateProduct = (index, field, value) => {
-    const updatedProducts = [...products];
-    updatedProducts[index][field] = value;
-    setProducts(updatedProducts);
-  };
-
   return (
     <div className="create-procurement">      
       <form onSubmit={handleSubmit}>
+        {/* Секция с выбранными товарами */}
+        {selectedProducts.length > 0 && (
+          <div className="form-section">
+            <div className="section-header">
+              <h4>Выбранные товары ({selectedProducts.length})</h4>
+            </div>
+            
+            <div className="selected-products-list">
+              {selectedProducts.map(product => (
+                <div key={product.id} className="selected-product-item">
+                  <div className="product-info">
+                    <span className="product-name">{product.name}</span>
+                    <span className="product-category">{product.category_name}</span>
+                    <span className="product-price">{formatPrice(product.price_per_item)} ₽/шт</span>
+                  </div>
+                  <div className="product-controls">
+                    <div className="quantity-controls">
+                      <button 
+                        type="button"
+                        className="quantity-btn"
+                        onClick={() => onUpdateQuantity(product.id, product.quantity - 1)}
+                      >
+                        -
+                      </button>
+                      <span className="quantity-display">{product.quantity} шт</span>
+                      <button 
+                        type="button"
+                        className="quantity-btn"
+                        onClick={() => onUpdateQuantity(product.id, product.quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="product-total">
+                      {formatPrice(product.price_per_item * product.quantity)} ₽
+                    </div>
+                    <button 
+                      type="button"
+                      className="btn-remove"
+                      onClick={() => onRemoveProduct(product.id)}
+                      title="Удалить товар"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="selected-products-total">
+                <strong>Общая стоимость закупки: {formatPrice(calculateTotalPrice())} ₽</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="form-section">
+          <h4>Основная информация о закупке</h4>
           
           <div className="form-row">
             <div className="form-group">
@@ -104,18 +161,18 @@ function CreateProcurement({ onClose, onCreate }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="current_price">Начальная цена, ₽ *</label>
+              <label htmlFor="current_price">Начальная цена, ₽</label>
               <input
                 type="number"
                 id="current_price"
                 name="current_price"
                 value={formData.current_price}
                 onChange={handleChange}
-                required
                 min="0"
                 step="0.01"
-                placeholder="0.00"
+                placeholder={formatPrice(calculateTotalPrice())}
               />
+              <small className="hint">Оставьте пустым для автоматического расчета ({formatPrice(calculateTotalPrice())} ₽)</small>
             </div>
             
             <div className="form-group">
@@ -143,6 +200,37 @@ function CreateProcurement({ onClose, onCreate }) {
               rows="3"
               placeholder="Подробное описание требований и условий закупки..."
             />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h4>Информация о заказчике</h4>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="customer_name">Наименование заказчика *</label>
+              <input
+                type="text"
+                id="customer_name"
+                name="customer_name"
+                value={formData.customer_name}
+                onChange={handleChange}
+                required
+                placeholder="ООО 'Компания'"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="customer_inn">ИНН заказчика</label>
+              <input
+                type="text"
+                id="customer_inn"
+                name="customer_inn"
+                value={formData.customer_inn}
+                onChange={handleChange}
+                placeholder="1234567890"
+              />
+            </div>
           </div>
         </div>
 
@@ -177,58 +265,43 @@ function CreateProcurement({ onClose, onCreate }) {
         </div>
 
         <div className="form-section">
-          <div className="section-header">
-            <h4>Товары в закупке</h4>
-            <button type="button" className="btn-outline" onClick={addProduct}>
-              + Добавить товар
-            </button>
-          </div>
+          <h4>Дополнительные условия</h4>
           
-          {products.map((product, index) => (
-            <div key={index} className="product-row">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Товар</label>
-                  <input
-                    type="text"
-                    placeholder="ID товара или наименование"
-                    value={product.product_id}
-                    onChange={(e) => updateProduct(index, 'product_id', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Количество</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={product.required_quantity}
-                    onChange={(e) => updateProduct(index, 'required_quantity', parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>&nbsp;</label>
-                  <button 
-                    type="button" 
-                    className="btn-remove"
-                    onClick={() => removeProduct(index)}
-                    disabled={products.length === 1}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+          <div className="form-group">
+            <label htmlFor="contract_terms">Условия исполнения контракта</label>
+            <textarea
+              id="contract_terms"
+              name="contract_terms"
+              value={formData.contract_terms}
+              onChange={handleChange}
+              rows="2"
+              placeholder="Сроки поставки, гарантийные обязательства, условия оплаты..."
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="contract_security">Обеспечение исполнения контракта</label>
+            <textarea
+              id="contract_security"
+              name="contract_security"
+              value={formData.contract_security}
+              onChange={handleChange}
+              rows="2"
+              placeholder="Размер обеспечения, срок предоставления..."
+            />
+          </div>
         </div>
 
         <div className="form-actions">
           <button type="button" className="btn-outline" onClick={onClose}>
             Отмена
           </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Создание...' : 'Создать закупку'}
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            disabled={loading || selectedProducts.length === 0}
+          >
+            {loading ? 'Создание...' : `Создать закупку (${selectedProducts.length} товаров)`}
           </button>
         </div>
       </form>
