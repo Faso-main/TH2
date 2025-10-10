@@ -16,16 +16,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     end_date: '',
     law_type: '44-ФЗ',
     contract_terms: '',
-    contract_security: '',
     location: ''
   });
   const [loading, setLoading] = useState(false);
 
-  // Генерация номера сессии и установка данных при монтировании
+  // Генерация номера сессии при монтировании
   useEffect(() => {
     generateSessionNumber();
     setDefaultCustomerInfo();
-    setDefaultDates();
   }, []);
 
   // Генерация номера котировочной сессии
@@ -41,24 +39,11 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     if (currentUser) {
       setFormData(prev => ({
         ...prev,
-        customer_name: currentUser.company_name || 'Не указано',
-        customer_inn: currentUser.INN || '0000000000',
-        location: currentUser.location || 'Москва'
+        customer_name: currentUser.company_name || '',
+        customer_inn: currentUser.INN || '',
+        location: currentUser.location || ''
       }));
     }
-  };
-
-  // Установка дат по умолчанию
-  const setDefaultDates = () => {
-    const now = new Date();
-    const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Завтра
-    const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Через неделю
-
-    setFormData(prev => ({
-      ...prev,
-      start_date: startDate.toISOString().slice(0, 16),
-      end_date: endDate.toISOString().slice(0, 16)
-    }));
   };
 
   const formatPrice = (price) => {
@@ -76,24 +61,8 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     setLoading(true);
 
     try {
-      // Проверка обязательных полей
-      const requiredFields = {
-        title: formData.title,
-        session_number: formData.session_number,
-        current_price: calculateTotalPrice(),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        customer_name: formData.customer_name,
-        law_type: formData.law_type,
-        location: formData.location
-      };
-
-      const missingFields = Object.entries(requiredFields)
-        .filter(([key, value]) => !value)
-        .map(([key]) => key);
-
-      if (missingFields.length > 0) {
-        alert(`Заполните все обязательные поля: ${missingFields.join(', ')}`);
+      if (!formData.title || !formData.start_date || !formData.end_date) {
+        alert('Заполните обязательные поля: название закупки и сроки проведения');
         return;
       }
 
@@ -103,22 +72,18 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       }
 
       const totalPrice = calculateTotalPrice();
-      
-      // Формируем полный объект закупки со всеми обязательными полями
       const procurementData = {
         title: formData.title,
-        description: formData.description || `Закупка товаров: ${selectedProducts.map(p => p.name).join(', ')}`,
+        description: formData.description,
         session_number: formData.session_number,
         customer_name: formData.customer_name,
         customer_inn: formData.customer_inn,
         current_price: totalPrice,
-        start_date: new Date(formData.start_date).toISOString(),
-        end_date: new Date(formData.end_date).toISOString(),
+        start_date: formData.start_date,
+        end_date: formData.end_date,
         law_type: formData.law_type,
-        contract_terms: formData.contract_terms || 'Стандартные условия поставки',
-        contract_security: formData.contract_security || 'Обеспечение не требуется',
+        contract_terms: formData.contract_terms,
         location: formData.location,
-        status: 'active',
         products: selectedProducts.map(product => ({
           product_id: product.id,
           required_quantity: product.quantity,
@@ -126,9 +91,9 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         }))
       };
 
-      console.log('Sending procurement data:', procurementData);
       await onCreate(procurementData);
-      
+    } catch (error) {
+      alert('Ошибка при создании закупки: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -139,6 +104,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Генерация описания на основе выбранных товаров
+  const generateDescription = () => {
+    if (selectedProducts.length === 0) return '';
+    
+    const productNames = selectedProducts.map(p => p.name).join(', ');
+    return `Закупка ${selectedProducts.length} товаров: ${productNames}. ${formData.description}`;
   };
 
   return (
@@ -296,7 +269,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           
           <div className="form-row">
             <div className="form-group">
-              <label>Номер котировочной сессии *</label>
+              <label>Номер котировочной сессии</label>
               <input
                 type="text"
                 value={formData.session_number}
@@ -306,7 +279,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
             </div>
             
             <div className="form-group">
-              <label>Заказчик *</label>
+              <label>Заказчик</label>
               <input
                 type="text"
                 value={formData.customer_name}
@@ -328,7 +301,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
             </div>
             
             <div className="form-group">
-              <label>Начальная цена *</label>
+              <label>Начальная цена</label>
               <input
                 type="text"
                 value={`${formatPrice(calculateTotalPrice())} ₽`}
@@ -339,34 +312,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           </div>
         </div>
 
-        <div className="form-section">
-          <h4>Условия контракта</h4>
-          
-          <div className="form-group">
-            <label htmlFor="contract_terms">Условия исполнения контракта</label>
-            <textarea
-              id="contract_terms"
-              name="contract_terms"
-              value={formData.contract_terms}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Стандартные условия поставки"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="contract_security">Обеспечение исполнения контракта</label>
-            <textarea
-              id="contract_security"
-              name="contract_security"
-              value={formData.contract_security}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Обеспечение не требуется"
-            />
-          </div>
-        </div>
-
         <div className="form-actions">
           <button type="button" className="btn-outline" onClick={onClose}>
             Отмена
@@ -374,7 +319,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           <button 
             type="submit" 
             className="btn-primary" 
-            disabled={loading || selectedProducts.length === 0 || !formData.title || !formData.location}
+            disabled={loading || selectedProducts.length === 0}
           >
             {loading ? 'Создание...' : `Создать закупку (${selectedProducts.length} товаров)`}
           </button>
