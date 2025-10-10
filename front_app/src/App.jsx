@@ -379,8 +379,81 @@ function Header({ currentUser, onLogout, onUserProfileClick, onCreateProcurement
   );
 }
 
+
+
+// Обновляем Main компонент в App.jsx
+
 function Main({ products, procurements, loading, currentUser, onParticipate, onOpenAuth }) {
   const [activeSection, setActiveSection] = useState('products');
+  const [filteredProducts, setFilteredProducts] = useState(products);
+  const [filteredProcurements, setFilteredProcurements] = useState(procurements);
+
+  // Функция фильтрации товаров
+  const filterProducts = (filters) => {
+    let filtered = [...products];
+    
+    // Фильтр по категориям
+    if (filters.categories.length > 0) {
+      // Здесь должна быть логика сопоставления товаров с категориями верхнего уровня
+      // Для демо просто фильтруем по названию категории
+      filtered = filtered.filter(product => 
+        filters.categories.some(catId => 
+          product.category_name?.toLowerCase().includes(
+            getCategoryNameById(catId).toLowerCase()
+          )
+        )
+      );
+    }
+    
+    // Фильтр по цене
+    if (filters.priceRange.min) {
+      filtered = filtered.filter(product => product.price_per_item >= parseFloat(filters.priceRange.min));
+    }
+    if (filters.priceRange.max) {
+      filtered = filtered.filter(product => product.price_per_item <= parseFloat(filters.priceRange.max));
+    }
+    
+    setFilteredProducts(filtered);
+  };
+
+  // Функция фильтрации закупок
+  const filterProcurements = (filters) => {
+    let filtered = [...procurements];
+    
+    // Фильтр по статусу
+    if (filters.procurementStatus.length > 0) {
+      filtered = filtered.filter(procurement => 
+        filters.procurementStatus.includes(procurement.status)
+      );
+    }
+    
+    setFilteredProcurements(filtered);
+  };
+
+  const handleFiltersChange = (filters) => {
+    if (activeSection === 'products') {
+      filterProducts(filters);
+    } else {
+      filterProcurements(filters);
+    }
+  };
+
+  // Вспомогательная функция для получения названия категории по ID
+  const getCategoryNameById = (id) => {
+    const categories = {
+      1: 'Электроника',
+      2: 'Бытовая техника', 
+      3: 'Одежда',
+      4: 'Мебель'
+    };
+    return categories[id] || '';
+  };
+
+  // Обновляем filtered данные при изменении исходных данных
+  useEffect(() => {
+    setFilteredProducts(products);
+    setFilteredProcurements(procurements);
+  }, [products, procurements]);
 
   if (loading) {
     return (
@@ -414,17 +487,17 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
               </div>
               <span className="products-count">
                 {activeSection === 'products' 
-                  ? `Найдено ${products.length} товаров` 
-                  : `Активные закупки: ${procurements.length}`
+                  ? `Найдено ${filteredProducts.length} товаров` 
+                  : `Активные закупки: ${filteredProcurements.length}`
                 }
               </span>
             </div>
             
             {activeSection === 'products' ? (
-              <ProductsGrid products={products} />
+              <ProductsGrid products={filteredProducts} />
             ) : (
               <ProcurementsGrid 
-                procurements={procurements}
+                procurements={filteredProcurements}
                 currentUser={currentUser}
                 onParticipate={onParticipate}
                 onOpenAuth={onOpenAuth}
@@ -432,7 +505,12 @@ function Main({ products, procurements, loading, currentUser, onParticipate, onO
             )}
           </section>
 
-          <FiltersSidebar activeSection={activeSection} />
+          <FiltersSidebar 
+            activeSection={activeSection}
+            products={products}
+            procurements={procurements}
+            onFiltersChange={handleFiltersChange}
+          />
         </div>
       </div>
     </main>
@@ -591,24 +669,107 @@ function ProcurementsGrid({ procurements, onParticipate }) {
   );
 }
 
-// Компонент фильтров (упрощенный)
-function FiltersSidebar({ activeSection }) {
+// Обновляем компонент FiltersSidebar в App.jsx
+
+// eslint-disable-next-line no-unused-vars
+function FiltersSidebar({ activeSection, products, procurements, onFiltersChange }) {
+  const [filters, setFilters] = useState({
+    categories: [],
+    priceRange: { min: '', max: '' },
+    procurementStatus: ['active']
+  });
+
+  // Категории верхнего уровня
+  const topLevelCategories = [
+    { id: 1, name: 'Электроника' },
+    { id: 2, name: 'Бытовая техника' },
+    { id: 3, name: 'Одежда' },
+    { id: 4, name: 'Мебель' }
+  ];
+
+  const handleCategoryChange = (categoryId) => {
+    const newCategories = filters.categories.includes(categoryId)
+      ? filters.categories.filter(id => id !== categoryId)
+      : [...filters.categories, categoryId];
+    
+    const newFilters = { ...filters, categories: newCategories };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
+  };
+
+  const handlePriceChange = (field, value) => {
+    const newPriceRange = { ...filters.priceRange, [field]: value };
+    const newFilters = { ...filters, priceRange: newPriceRange };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
+  };
+
+  const handleStatusChange = (status) => {
+    const newStatus = filters.procurementStatus.includes(status)
+      ? filters.procurementStatus.filter(s => s !== status)
+      : [...filters.procurementStatus, status];
+    
+    const newFilters = { ...filters, procurementStatus: newStatus };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      categories: [],
+      priceRange: { min: '', max: '' },
+      procurementStatus: ['active']
+    };
+    setFilters(clearedFilters);
+    onFiltersChange(clearedFilters);
+  };
+
   return (
     <aside className="filters-sidebar">
       <div className="filters-header">
         <h3>Фильтры</h3>
-        <button className="clear-filters-btn">Очистить</button>
+        <button className="clear-filters-btn" onClick={clearFilters}>
+          Очистить
+        </button>
       </div>
       
       {activeSection === 'products' ? (
         <>
           <div className="filters-section">
+            <h4>Категории</h4>
+            <div className="filter-options">
+              {topLevelCategories.map(category => (
+                <label key={category.id} className="filter-option">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.categories.includes(category.id)}
+                    onChange={() => handleCategoryChange(category.id)}
+                  />
+                  <span>{category.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filters-section">
             <h4>Цена, ₽</h4>
             <div className="price-range">
               <div className="price-inputs">
-                <input type="number" placeholder="0" className="price-input" />
+                <input 
+                  type="number" 
+                  placeholder="0" 
+                  className="price-input"
+                  value={filters.priceRange.min}
+                  onChange={(e) => handlePriceChange('min', e.target.value)}
+                />
                 <span>-</span>
-                <input type="number" placeholder="100000" className="price-input" />
+                <input 
+                  type="number" 
+                  placeholder="100000" 
+                  className="price-input"
+                  value={filters.priceRange.max}
+                  onChange={(e) => handlePriceChange('max', e.target.value)}
+                />
               </div>
             </div>
           </div>
@@ -619,21 +780,33 @@ function FiltersSidebar({ activeSection }) {
             <h4>Статус закупки</h4>
             <div className="filter-options">
               <label className="filter-option">
-                <input type="checkbox" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  checked={filters.procurementStatus.includes('active')}
+                  onChange={() => handleStatusChange('active')}
+                />
                 <span>Активные</span>
               </label>
               <label className="filter-option">
-                <input type="checkbox" />
+                <input 
+                  type="checkbox" 
+                  checked={filters.procurementStatus.includes('soon')}
+                  onChange={() => handleStatusChange('soon')}
+                />
                 <span>Скоро начнутся</span>
+              </label>
+              <label className="filter-option">
+                <input 
+                  type="checkbox" 
+                  checked={filters.procurementStatus.includes('completed')}
+                  onChange={() => handleStatusChange('completed')}
+                />
+                <span>Завершенные</span>
               </label>
             </div>
           </div>
         </>
       )}
-      
-      <button className="apply-filters-btn">
-        Применить фильтры
-      </button>
     </aside>
   );
 }

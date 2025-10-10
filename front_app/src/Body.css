@@ -633,3 +633,46 @@
 .category-shoes { background: linear-gradient(135deg, #fd7e14, #e55a00); }
 .category-furniture { background: linear-gradient(135deg, #20c997, #199d76); }
 .category-kitchen { background: linear-gradient(135deg, #e83e8c, #d91a72); }
+
+/* Добавляем в Body.css */
+
+/* Стили для активных фильтров */
+.filter-option input[type="checkbox"]:checked + span {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.filter-option input[type="checkbox"]:checked + span::before {
+  content: "✓ ";
+}
+
+/* Анимация применения фильтров */
+.products-grid,
+.procurements-grid {
+  transition: opacity 0.3s ease;
+}
+
+.products-grid.filtering,
+.procurements-grid.filtering {
+  opacity: 0.7;
+}
+
+/* Счетчик активных фильтров */
+.filters-header {
+  position: relative;
+}
+
+.filters-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
