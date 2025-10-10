@@ -7,11 +7,11 @@ const path = require('path');
 class ProcurementDataImporter {
     constructor() {
         this.client = new Client({
+            user: 'store_app1',
             host: 'localhost',
-            port: 5432,
             database: 'pc_db1',
-            user: 'postgres',
-            password: ''
+            password: '1234',
+            port: 5432,
         });
         
         this.stats = {
