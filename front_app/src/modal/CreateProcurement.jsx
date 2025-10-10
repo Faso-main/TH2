@@ -131,7 +131,6 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       
     } catch (error) {
       console.error('Create procurement error:', error);
-      alert('Ошибка при создании закупки: ' + error.message);
     } finally {
       setLoading(false);
     }
