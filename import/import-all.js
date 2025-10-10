@@ -45,7 +45,7 @@ class ProcurementDataImporter {
     async importCategories() {
         console.log('📁 Импорт категорий...');
         
-        const templates = JSON.parse(fs.readFileSync('clean_data/procurement_templates.json', 'utf8'));
+        const templates = JSON.parse(fs.readFileSync('procurement_templates.json', 'utf8'));
         const categories = [];
 
         for (const [templateKey, templateData] of Object.entries(templates)) {
@@ -79,7 +79,7 @@ class ProcurementDataImporter {
             const products = [];
             let batchCount = 0;
 
-            fs.createReadStream('clean_data/categorized_products.csv')
+            fs.createReadStream('344608_СТЕ.csv')
                 .pipe(csv())
                 .on('data', (row) => {
                     const productId = row.product_id || row.id;
@@ -145,7 +145,7 @@ class ProcurementDataImporter {
             const procurementItems = [];
             let procurementCount = 0;
 
-            fs.createReadStream('clean_data/cleaned_procurement_data.csv')
+            fs.createReadStream('cleaned_procurement_data.csv')
                 .pipe(csv())
                 .on('data', (row) => {
                     const procurementId = row.procurement_id || `proc_${procurementCount}`;
