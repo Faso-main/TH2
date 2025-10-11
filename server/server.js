@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import pkg from 'pg';
+import recommendationRoutes from './recommendation_routes.js';
 
 const { Pool } = pkg;
 const app = express();
@@ -706,3 +707,120 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
 
+app.use('/api/ml', recommendationRoutes);
+
+console.log('✅ ML Recommendation routes registered:');
+console.log('   POST /api/ml/recommendations');
+console.log('   GET  /api/ml/health');
+
+app.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`База данных: pc_db`);
+  console.log(`Пользователь БД: store_app1`);
+  console.log(`API доступно: http://localhost:${PORT}/api`);
+});
+
+app.post('/api/ml/recommendations', async (req, res) => {
+    try {
+        const { user_id, limit = 15 } = req.body;
+        
+        console.log(`🎯 [ML] Getting recommendations for user: ${user_id}`);
+        
+        // Прямой вызов Python ML сервиса
+        const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: user_id,
+                limit: parseInt(limit)
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Python service responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log(`✅ [ML] Successfully received ${data.recommendations?.length || 0} recommendations`);
+        
+        res.json({
+            success: true,
+            ...data
+        });
+
+    } catch (error) {
+        console.error('❌ [ML] Recommendation error:', error.message);
+        
+        // Fallback рекомендации
+        const fallbackRecommendations = [
+            {
+                product_id: "fallback_1",
+                product_name: "Офисный стул",
+                product_category: "Мебель", 
+                total_score: 0.8,
+                price_range: { avg: 4500, min: 3500, max: 6000, source: "fallback" },
+                explanation: "Популярный товар для офиса",
+                in_catalog: true
+            },
+            {
+                product_id: "fallback_2", 
+                product_name: "Принтер лазерный", 
+                product_category: "Офисная техника",
+                total_score: 0.7,
+                price_range: { avg: 12000, min: 8000, max: 15000, source: "fallback" },
+                explanation: "Необходимая офисная техника", 
+                in_catalog: true
+            },
+            {
+                product_id: "fallback_3", 
+                product_name: "Канцелярский набор", 
+                product_category: "Канцелярия",
+                total_score: 0.6,
+                price_range: { avg: 1500, min: 800, max: 2500, source: "fallback" },
+                explanation: "Базовые канцелярские товары", 
+                in_catalog: true
+            }
+        ].slice(0, req.body.limit || 15);
+        
+        res.json({
+            success: false,
+            user_id: req.body.user_id,
+            recommendations: fallbackRecommendations,
+            count: fallbackRecommendations.length,
+            note: 'fallback_recommendations',
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/ml/health', async (req, res) => {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/health', {
+            timeout: 5000
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Python service health check failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        res.json({
+            python_service: data,
+            status: 'healthy'
+        });
+    } catch (error) {
+        console.error('❌ [ML] Health check error:', error.message);
+        res.status(503).json({
+            python_service: 'unavailable', 
+            status: 'unhealthy',
+            error: error.message
+        });
+    }
+});
+
+console.log('✅ ML Recommendation endpoints registered:');
+console.log('   POST /api/ml/recommendations');
+console.log('   GET  /api/ml/health');
