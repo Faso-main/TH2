@@ -722,6 +722,30 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
 
+
+app.get('/api/ml/health', (req, res) => {
+  console.log('✅ ML Health check called');
+  res.json({ status: 'ML healthy', message: 'Direct route works!' });
+});
+
+app.post('/api/ml/recommendations', (req, res) => {
+  console.log('✅ ML Recommendations called:', req.body);
+  res.json({
+    success: true,
+    recommendations: [
+      { 
+        product_id: 'test_1', 
+        product_name: 'Тестовый товар',
+        product_category: 'Электроника',
+        total_score: 0.9,
+        price_range: { avg: 1000 },
+        explanation: 'Тестовая рекомендация',
+        in_catalog: true
+      }
+    ]
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   console.log(`База данных: pc_db`);
