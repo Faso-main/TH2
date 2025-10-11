@@ -712,6 +712,8 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
 
+app.use('/api/ml', recommendationRoutes);
+
 // Health check для ML
 app.get('/api/ml/health', async (req, res) => {
   try {
