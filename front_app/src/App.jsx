@@ -701,13 +701,12 @@ function Main({
         <button 
           className="btn-primary"
           onClick={() => {
-            // Если есть выбранные товары, переходим на шаг 2, иначе на шаг 1
-            const nextStep = selectedProducts.length > 0 ? 2 : 1;
-            setProcurementCreationStep(nextStep);
+            // Всегда открываем шаг 2 (выбор товаров)
+            setProcurementCreationStep(2);
             setActiveModal('create-procurement');
           }}
         >
-          {selectedProducts.length > 0 ? 'Вернуться к закупке' : 'Продолжить создание'}
+          Продолжить создание
         </button>
       </div>
     </div>
