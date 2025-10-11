@@ -633,7 +633,6 @@ function Main({
   activeSection,
   setActiveSection,
   savedProcurementFormData,
-  // Добавьте эти пропсы:
   setProcurementCreationStep,
   setActiveModal
 }) {

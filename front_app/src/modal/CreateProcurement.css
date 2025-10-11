@@ -64,13 +64,6 @@
   min-height: 400px;
 }
 
-/* Стили для выбора товаров */
-.products-selection-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  padding: 1rem;
-}
-
 .products-selection-header h4 {
   color: var(--text-primary);
   margin-bottom: 0.5rem;

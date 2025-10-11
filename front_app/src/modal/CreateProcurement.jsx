@@ -399,10 +399,6 @@ function CreateProcurement({
         ) : (
           // Шаг 2: Выбор товаров
           <div className="step-content">
-            <div className="products-selection-header">
-              <h4>Выбор товаров для закупки</h4>
-              <p>Добавьте товары в закупку или используйте рекомендуемые</p>
-            </div>
 
             {/* Информация о закупке */}
             <div className="form-section">
