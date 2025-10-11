@@ -758,7 +758,7 @@
 
 /* Добавьте в App.css или Body.css */
 .saved-data-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(291deg, #0d0d0d, #e00000);
   color: white;
   padding: 1rem;
   border-radius: var(--border-radius);
