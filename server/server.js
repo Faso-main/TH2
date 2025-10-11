@@ -488,9 +488,12 @@ app.get('/api/procurements', async (req, res) => {
   }
 });
 
-// Создание закупки
 app.post('/api/procurements', checkSession, async (req, res) => {
+  let client;
   try {
+    console.log('Create procurement request body:', req.body);
+    console.log('User creating procurement:', req.user);
+
     const {
       title,
       description,
@@ -500,18 +503,25 @@ app.post('/api/procurements', checkSession, async (req, res) => {
       products = []
     } = req.body;
 
-    console.log('Create procurement request:', req.body);
-
     // Валидация обязательных полей
     if (!title || !current_price) {
-      return res.status(400).json({ error: 'Заполните все обязательные поля: название и цена' });
+      return res.status(400).json({ 
+        error: 'Заполните все обязательные поля: название и цена',
+        details: { title: !!title, current_price: !!current_price }
+      });
     }
+
+    // Начинаем транзакцию
+    client = await pool.connect();
+    await client.query('BEGIN');
 
     // Генерация ID закупки
     const procurementId = `PROC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+    console.log('Creating procurement with ID:', procurementId);
+
     // Создаем закупку
-    const procurementResult = await pool.query(
+    const procurementResult = await client.query(
       `INSERT INTO procurements 
        (procurement_id, user_id, name, estimated_price, status, procurement_date, organization_name, organization_inn)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -523,19 +533,23 @@ app.post('/api/procurements', checkSession, async (req, res) => {
         parseFloat(current_price),
         'active',
         new Date(),
-        customer_name,
-        customer_inn
+        customer_name || 'Не указано',
+        customer_inn || '0000000000'
       ]
     );
 
     const procurement = procurementResult.rows[0];
-    console.log('Procurement created:', procurement);
+    console.log('Procurement created successfully:', procurement);
 
     // Добавляем товары в закупку
     if (products && products.length > 0) {
+      console.log('Adding products to procurement:', products.length);
+      
       for (const product of products) {
         if (product.product_id && product.required_quantity > 0) {
-          await pool.query(
+          console.log('Adding product:', product.product_id, 'quantity:', product.required_quantity);
+          
+          await client.query(
             `INSERT INTO procurement_items 
              (procurement_id, product_id, quantity, unit_price)
              VALUES ($1, $2, $3, $4)`,
@@ -543,12 +557,17 @@ app.post('/api/procurements', checkSession, async (req, res) => {
               procurementId,
               product.product_id,
               product.required_quantity,
-              product.max_price || product.price_per_item
+              product.max_price || product.price_per_item || 0
             ]
           );
         }
       }
+    } else {
+      console.log('No products to add to procurement');
     }
+
+    // Коммитим транзакцию
+    await client.query('COMMIT');
 
     // Получаем полные данные закупки для ответа
     const fullProcurementResult = await pool.query(
@@ -560,27 +579,23 @@ app.post('/api/procurements', checkSession, async (req, res) => {
     );
 
     const productsResult = await pool.query(
-      `SELECT pi.*, p.name as product_name
+      `SELECT pi.*, p.name as product_name, p.average_price as market_price
        FROM procurement_items pi
        JOIN products p ON pi.product_id = p.product_id
        WHERE pi.procurement_id = $1`,
       [procurementId]
     );
 
-    const participantsResult = await pool.query(
-      `SELECT COUNT(*) as participants_count 
-       FROM procurement_participants 
-       WHERE procurement_id = $1`,
-      [procurementId]
-    );
+    // ВРЕМЕННО: устанавливаем participants_count = 0 вместо запроса к procurement_participants
+    const participants_count = 0;
 
     const procurementWithProducts = {
       ...fullProcurementResult.rows[0],
       products: productsResult.rows,
-      participants_count: parseInt(participantsResult.rows[0]?.participants_count || 0)
+      participants_count: participants_count
     };
 
-    console.log('Final procurement data:', procurementWithProducts);
+    console.log('Final procurement data prepared');
 
     res.json({ 
       message: 'Закупка успешно создана',
@@ -588,12 +603,44 @@ app.post('/api/procurements', checkSession, async (req, res) => {
     });
 
   } catch (error) {
+    // Откатываем транзакцию в случае ошибки
+    if (client) {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+    
     console.error('Create procurement error:', error);
-    res.status(500).json({ error: 'Ошибка при создании закупки: ' + error.message });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      table: error.table,
+      constraint: error.constraint
+    });
+    
+    // Более информативные ошибки
+    if (error.code === '23505') { // unique violation
+      return res.status(400).json({ error: 'Закупка с таким ID уже существует' });
+    }
+    if (error.code === '23503') { // foreign key violation
+      return res.status(400).json({ error: 'Ошибка связи с таблицей. Проверьте существование товаров.' });
+    }
+    if (error.code === '23502') { // not null violation
+      return res.status(400).json({ error: 'Обязательные поля не заполнены' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Ошибка при создании закупки',
+      details: error.message 
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
-// Участие в закупке
+// Также нужно исправить endpoint участия в закупках
 app.post('/api/procurements/:id/participate', checkSession, async (req, res) => {
   try {
     const { id } = req.params;
@@ -609,7 +656,14 @@ app.post('/api/procurements/:id/participate', checkSession, async (req, res) => 
       return res.status(404).json({ error: 'Закупка не найдена или не активна' });
     }
 
-    // Создаем участие
+    // ВРЕМЕННО: возвращаем заглушку, так как таблицы нет
+    return res.status(501).json({ 
+      error: 'Функционал участия в закупках временно недоступен',
+      message: 'Таблица участников закупок находится в разработке'
+    });
+
+    // Код ниже будет работать после создания таблицы:
+    /*
     await pool.query(
       `INSERT INTO procurement_participants 
        (procurement_id, user_id, proposed_price, proposal_text, status)
@@ -618,6 +672,7 @@ app.post('/api/procurements/:id/participate', checkSession, async (req, res) => 
     );
 
     res.json({ message: 'Заявка на участие успешно отправлена' });
+    */
 
   } catch (error) {
     console.error('Participate error:', error);
