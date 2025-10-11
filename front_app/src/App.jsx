@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import './App.css';
@@ -194,51 +193,38 @@ function App() {
     setSelectedProducts([]);
   };
 
-    const saveProcurementForm = (formData) => {
-      setSavedProcurementForm(formData);
-      localStorage.setItem('procurementFormData', JSON.stringify(formData));
-    };
-
-    // Функция для очистки сохраненных данных
-    const clearSavedProcurementForm = () => {
-      setSavedProcurementForm(null);
-      localStorage.removeItem('procurementFormData');
-    };
-  
   // Функции для работы с закупками
-const handleCreateProcurement = async (procurementData) => {
-  try {
-    console.log('Creating procurement:', procurementData);
-    
-    const procurementWithProducts = {
-      ...procurementData,
-      products: selectedProducts.map(product => ({
-        product_id: product.id,
-        required_quantity: product.quantity,
-        max_price: product.price_per_item
-      }))
-    };
+  const handleCreateProcurement = async (procurementData) => {
+    try {
+      console.log('Creating procurement:', procurementData);
+      
+      const procurementWithProducts = {
+        ...procurementData,
+        products: selectedProducts.map(product => ({
+          product_id: product.id,
+          required_quantity: product.quantity,
+          max_price: product.price_per_item
+        }))
+      };
 
-    const response = await procurementsAPI.create(procurementWithProducts);
-    
-    setProcurements(prev => [response.procurement, ...prev]);
-    clearSelectedProducts();
-    setHighlightAddToProcurement(false);
-    
-    // ОЧИЩАЕМ СОХРАНЕННЫЕ ДАННЫЕ ПОСЛЕ УСПЕШНОГО СОЗДАНИЯ
-    clearSavedProcurementForm();
-    
-    closeModal();
-    
-    showNotification('Закупка успешно создана!', 'success');
-    
-    return response;
-    
-  } catch (error) {
-    console.error('Create procurement error:', error);
-    throw new Error(error.message || 'Ошибка при создании закупки');
-  }
-};
+      const response = await procurementsAPI.create(procurementWithProducts);
+      
+      setProcurements(prev => [response.procurement, ...prev]);
+      clearSelectedProducts();
+      setHighlightAddToProcurement(false);
+      setSavedProcurementData(null);
+      
+      closeModal();
+      
+      showNotification('Закупка успешно создана!', 'success');
+      
+      return response;
+      
+    } catch (error) {
+      console.error('Create procurement error:', error);
+      throw new Error(error.message || 'Ошибка при создании закупки');
+    }
+  };
 
   const handleParticipate = async (procurementId, proposedPrice) => {
     if (!currentUser) {
@@ -289,6 +275,7 @@ const handleCreateProcurement = async (procurementData) => {
 
   const handleCloseCreateProcurement = () => {
     setProcurementCreationStep(1);
+    setSavedProcurementData(null);
     closeModal();
   };
 
@@ -428,9 +415,8 @@ const handleCreateProcurement = async (procurementData) => {
           currentUser={currentUser}
           step={procurementCreationStep}
           onStepChange={setProcurementCreationStep}
-          initialFormData={savedProcurementForm}
-          onFormDataChange={saveProcurementForm}
-          onClearSavedForm={clearSavedProcurementForm}
+          initialFormData={savedProcurementData?.formData}
+          onFormDataChange={(formData) => setSavedProcurementData(prev => ({ ...prev, formData }))}
         />
       </Modal>
 
