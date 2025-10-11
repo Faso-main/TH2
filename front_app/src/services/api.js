@@ -249,3 +249,63 @@ export const testAPI = {
     return apiRequest('/health');
   }
 };
+
+export const unifiedAPI = {
+  recommendations: {
+    async getQuickRecommendations(limit = 8) {
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        if (!currentUser) {
+          console.warn('No user found for recommendations');
+          return { recommendations: [] };
+        }
+
+        const response = await fetch('/api/ml/recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'session-id': sessionId || ''
+          },
+          body: JSON.stringify({
+            user_id: currentUser.user_id,
+            limit: limit
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Преобразуем в формат ожидаемый фронтендом
+        const formattedRecommendations = data.recommendations?.map(rec => ({
+          id: rec.product_id,
+          name: rec.product_name,
+          category_name: rec.product_category,
+          price_per_item: rec.price_range?.avg || 1000,
+          total_score: rec.total_score,
+          explanation: rec.explanation,
+          in_catalog: rec.in_catalog
+        })) || [];
+
+        return {
+          success: data.success,
+          recommendations: formattedRecommendations,
+          count: formattedRecommendations.length
+        };
+
+      } catch (error) {
+        console.warn('ML recommendations unavailable, using fallback:', error);
+        return {
+          success: false,
+          recommendations: [],
+          count: 0,
+          error: error.message
+        };
+      }
+    }
+  }
+};

@@ -11,6 +11,8 @@ import UserProfile from './modal/UserProfile';
 import CreateProcurement from './modal/CreateProcurement';
 import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
+import RecommendationsPanel from './model/RecommendationsPanel';
+
 
 function App() {
   const [savedProcurementFormData, setSavedProcurementFormData] = useState(null);
@@ -596,6 +598,23 @@ function Header({
     onClearSearch();
   };
 
+  const handleQuickRecommendations = () => {
+    // Скролл к панели рекомендаций
+    const recommendationsPanel = document.querySelector('.recommendations-panel');
+    if (recommendationsPanel) {
+      recommendationsPanel.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      // Добавляем анимацию выделения
+      recommendationsPanel.style.boxShadow = '0 0 0 3px var(--primary-color)';
+      setTimeout(() => {
+        recommendationsPanel.style.boxShadow = '';
+      }, 2000);
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -646,6 +665,29 @@ function Header({
         </div>
 
         <div className="header-actions">
+          {/* Кнопка быстрых рекомендаций */}
+          {currentUser && (
+            <button 
+              className="user-icon-btn recommendations-btn"
+              onClick={handleQuickRecommendations}
+              title="Персональные рекомендации"
+            >
+              <svg 
+                width="35"
+                height="35" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Кнопка создания закупки */}
           {currentUser && (
             <button 
               className={`user-icon-btn create-procurement-btn ${selectedProductsCount > 0 ? 'has-products' : ''}`}
@@ -671,6 +713,7 @@ function Header({
             </button>
           )}
 
+          {/* Кнопка профиля пользователя */}
           <button 
             className={`user-icon-btn ${currentUser ? 'user-authenticated' : ''}`} 
             onClick={onUserProfileClick} 
@@ -692,6 +735,7 @@ function Header({
             </svg>
           </button>
 
+          {/* Кнопка выхода */}
           {currentUser && (
             <button 
               className="user-icon-btn logout-btn" 
@@ -724,6 +768,7 @@ function Header({
 }
 
 // Компонент Main
+// В App.jsx - полный компонент Main
 function Main({ 
   products, 
   procurements, 
@@ -777,7 +822,10 @@ function Main({
     return (
       <main className="main">
         <div className="products-container">
-          <div className="loading">Загрузка...</div>
+          <div className="loading">
+            <div className="loading-spinner"></div>
+            <p>Загрузка данных...</p>
+          </div>
         </div>
       </main>
     );
@@ -788,37 +836,41 @@ function Main({
 
   return (
     <main className="main">
-<div className="products-container">
-  {/* Универсальный баннер для сохраненной закупки */}
-  {savedProcurementFormData && (
-    <div className="saved-data-banner">
-      <div className="banner-content">
-        <div className="banner-info">
-          <div>
-            <div className="banner-subtitle">
-              {selectedProducts.length > 0 
-                ? `Выбрано товаров: ${selectedProducts.length}` 
-                : 'Готово к выбору товаров'
-              }
-              {savedProcurementFormData.formData?.customer_name && 
-                ` • ${savedProcurementFormData.formData.customer_name}`
-              }
+      <div className="products-container">
+        {/* Универсальный баннер для сохраненной закупки */}
+        {savedProcurementFormData && (
+          <div className="saved-data-banner">
+            <div className="banner-content">
+              <div className="banner-info">
+                <div className="banner-title">📋 Черновик закупки</div>
+                <div className="banner-subtitle">
+                  {selectedProducts.length > 0 
+                    ? `Выбрано товаров: ${selectedProducts.length}` 
+                    : 'Готово к выбору товаров'
+                  }
+                  {savedProcurementFormData.formData?.customer_name && 
+                    ` • ${savedProcurementFormData.formData.customer_name}`
+                  }
+                </div>
+              </div>
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  setProcurementCreationStep(2);
+                  setActiveModal('create-procurement');
+                }}
+              >
+                Продолжить создание
+              </button>
             </div>
           </div>
-        </div>
-        <button 
-          className="btn-primary"
-          onClick={() => {
-            // Всегда открываем шаг 2 (выбор товаров)
-            setProcurementCreationStep(2);
-            setActiveModal('create-procurement');
-          }}
-        >
-          Продолжить создание
-        </button>
-      </div>
-    </div>
-  )}
+        )}
+
+        {/* 🔥 ПАНЕЛЬ ПЕРСОНАЛЬНЫХ РЕКОМЕНДАЦИЙ */}
+        <RecommendationsPanel 
+          currentUser={currentUser}
+          onAddToProcurement={onAddToProcurement}
+        />
 
         <div className="products-layout">
           <section className="products-main">
@@ -828,13 +880,13 @@ function Main({
                   className={`section-btn ${activeSection === 'products' ? 'active' : ''}`}
                   onClick={() => setActiveSection('products')}
                 >
-                  Товары
+                  🛍️ Товары
                 </button>
                 <button 
                   className={`section-btn ${activeSection === 'procurements' ? 'active' : ''}`}
                   onClick={() => setActiveSection('procurements')}
                 >
-                  Закупки
+                  📊 Закупки
                 </button>
               </div>
               <div className="search-info">

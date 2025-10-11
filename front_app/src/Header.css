@@ -471,3 +471,86 @@
 .create-procurement-btn {
   position: relative;
 }
+
+/* В Header.css добавить */
+
+.recommendations-btn {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.recommendations-btn:hover {
+  color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.recommendations-btn:hover::after {
+  content: "Рекомендации";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* Анимация для баннера сохраненной закупки */
+.saved-data-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  animation: slideInDown 0.5s ease;
+}
+
+.saved-data-banner .banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.saved-data-banner .banner-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.saved-data-banner .banner-subtitle {
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Адаптивность для header */
+@media (max-width: 768px) {
+  .header-actions {
+    gap: 0.5rem;
+  }
+  
+  .user-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .user-icon-btn svg {
+    width: 28px;
+    height: 28px;
+  }
+}
