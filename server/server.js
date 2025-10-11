@@ -714,6 +714,17 @@ app.use('/api/*', (req, res) => {
 
 app.use('/api/ml', recommendationRoutes);
 
+console.log('✅ ML Recommendation routes registered:');
+console.log('   POST /api/ml/recommendations');
+console.log('   GET  /api/ml/health');
+
+app.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`База данных: pc_db`);
+  console.log(`Пользователь БД: store_app1`);
+  console.log(`API доступно: http://localhost:${PORT}/api`);
+});
+
 // Health check для ML
 app.get('/api/ml/health', async (req, res) => {
   try {
