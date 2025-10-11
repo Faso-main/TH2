@@ -30,14 +30,110 @@ function App() {
   const [highlightAddToProcurement, setHighlightAddToProcurement] = useState(false);
   const [savedProcurementData, setSavedProcurementData] = useState(null);
 
-  // Загрузка данных при старте
-  useEffect(() => {
-    const user = authAPI.getCurrentUser();
-    if (user && authAPI.isAuthenticated()) {
-      setCurrentUser(user);
-    }
-    loadInitialData();
-  }, []);
+  const handleAddProductToProcurement = (product) => {
+    setSelectedProducts(prev => {
+      const existingProduct = prev.find(p => p.id === product.id);
+      if (existingProduct) {
+        return prev.map(p => 
+          p.id === product.id 
+            ? { ...p, quantity: (p.quantity || 1) + 1 }
+            : p
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+useEffect(() => {
+  const user = authAPI.getCurrentUser();
+  if (user && authAPI.isAuthenticated()) {
+    setCurrentUser(user);
+    
+    // Загружаем рекомендации для авторизованного пользователя
+    const loadRecommendations = async () => {
+      try {
+        console.log('Loading recommendations for user:', user.user_id || user.id);
+        
+        // Пробуем загрузить персонализированные рекомендации
+        const recommendations = await unifiedAPI.recommendations.getQuickRecommendations(8);
+        console.log('Recommendations loaded:', recommendations);
+        
+        // Сохраняем рекомендации в состоянии (если нужно отображать на главной)
+        if (recommendations.recommendations && recommendations.recommendations.length > 0) {
+          // Можно сохранить в состоянии для отображения на главной
+          // setRecommendedProducts(recommendations.recommendations);
+        }
+        
+      } catch (error) {
+        console.warn('Could not load recommendations:', error);
+        // Это нормально, если рекомендации временно недоступны
+      }
+    };
+    
+    loadRecommendations();
+    
+    // Загружаем историю закупок для улучшения рекомендаций
+    const loadUserHistory = async () => {
+      try {
+        const procurements = await userAPI.getMyProcurements({ limit: 10 });
+        console.log('User procurement history loaded:', procurements.length, 'procurements');
+        
+        // Можно отправить историю в ML систему для обновления модели
+        if (procurements.length > 0) {
+          // unifiedAPI.recommendations.updateUserHistory(procurements);
+        }
+        
+      } catch (error) {
+        console.warn('Could not load user history:', error);
+      }
+    };
+    
+    loadUserHistory();
+  }
+  
+  // Загружаем основные данные (товары и закупки)
+  loadInitialData();
+  
+  // Инициализируем глобальные функции для модальных окон
+  window.addProductToProcurement = (product) => {
+    setSelectedProducts(prev => {
+      const existingProduct = prev.find(p => p.id === product.id);
+      if (existingProduct) {
+        return prev.map(p => 
+          p.id === product.id 
+            ? { ...p, quantity: (p.quantity || 1) + 1 }
+            : p
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+  
+  // Функция для добавления рекомендованных товаров
+  window.addRecommendedProducts = (products) => {
+    setSelectedProducts(prev => {
+      const newProducts = [...prev];
+      
+      products.forEach(product => {
+        const existingProduct = newProducts.find(p => p.id === product.id);
+        if (!existingProduct) {
+          newProducts.push({
+            ...product,
+            quantity: product.quantity || 1
+          });
+        }
+      });
+      
+      return newProducts;
+    });
+  };
+  
+  return () => {
+    // Очищаем глобальные функции при размонтировании
+    window.addProductToProcurement = null;
+    window.addRecommendedProducts = null;
+  };
+}, []);
 
   const loadInitialData = async () => {
     try {
@@ -433,6 +529,7 @@ const handleClearSavedProcurementData = () => {
         size="large"
       >
         <CreateProcurement 
+          onAddProduct={handleAddProductToProcurement}
           onClose={handleCloseCreateProcurement}
           onCreate={handleCreateProcurement}
           selectedProducts={selectedProducts}
