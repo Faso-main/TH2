@@ -12,8 +12,6 @@ const PORT = 5000;
 
 const corsOptions = {
   origin: [
-    'https://www.faso312.ru',
-    'https://faso312.ru', 
     'http://localhost:3000',
     'http://127.0.0.1:3000'
   ],
