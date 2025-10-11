@@ -1,7 +1,6 @@
-# main.py - FastAPI Production Version for Ubuntu VPS
+# main.py - Исправленная версия для реальных данных
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import asyncpg
@@ -9,46 +8,27 @@ import os
 from datetime import datetime
 import logging
 from collections import defaultdict, Counter
+import math
 
-# Production logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/var/log/procurement_api.log'),
-        logging.StreamHandler()
-    ]
-)
+# Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-app = FastAPI(
-    title="Smart Procurement Recommendations API",
-    description="Production API for procurement recommendations",
-    version="2.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
+app = FastAPI(title="Procurement Recommendations API")
 
-# Middleware
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000", 
-        "https://faso312.ru",
-        "http://faso312.ru"
-    ],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://faso312.ru"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Модели данных
+# Models
 class RecommendationRequest(BaseModel):
     user_id: str
     limit: int = 15
-    include_history: bool = False
 
 class RecommendationResponse(BaseModel):
     user_id: str
@@ -57,71 +37,41 @@ class RecommendationResponse(BaseModel):
     engine: str
     generated_at: str
 
-class HealthResponse(BaseModel):
-    status: str
-    database: str
-    smart_engine: bool
-    products_loaded: int
-    timestamp: str
-    version: str
-
-# Database Connector с retry логикой
-class DatabaseConnector:
+# Database Service
+class DatabaseService:
     def __init__(self):
         self.pool = None
-        self.max_retries = 3
-        self.retry_delay = 2
         
     async def connect(self):
-        """Подключение к PostgreSQL с retry логикой"""
-        for attempt in range(self.max_retries):
-            try:
-                # Получаем параметры из переменных окружения или используем дефолты
-                db_host = os.getenv('DB_HOST', 'localhost')
-                db_port = int(os.getenv('DB_PORT', '5432'))
-                db_name = os.getenv('DB_NAME', 'pc_db')
-                db_user = os.getenv('DB_USER', 'store_app1')
-                db_password = os.getenv('DB_PASSWORD', '1234')
-                
-                self.pool = await asyncpg.create_pool(
-                    user=db_user,
-                    host=db_host,
-                    database=db_name,
-                    password=db_password,
-                    port=db_port,
-                    min_size=5,
-                    max_size=20,
-                    command_timeout=60
-                )
-                
-                # Test connection
-                async with self.pool.acquire() as conn:
-                    await conn.execute('SELECT 1')
-                
-                logger.info("✅ Successfully connected to PostgreSQL database")
-                return
-                
-            except Exception as e:
-                logger.error(f"❌ Database connection attempt {attempt + 1} failed: {e}")
-                if attempt < self.max_retries - 1:
-                    logger.info(f"Retrying in {self.retry_delay} seconds...")
-                    import asyncio
-                    await asyncio.sleep(self.retry_delay)
-                else:
-                    raise
-    
-    async def get_user_procurements(self, user_id: str) -> List[Dict]:
-        """Получить историю закупок пользователя"""
+        """Подключение к PostgreSQL"""
         try:
-            query = """
+            self.pool = await asyncpg.create_pool(
+                user='store_app1',
+                host='localhost',
+                database='pc_db',
+                password='1234',
+                port=5432,
+                min_size=3,
+                max_size=10
+            )
+            logger.info("✅ Connected to PostgreSQL")
+        except Exception as e:
+            logger.error(f"❌ Database connection failed: {e}")
+            raise
+    
+    async def get_user_profile(self, user_id: str) -> Dict:
+        """Получить полный профиль пользователя с историей закупок"""
+        try:
+            # История закупок пользователя
+            procurements_query = """
             SELECT 
                 p.procurement_id,
                 pi.product_id,
-                pi.quantity,
-                pi.unit_price,
                 pr.name as product_name,
                 pr.category_id,
                 c.name as category_name,
+                pi.quantity,
+                pi.unit_price,
                 pr.average_price,
                 p.procurement_date
             FROM procurements p
@@ -134,48 +84,107 @@ class DatabaseConnector:
             """
             
             async with self.pool.acquire() as conn:
-                rows = await conn.fetch(query, user_id)
+                rows = await conn.fetch(procurements_query, user_id)
             
             procurements = []
+            purchased_products = set()
+            category_stats = Counter()
+            total_spent = 0
+            price_points = []
+            
             for row in rows:
-                procurements.append({
+                price = float(row['unit_price']) if row['unit_price'] else float(row['average_price']) if row['average_price'] else 0
+                quantity = row['quantity'] or 1
+                
+                procurement_data = {
                     'procurement_id': row['procurement_id'],
                     'product_id': row['product_id'],
                     'product_name': row['product_name'],
                     'category_id': row['category_id'],
-                    'category_name': row['category_name'],
-                    'quantity': row['quantity'],
-                    'unit_price': float(row['unit_price']) if row['unit_price'] else 0,
+                    'category_name': row['category_name'] or 'Без категории',
+                    'quantity': quantity,
+                    'unit_price': price,
                     'average_price': float(row['average_price']) if row['average_price'] else 0,
-                    'procurement_date': row['procurement_date'].isoformat() if row['procurement_date'] else None
-                })
+                }
+                procurements.append(procurement_data)
+                
+                purchased_products.add(row['product_id'])
+                category_stats[row['category_name'] or 'Без категории'] += 1
+                total_spent += price * quantity
+                if price > 0:
+                    price_points.append(price)
             
-            logger.info(f"📊 Loaded {len(procurements)} procurement items for user {user_id}")
-            return procurements
+            # Вычисляем статистику по ценам
+            price_stats = {}
+            if price_points:
+                price_stats = {
+                    'avg_price': sum(price_points) / len(price_points),
+                    'min_price': min(price_points),
+                    'max_price': max(price_points),
+                    'median_price': sorted(price_points)[len(price_points) // 2]
+                }
+            
+            profile = {
+                'procurements': procurements,
+                'purchased_products': purchased_products,
+                'category_stats': dict(category_stats),
+                'price_stats': price_stats,
+                'total_spent': total_spent,
+                'total_procurements': len(procurements),
+                'preferred_categories': [cat for cat, count in category_stats.most_common(5)]
+            }
+            
+            logger.info(f"📊 User {user_id}: {len(procurements)} purchases, {len(purchased_products)} unique products, {len(category_stats)} categories")
+            return profile
             
         except Exception as e:
-            logger.error(f"Error getting user procurements: {e}")
-            return []
+            logger.error(f"Error getting user profile: {e}")
+            return self._get_empty_profile()
     
-    async def get_available_products(self, limit: int = 10000) -> List[Dict]:
-        """Получить доступные товары с реальными ценами"""
+    def _get_empty_profile(self):
+        """Пустой профиль для пользователей без истории"""
+        return {
+            'procurements': [],
+            'purchased_products': set(),
+            'category_stats': {},
+            'price_stats': {},
+            'total_spent': 0,
+            'total_procurements': 0,
+            'preferred_categories': []
+        }
+    
+    async def get_recommendation_candidates(self, limit: int = 50000) -> List[Dict]:
+        """Получить товары для рекомендаций - ТОЛЬКО доступные и с ценами"""
         try:
             query = """
             SELECT 
-                product_id, 
-                name, 
-                description, 
-                category_id,
-                manufacturer, 
-                average_price, 
-                unit_of_measure,
-                specifications,
-                is_available
-            FROM products 
-            WHERE is_available = true
-            AND average_price > 0
-            AND name IS NOT NULL
-            ORDER BY average_price DESC
+                p.product_id,
+                p.name,
+                p.description,
+                p.category_id,
+                c.name as category_name,
+                p.manufacturer,
+                p.average_price,
+                p.unit_of_measure,
+                p.specifications,
+                p.is_available,
+                -- Считаем популярность на основе истории закупок
+                (SELECT COUNT(*) FROM procurement_items pi WHERE pi.product_id = p.product_id) as purchase_count,
+                -- Определяем основную категорию (если есть родительская)
+                CASE 
+                    WHEN c.parent_category_id IS NOT NULL THEN 
+                        (SELECT name FROM categories WHERE category_id = c.parent_category_id)
+                    ELSE c.name
+                END as main_category
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.category_id
+            WHERE p.is_available = true 
+            AND p.average_price > 0  -- Только товары с ценами
+            AND p.name IS NOT NULL
+            AND LENGTH(TRIM(p.name)) > 5  -- Только с нормальными названиями
+            ORDER BY 
+                purchase_count DESC,
+                p.average_price DESC
             LIMIT $1
             """
             
@@ -184,341 +193,242 @@ class DatabaseConnector:
             
             products = []
             for row in rows:
+                # Исправляем категории для товаров без категории
+                category_name = row['category_name'] or 'Без категории'
+                main_category = row['main_category'] or category_name
+                
                 products.append({
                     'product_id': row['product_id'],
                     'name': row['name'],
                     'description': row['description'],
                     'category_id': row['category_id'],
+                    'category_name': category_name,
+                    'main_category': main_category,
                     'manufacturer': row['manufacturer'],
-                    'average_price': float(row['average_price']) if row['average_price'] else 0,
+                    'average_price': float(row['average_price']),
                     'unit_of_measure': row['unit_of_measure'],
                     'specifications': row['specifications'],
-                    'is_available': row['is_available']
+                    'is_available': row['is_available'],
+                    'purchase_count': row['purchase_count'] or 0
                 })
             
-            logger.info(f"📦 Loaded {len(products)} available products from database")
+            logger.info(f"📦 Loaded {len(products)} available products with prices")
+            
+            # Логируем распределение по категориям
+            category_dist = Counter(p['main_category'] for p in products)
+            logger.info(f"📊 Category distribution: {dict(category_dist.most_common(10))}")
+            
             return products
             
         except Exception as e:
-            logger.error(f"Error getting available products: {e}")
+            logger.error(f"Error getting recommendation candidates: {e}")
             return []
     
-    async def get_category_name(self, category_id: str) -> str:
-        """Получить название категории по ID"""
-        if not category_id:
-            return "Другое"
-            
+    async def get_user_procurements_count(self, user_id: str) -> int:
+        """Получить количество закупок пользователя"""
         try:
-            query = "SELECT name FROM categories WHERE category_id = $1"
+            query = "SELECT COUNT(*) FROM procurements WHERE user_id = $1"
             async with self.pool.acquire() as conn:
-                row = await conn.fetchrow(query, category_id)
-            return row['name'] if row else "Другое"
-        except Exception as e:
-            logger.warning(f"Could not get category name for {category_id}: {e}")
-            return "Другое"
-    
-    async def get_popular_products(self, limit: int = 200) -> List[Dict]:
-        """Получить популярные товары (часто закупаемые)"""
-        try:
-            query = """
-            SELECT 
-                p.product_id,
-                p.name,
-                p.average_price,
-                p.category_id,
-                COUNT(pi.procurement_item_id) as purchase_count
-            FROM products p
-            JOIN procurement_items pi ON p.product_id = pi.product_id
-            WHERE p.is_available = true
-            GROUP BY p.product_id, p.name, p.average_price, p.category_id
-            ORDER BY purchase_count DESC
-            LIMIT $1
-            """
-            
-            async with self.pool.acquire() as conn:
-                rows = await conn.fetch(query, limit)
-            
-            popular_products = []
-            for row in rows:
-                popular_products.append({
-                    'product_id': row['product_id'],
-                    'name': row['name'],
-                    'average_price': float(row['average_price']),
-                    'category_id': row['category_id'],
-                    'purchase_count': row['purchase_count']
-                })
-            
-            return popular_products
-            
-        except Exception as e:
-            logger.error(f"Error getting popular products: {e}")
-            return []
+                count = await conn.fetchval(query, user_id)
+            return count
+        except:
+            return 0
 
 # Smart Recommendation Engine
-class SmartRecommendationEngine:
-    def __init__(self, db_connector):
-        self.db = db_connector
-        self.config = {
-            'weights': {
-                'purchase_history': 0.35,
-                'category_similarity': 0.25, 
-                'price_compatibility': 0.20,
-                'popularity': 0.15,
-                'availability': 0.05
-            },
-            'price_tolerance': 0.3
-        }
+class RecommendationEngine:
+    def __init__(self, db_service):
+        self.db = db_service
         
-        self.popular_products = []
-        self.products_cache = []
-        self.cache_timestamp = None
-        self.cache_ttl = 300  # 5 минут
-    
-    async def initialize(self):
-        """Инициализация - загрузка популярных товаров"""
-        self.popular_products = await self.db.get_popular_products(200)
-        logger.info(f"📈 Loaded {len(self.popular_products)} popular products")
-    
-    async def _get_cached_products(self):
-        """Получить товары с кэшированием"""
-        now = datetime.now().timestamp()
+    async def generate_recommendations(self, user_id: str, limit: int = 15) -> List[Dict]:
+        """Генерация персонализированных рекомендаций"""
         
-        if (not self.products_cache or 
-            not self.cache_timestamp or 
-            (now - self.cache_timestamp) > self.cache_ttl):
+        # 1. Получаем профиль пользователя
+        user_profile = await self.db.get_user_profile(user_id)
+        
+        # 2. Получаем кандидатов для рекомендаций
+        candidates = await self.db.get_recommendation_candidates(20000)  # Ограничиваем для производительности
+        
+        # 3. Генерируем рекомендации
+        recommendations = []
+        
+        for product in candidates:
+            # Пропускаем уже купленные товары
+            if product['product_id'] in user_profile['purchased_products']:
+                continue
             
-            self.products_cache = await self.db.get_available_products(8000)
-            self.cache_timestamp = now
-            logger.info(f"🔄 Refreshed products cache: {len(self.products_cache)} items")
-        
-        return self.products_cache
-    
-    def _analyze_user_behavior(self, user_procurements: List[Dict]) -> Dict:
-        """Анализ поведения пользователя"""
-        profile = {
-            'purchased_products': set(),
-            'preferred_categories': Counter(),
-            'price_ranges': defaultdict(list),
-            'total_spent': 0,
-            'avg_price_per_item': 0,
-            'category_weights': defaultdict(float)
-        }
-        
-        if not user_procurements:
-            return profile
-        
-        for procurement in user_procurements:
-            product_id = procurement['product_id']
-            category = procurement['category_name']
-            price = procurement['unit_price'] or procurement['average_price']
+            # Вычисляем score
+            score_data = self._calculate_product_score(product, user_profile)
             
-            profile['purchased_products'].add(product_id)
-            profile['preferred_categories'][category] += 1
-            profile['price_ranges'][category].append(price)
-            profile['total_spent'] += price * procurement.get('quantity', 1)
+            if score_data['total_score'] > 0.15:  # Минимальный порог
+                recommendations.append({
+                    'product_id': product['product_id'],
+                    'product_name': product['name'],
+                    'product_category': product['main_category'],
+                    'total_score': round(score_data['total_score'], 4),
+                    'component_scores': score_data['components'],
+                    'explanation': self._generate_explanation(product, user_profile, score_data),
+                    'price_range': {
+                        'avg': product['average_price'],
+                        'min': product['average_price'] * 0.7,
+                        'max': product['average_price'] * 1.3,
+                        'source': 'database'
+                    },
+                    'in_catalog': True,
+                    'is_available': True,
+                    'real_price': product['average_price'],
+                    'purchase_count': product['purchase_count']
+                })
         
-        total_items = sum(profile['preferred_categories'].values())
-        if total_items > 0:
-            profile['avg_price_per_item'] = profile['total_spent'] / total_items
+        # Сортируем по score и ограничиваем
+        recommendations.sort(key=lambda x: x['total_score'], reverse=True)
+        final_recommendations = recommendations[:limit]
         
-        total_categories = sum(profile['preferred_categories'].values())
-        if total_categories > 0:
-            for category, count in profile['preferred_categories'].items():
-                profile['category_weights'][category] = count / total_categories
+        if final_recommendations:
+            score_range = f"{final_recommendations[0]['total_score']:.3f}-{final_recommendations[-1]['total_score']:.3f}"
+        else:
+            score_range = "0-0"
+            
+        logger.info(f"🎯 User {user_id}: {len(final_recommendations)} recommendations, scores: {score_range}")
         
-        logger.info(f"👤 User profile: {total_items} items, {len(profile['preferred_categories'])} categories, avg price: {profile['avg_price_per_item']:.0f}")
-        return profile
+        return final_recommendations
     
-    def _calculate_purchase_history_score(self, product: Dict, user_profile: Dict) -> float:
-        if not user_profile['purchased_products']:
-            return 0.5
+    def _calculate_product_score(self, product: Dict, user_profile: Dict) -> Dict:
+        """Вычисление скора для товара с компонентами"""
         
-        product_category = product.get('category_name', 'Другое')
-        category_weight = user_profile['category_weights'].get(product_category, 0)
-        return min(category_weight * 2.0, 1.0)
+        components = {}
+        
+        # 1. Категориальное сходство (40% веса)
+        product_main_category = product['main_category']
+        user_categories = user_profile['category_stats']
+        
+        if user_categories and product_main_category in user_categories:
+            total_purchases = sum(user_categories.values())
+            category_share = user_categories[product_main_category] / total_purchases
+            components['category_similarity'] = min(category_share * 2.0, 1.0) * 0.4
+        else:
+            components['category_similarity'] = 0.1 * 0.4  # Базовый скор для новых категорий
+        
+        # 2. Популярность товара (25% веса)
+        purchase_count = product.get('purchase_count', 0)
+        # Логарифмическая нормализация для популярности
+        popularity_score = min(math.log(purchase_count + 1) / math.log(1000), 1.0)
+        components['popularity'] = popularity_score * 0.25
+        
+        # 3. Совместимость по цене (25% веса)
+        price_stats = user_profile.get('price_stats', {})
+        if price_stats and 'avg_price' in price_stats:
+            user_avg_price = price_stats['avg_price']
+            product_price = product['average_price']
+            
+            if user_avg_price > 0:
+                # Мягкое сравнение цен - учитываем диапазон ±50%
+                price_diff = abs(product_price - user_avg_price) / user_avg_price
+                if price_diff <= 0.5:  # В пределах 50% от средней цены пользователя
+                    price_score = 1.0 - (price_diff / 0.5)  # Линейное уменьшение
+                else:
+                    price_score = 0.1
+                components['price_compatibility'] = price_score * 0.25
+            else:
+                components['price_compatibility'] = 0.5 * 0.25
+        else:
+            components['price_compatibility'] = 0.3 * 0.25  # Базовый скор
+        
+        # 4. Качество данных товара (10% веса)
+        data_quality = 0.0
+        if product['name'] and len(product['name'].strip()) > 10:
+            data_quality += 0.05
+        if product['manufacturer']:
+            data_quality += 0.03
+        if product['description']:
+            data_quality += 0.02
+        components['data_quality'] = data_quality * 0.10
+        
+        # Общий score
+        total_score = sum(components.values())
+        
+        return {
+            'total_score': min(total_score, 1.0),
+            'components': {k: round(v, 4) for k, v in components.items()}
+        }
     
-    def _calculate_category_similarity(self, product: Dict, user_profile: Dict) -> float:
-        product_category = product.get('category_name', 'Другое')
+    def _generate_explanation(self, product: Dict, user_profile: Dict, score_data: Dict) -> str:
+        """Генерация объяснения рекомендации"""
         
-        if not user_profile['preferred_categories']:
-            return 0.3
-        
-        max_count = max(user_profile['preferred_categories'].values())
-        category_count = user_profile['preferred_categories'].get(product_category, 0)
-        return category_count / max_count if max_count > 0 else 0
-    
-    def _calculate_price_compatibility(self, product: Dict, user_profile: Dict) -> float:
-        product_price = product.get('average_price', 0)
-        user_avg_price = user_profile['avg_price_per_item']
-        
-        if user_avg_price == 0:
-            return 0.5
-        
-        price_ratio = min(product_price, user_avg_price) / max(product_price, user_avg_price)
-        tolerance = self.config['price_tolerance']
-        
-        if abs(product_price - user_avg_price) <= user_avg_price * tolerance:
-            return min(price_ratio + 0.3, 1.0)
-        
-        return price_ratio
-    
-    def _calculate_popularity_score(self, product: Dict) -> float:
-        product_id = product['product_id']
-        
-        for popular_product in self.popular_products:
-            if popular_product['product_id'] == product_id:
-                max_purchases = max(p['purchase_count'] for p in self.popular_products) if self.popular_products else 1
-                return popular_product['purchase_count'] / max_purchases
-        
-        return 0.1
-    
-    def _generate_explanation(self, product: Dict, user_profile: Dict, scores: Dict) -> str:
         explanations = []
+        components = score_data['components']
         
-        if scores['purchase_history'] > 0.7:
-            explanations.append("часто покупаете в этой категории")
-        elif scores['purchase_history'] > 0.4:
-            explanations.append("похоже на ваши предыдущие покупки")
+        # На основе категории
+        if components['category_similarity'] > 0.3:
+            explanations.append("соответствует вашим интересам")
+        elif components['category_similarity'] > 0.1:
+            explanations.append("в вашей сфере деятельности")
         
-        if scores['category_similarity'] > 0.6:
-            category = product.get('category_name', 'этой категории')
-            explanations.append(f"популярно в {category}")
+        # На основе цены
+        if components['price_compatibility'] > 0.2:
+            explanations.append("подходит по бюджету")
         
-        if scores['price_compatibility'] > 0.8:
-            explanations.append("отлично подходит по цене")
-        elif scores['price_compatibility'] > 0.6:
-            explanations.append("подходит по вашему бюджету")
+        # На основе популярности
+        if components['popularity'] > 0.15:
+            purchase_count = product.get('purchase_count', 0)
+            if purchase_count > 100:
+                explanations.append("популярный выбор")
+            elif purchase_count > 10:
+                explanations.append("востребованный товар")
         
-        if scores['popularity'] > 0.7:
-            explanations.append("популярный выбор")
-        
-        return "Рекомендуем: " + ", ".join(explanations) if explanations else "Персональная рекомендация на основе анализа закупок"
-    
-    async def get_personalized_recommendations(self, user_id: str, limit: int = 15) -> List[Dict]:
-        """Умные персонализированные рекомендации"""
-        try:
-            # 1. Получаем историю пользователя
-            user_procurements = await self.db.get_user_procurements(user_id)
-            
-            # 2. Получаем доступные товары (с кэшем)
-            available_products = await self._get_cached_products()
-            
-            # 3. Анализируем поведение пользователя
-            user_profile = self._analyze_user_behavior(user_procurements)
-            
-            # 4. Получаем названия категорий для товаров
-            for product in available_products:
-                product['category_name'] = await self.db.get_category_name(product['category_id'])
-            
-            # 5. Генерируем рекомендации
-            recommendations = []
-            purchased_ids = user_profile['purchased_products']
-            
-            for product in available_products:
-                if product['product_id'] in purchased_ids:
-                    continue
-                
-                scores = {
-                    'purchase_history': self._calculate_purchase_history_score(product, user_profile),
-                    'category_similarity': self._calculate_category_similarity(product, user_profile),
-                    'price_compatibility': self._calculate_price_compatibility(product, user_profile),
-                    'popularity': self._calculate_popularity_score(product),
-                    'availability': 1.0
-                }
-                
-                total_score = sum(
-                    scores[factor] * self.config['weights'][factor] 
-                    for factor in scores
-                )
-                
-                if total_score > 0.2:
-                    recommendations.append({
-                        'product_id': product['product_id'],
-                        'product_name': product['name'],
-                        'product_category': product['category_name'],
-                        'total_score': round(total_score, 4),
-                        'component_scores': {k: round(v, 4) for k, v in scores.items()},
-                        'explanation': self._generate_explanation(product, user_profile, scores),
-                        'price_range': {
-                            'avg': product['average_price'],
-                            'min': product['average_price'] * 0.7,
-                            'max': product['average_price'] * 1.3,
-                            'source': 'database_real'
-                        },
-                        'in_catalog': True,
-                        'is_available': True,
-                        'real_data': True
-                    })
-            
-            # 6. Сортируем и ограничиваем
-            recommendations.sort(key=lambda x: x['total_score'], reverse=True)
-            final_recommendations = recommendations[:limit]
-            
-            logger.info(f"🎯 Generated {len(final_recommendations)} recommendations for user {user_id}")
-            if final_recommendations:
-                logger.info(f"📊 Score range: {final_recommendations[0]['total_score']:.3f} - {final_recommendations[-1]['total_score']:.3f}")
-            
-            return final_recommendations
-            
-        except Exception as e:
-            logger.error(f"Error generating recommendations for {user_id}: {e}")
-            return []
+        if explanations:
+            return "Рекомендуем: " + ", ".join(explanations)
+        else:
+            return "Качественный товар из нашего каталога"
 
-# Глобальные объекты
-db_connector = DatabaseConnector()
-smart_engine = SmartRecommendationEngine(db_connector)
+# Global services
+db_service = DatabaseService()
+recommendation_engine = RecommendationEngine(db_service)
 
-# Startup event
+# Startup
 @app.on_event("startup")
 async def startup_event():
-    """Инициализация при запуске"""
-    try:
-        await db_connector.connect()
-        await smart_engine.initialize()
-        logger.info("✅ Smart recommendation engine initialized successfully")
-    except Exception as e:
-        logger.error(f"❌ Failed to initialize services: {e}")
-        # Не падаем полностью, сервис будет пытаться переподключиться
+    await db_service.connect()
+    logger.info("✅ Recommendation services initialized")
 
 # API Endpoints
 @app.get("/")
 async def root():
     return {
-        "message": "Smart Procurement Recommendations API", 
+        "message": "Procurement Recommendations API", 
         "status": "running",
-        "version": "2.0.0",
-        "timestamp": datetime.now().isoformat()
+        "version": "2.0-real-data"
     }
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 async def health_check():
-    """Проверка здоровья сервиса"""
     try:
-        test_products = await db_connector.get_available_products(5)
-        return HealthResponse(
-            status="healthy",
-            database="pc_db",
-            smart_engine=True,
-            products_loaded=len(test_products),
-            timestamp=datetime.now().isoformat(),
-            version="2.0.0"
-        )
+        # Проверяем БД и получаем статистику
+        async with db_service.pool.acquire() as conn:
+            available_products = await conn.fetchval(
+                "SELECT COUNT(*) FROM products WHERE is_available = true AND average_price > 0"
+            )
+            total_users = await conn.fetchval("SELECT COUNT(*) FROM users")
+        
+        return {
+            "status": "healthy", 
+            "database": "connected",
+            "available_products": available_products,
+            "total_users": total_users,
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return HealthResponse(
-            status="unhealthy",
-            database="pc_db", 
-            smart_engine=False,
-            products_loaded=0,
-            timestamp=datetime.now().isoformat(),
-            version="2.0.0"
-        )
+        return {
+            "status": "unhealthy",
+            "database": "disconnected", 
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 @app.post("/api/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(request: RecommendationRequest):
-    """Получить умные рекомендации для пользователя"""
+    """Основной endpoint для рекомендаций"""
     try:
-        recommendations = await smart_engine.get_personalized_recommendations(
+        recommendations = await recommendation_engine.generate_recommendations(
             user_id=request.user_id,
             limit=request.limit
         )
@@ -527,7 +437,7 @@ async def get_recommendations(request: RecommendationRequest):
             user_id=request.user_id,
             recommendations_count=len(recommendations),
             recommendations=recommendations,
-            engine="smart_v1",
+            engine="postgresql_real_data",
             generated_at=datetime.now().isoformat()
         )
         
@@ -536,54 +446,19 @@ async def get_recommendations(request: RecommendationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/recommendations/{user_id}")
-async def get_recommendations_by_user_id(user_id: str, limit: int = 15):
-    """Получить рекомендации по ID пользователя (GET версия)"""
-    try:
-        recommendations = await smart_engine.get_personalized_recommendations(
-            user_id=user_id,
-            limit=limit
-        )
-        
-        return RecommendationResponse(
-            user_id=user_id,
-            recommendations_count=len(recommendations),
-            recommendations=recommendations,
-            engine="smart_v1", 
-            generated_at=datetime.now().isoformat()
-        )
-        
-    except Exception as e:
-        logger.error(f"Recommendations error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+async def get_recommendations_get(user_id: str, limit: int = 15):
+    """GET версия для рекомендаций"""
+    return await get_recommendations(RecommendationRequest(user_id=user_id, limit=limit))
 
-# Совместимость со старыми endpoint'ами
-@app.post("/api/recommendations/user/{user_id}")
-async def legacy_get_recommendations(user_id: str, limit: int = 15):
-    return await get_recommendations_by_user_id(user_id, limit)
-
+# Совместимость с существующими endpoint'ами
 @app.get("/api/ml/health")
 async def ml_health():
     return await health_check()
 
-@app.post("/api/ml/recommendations") 
+@app.post("/api/ml/recommendations")
 async def ml_recommendations(request: RecommendationRequest):
     return await get_recommendations(request)
 
-# Error handlers
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"Global exception handler: {exc}")
-    return JSONResponse( # pyright: ignore[reportUndefinedVariable]
-        status_code=500,
-        content={"error": "Internal server error", "detail": str(exc)}
-    )
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="127.0.0.1",  # Слушаем все интерфейсы
-        port=8000,
-        workers=2,  # 2 воркера для production
-        log_level="info"
-    )
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
