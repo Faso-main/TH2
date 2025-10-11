@@ -67,7 +67,7 @@ const loadRecommendations = async () => {
           onClick={loadRecommendations}
           disabled={loading}
         >
-          {loading ? '♾️' : '♾️'}
+          {loading ? '⟳' : '⟳'}
         </button>
       </div>
 
