@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import pkg from 'pg';
-import recommendationRoutes from '../py_back/recommendation_routes';
+import recommendationRoutes from '../py_back/recommendation_routes.js';
 
 const { Pool } = pkg;
 const app = express();
