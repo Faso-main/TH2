@@ -1,5 +1,4 @@
-// controllers/recommendation_controller.js
-const axios = require('axios');
+import axios from 'axios';
 
 class RecommendationController {
     constructor() {
@@ -37,32 +36,21 @@ class RecommendationController {
         } catch (error) {
             console.error('❌ ML Recommendation error:', error.message);
             
-            // Fallback - базовые рекомендации
-            try {
-                const fallbackRecommendations = await this.getFallbackRecommendations(limit);
-                
-                res.json({
-                    success: false,
-                    user_id: req.body.user_id,
-                    recommendations: fallbackRecommendations,
-                    count: fallbackRecommendations.length,
-                    note: 'fallback_recommendations',
-                    error: error.message
-                });
-                
-            } catch (fallbackError) {
-                console.error('❌ Fallback also failed:', fallbackError);
-                res.status(500).json({
-                    success: false,
-                    error: 'Рекомендации временно недоступны',
-                    details: error.message
-                });
-            }
+            // Fallback
+            const fallbackRecommendations = this.getFallbackRecommendations(limit);
+            
+            res.json({
+                success: false,
+                user_id: req.body.user_id,
+                recommendations: fallbackRecommendations,
+                count: fallbackRecommendations.length,
+                note: 'fallback_recommendations',
+                error: error.message
+            });
         }
     }
 
-    async getFallbackRecommendations(limit = 15) {
-        // Простые рекомендации без БД
+    getFallbackRecommendations(limit = 15) {
         return [
             {
                 product_id: "fallback_1",
@@ -75,11 +63,11 @@ class RecommendationController {
             },
             {
                 product_id: "fallback_2", 
-                product_name: "Базовый товар 2",
+                product_name: "Базовый товар 2", 
                 product_category: "Офис",
                 total_score: 0.5,
                 price_range: { avg: 3000 },
-                explanation: "Базовая рекомендация",
+                explanation: "Базовая рекомендаation", 
                 in_catalog: true
             }
         ].slice(0, limit);
@@ -104,4 +92,6 @@ class RecommendationController {
     }
 }
 
-module.exports = new RecommendationController();
+// Создаем экземпляр и экспортируем его
+const recommendationController = new RecommendationController();
+export { recommendationController };

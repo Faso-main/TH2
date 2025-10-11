@@ -1,6 +1,5 @@
-// routes/recommendation_routes.js
 import express from 'express';
-import recommendationController from './recommendation_controller.js';
+import { recommendationController } from '.recommendation_controller.js';
 
 const router = express.Router();
 
