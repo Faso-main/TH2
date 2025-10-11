@@ -30,23 +30,6 @@ const corsOptions = {
   exposedHeaders: ['session-id']
 };
 
-app.use(
-  '/api/ml',
-  createProxyMiddleware({
-    target: 'http://127.0.0.1:8000',
-    changeOrigin: false,
-    // Внешний путь: /api/ml/health -> Внутренний: /health
-    //               /api/ml/recommendations -> /api/recommendations
-    pathRewrite: (path, req) => {
-      if (path === '/api/ml/health') return '/health';
-      return path.replace(/^\/api\/ml/, '');
-    },
-    // опционально:
-    // onProxyReq(proxyReq, req, res) { ... },
-    // onError(err, req, res) { res.status(502).json({error:'ML proxy error'}) }
-  })
-);
-
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
