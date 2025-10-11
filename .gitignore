@@ -6,3 +6,5 @@ ML/
 old/
 *.csv
 __pycache__/
+py_back/invalid/
+py_back/__pycache__/
