@@ -676,24 +676,42 @@ function Main({
 
   return (
     <main className="main">
-      <div className="products-container">
-        {/* Баннер сохраненных данных закупки */}
-        {savedProcurementFormData && savedProcurementData && highlightAddToProcurement && (
-          <div className="saved-data-banner">
-            <div className="banner-content">
-              <span>Есть сохраненные данные закупки</span>
-              <button 
-                className="btn-outline btn-small"
-                onClick={() => {
-                  setProcurementCreationStep(1);
-                  setActiveModal('create-procurement');
-                }}
-              >
-                Продолжить создание
-              </button>
+<div className="products-container">
+  {/* Универсальный баннер для сохраненной закупки */}
+  {savedProcurementFormData && (
+    <div className="saved-data-banner">
+      <div className="banner-content">
+        <div className="banner-info">
+          <span className="banner-icon">📋</span>
+          <div>
+            <div className="banner-title">
+              {savedProcurementFormData.formData?.title || 'Закупка без названия'}
+            </div>
+            <div className="banner-subtitle">
+              {selectedProducts.length > 0 
+                ? `Выбрано товаров: ${selectedProducts.length}` 
+                : 'Готово к выбору товаров'
+              }
+              {savedProcurementFormData.formData?.customer_name && 
+                ` • ${savedProcurementFormData.formData.customer_name}`
+              }
             </div>
           </div>
-        )}
+        </div>
+        <button 
+          className="btn-primary"
+          onClick={() => {
+            // Если есть выбранные товары, переходим на шаг 2, иначе на шаг 1
+            const nextStep = selectedProducts.length > 0 ? 2 : 1;
+            setProcurementCreationStep(nextStep);
+            setActiveModal('create-procurement');
+          }}
+        >
+          {selectedProducts.length > 0 ? 'Вернуться к закупке' : 'Продолжить создание'}
+        </button>
+      </div>
+    </div>
+  )}
 
         <div className="products-layout">
           <section className="products-main">
