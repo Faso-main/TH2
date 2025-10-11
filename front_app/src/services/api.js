@@ -250,7 +250,6 @@ export const testAPI = {
   }
 };
 
-// services/api.js - добавь этот метод
 export const unifiedAPI = {
   recommendations: {
     async getQuickRecommendations(limit = 8) {
@@ -260,11 +259,10 @@ export const unifiedAPI = {
         
         if (!currentUser) {
           console.warn('No user found for recommendations');
-          return getFallbackRecommendations(limit);
+          return { recommendations: [] };
         }
 
-        // Пробуем новый emergency endpoint
-        const response = await fetch('/api/emergency-recommendations', {
+        const response = await fetch('/api/ml/recommendations', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -282,72 +280,32 @@ export const unifiedAPI = {
 
         const data = await response.json();
         
-        // Форматируем рекомендации
-        const recommendations = data.recommendations?.map(rec => ({
+        // Преобразуем в формат ожидаемый фронтендом
+        const formattedRecommendations = data.recommendations?.map(rec => ({
           id: rec.product_id,
           name: rec.product_name,
           category_name: rec.product_category,
-          price_per_item: rec.price_range?.avg || rec.real_price || 1000,
-          total_score: rec.total_score || 0.7,
+          price_per_item: rec.price_range?.avg || 1000,
+          total_score: rec.total_score,
           explanation: rec.explanation,
-          in_catalog: rec.in_catalog,
-          is_available: rec.is_available
+          in_catalog: rec.in_catalog
         })) || [];
 
         return {
-          success: true,
-          recommendations: recommendations,
-          count: recommendations.length,
-          source: data.engine || 'emergency_fix'
+          success: data.success,
+          recommendations: formattedRecommendations,
+          count: formattedRecommendations.length
         };
 
       } catch (error) {
-        console.warn('Emergency recommendations failed, using fallback:', error);
-        return getFallbackRecommendations(limit);
+        console.warn('ML recommendations unavailable, using fallback:', error);
+        return {
+          success: false,
+          recommendations: [],
+          count: 0,
+          error: error.message
+        };
       }
     }
   }
 };
-
-// Fallback рекомендации
-function getFallbackRecommendations(limit) {
-  const fallbackProducts = [
-    {
-      id: '35600326',
-      name: 'Принтер лазерный HP LaserJet Pro MFP M428fdw',
-      category_name: 'Офисная техника',
-      price_per_item: 28900,
-      total_score: 0.89,
-      explanation: 'Популярная модель для офиса',
-      in_catalog: true,
-      is_available: true
-    },
-    {
-      id: '36731994', 
-      name: 'Бумага для офисной техники Снегурочка А4',
-      category_name: 'Канцелярия',
-      price_per_item: 379,
-      total_score: 0.76,
-      explanation: 'Часто покупаемый товар',
-      in_catalog: true,
-      is_available: true
-    },
-    {
-      id: '34368176',
-      name: 'Калькулятор настольный CITIZEN SDC-444S',
-      category_name: 'Офисная техника', 
-      price_per_item: 1923,
-      total_score: 0.82,
-      explanation: 'Надежная модель для расчетов',
-      in_catalog: true,
-      is_available: true
-    }
-  ];
-  
-  return {
-    success: true,
-    recommendations: fallbackProducts.slice(0, limit),
-    count: Math.min(limit, fallbackProducts.length),
-    source: 'fallback'
-  };
-}
