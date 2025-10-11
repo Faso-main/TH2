@@ -402,7 +402,7 @@ function App() {
       <Modal
         isOpen={activeModal === 'create-procurement'}
         onClose={handleCloseCreateProcurement}
-        title={procurementCreationStep === 1 ? "Создание закупки - Основные параметры" : "Создание закупки - Выбор товаров"}
+        title={procurementCreationStep === 1 ? "Создание закупки" : "Выбор товаров"}
         size="large"
       >
         <CreateProcurement 
