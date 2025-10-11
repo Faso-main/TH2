@@ -165,39 +165,76 @@ const handleAddRecommended = async () => {
   setAddingRecommended(true);
   
   try {
+    console.log('Getting recommendations for user:', currentUser.user_id || currentUser.id);
+    
+    // Сначала получаем историю закупок пользователя
+    let procurementHistory = [];
+    try {
+      const procurementsResponse = await unifiedAPI.user.getMyProcurements();
+      console.log('Procurements response:', procurementsResponse);
+      
+      // Извлекаем массив закупок из ответа
+      const procurements = procurementsResponse.procurements || procurementsResponse.data || procurementsResponse;
+      
+      if (Array.isArray(procurements)) {
+        procurementHistory = procurements.map(procurement => ({
+          procurement_id: procurement.procurement_id || procurement.id,
+          products: procurement.products || [],
+          total_price: procurement.estimated_price || procurement.current_price || 0,
+          date: procurement.procurement_date || procurement.created_at
+        }));
+      }
+    } catch (historyError) {
+      console.warn('Could not load procurement history:', historyError);
+    }
+
     // Получаем рекомендации для пользователя
-    const recommendations = await unifiedAPI.recommendations.generateBundle({
+    const recommendationsResponse = await unifiedAPI.recommendations.generateBundle({
       target_budget: formData.current_price || 50000,
       max_items: 5
     });
 
-    console.log('Recommendations response:', recommendations); // Для отладки
+    console.log('Full recommendations response:', recommendationsResponse);
 
-    // Извлекаем рекомендованные товары с проверкой типа
+    // Извлекаем рекомендованные товары с правильной обработкой ответа
     let recommendedProducts = [];
     
-    if (recommendations && recommendations.bundle && Array.isArray(recommendations.bundle.products)) {
-      recommendedProducts = recommendations.bundle.products;
-    } else if (recommendations && Array.isArray(recommendations.recommended_products)) {
-      recommendedProducts = recommendations.recommended_products;
-    } else if (recommendations && Array.isArray(recommendations.recommendations)) {
-      recommendedProducts = recommendations.recommendations;
-    } else if (recommendations && Array.isArray(recommendations)) {
-      recommendedProducts = recommendations;
+    // Пробуем разные возможные структуры ответа
+    if (recommendationsResponse && Array.isArray(recommendationsResponse)) {
+      recommendedProducts = recommendationsResponse;
+    } else if (recommendationsResponse && recommendationsResponse.bundle && Array.isArray(recommendationsResponse.bundle.products)) {
+      recommendedProducts = recommendationsResponse.bundle.products;
+    } else if (recommendationsResponse && Array.isArray(recommendationsResponse.recommended_products)) {
+      recommendedProducts = recommendationsResponse.recommended_products;
+    } else if (recommendationsResponse && Array.isArray(recommendationsResponse.recommendations)) {
+      recommendedProducts = recommendationsResponse.recommendations;
+    } else if (recommendationsResponse && recommendationsResponse.data && Array.isArray(recommendationsResponse.data)) {
+      recommendedProducts = recommendationsResponse.data;
     } else {
-      console.warn('Unexpected recommendations format:', recommendations);
-      alert('Не удалось получить рекомендации в ожидаемом формате');
-      return;
+      console.warn('Unexpected recommendations format:', recommendationsResponse);
+      // Пробуем получить любые товары из ответа
+      const possibleProducts = 
+        recommendationsResponse?.products ||
+        recommendationsResponse?.items ||
+        recommendationsResponse?.results;
+      
+      if (Array.isArray(possibleProducts)) {
+        recommendedProducts = possibleProducts;
+      } else {
+        throw new Error('Неверный формат ответа от сервера рекомендаций');
+      }
     }
 
     if (!Array.isArray(recommendedProducts) || recommendedProducts.length === 0) {
-      alert('Не удалось получить рекомендации. Попробуйте позже.');
+      alert('Не удалось получить рекомендации. Сервер вернул пустой список.');
       return;
     }
 
+    console.log('Extracted recommended products:', recommendedProducts);
+
     // Фильтруем только доступные товары с деталями
     const availableProducts = recommendedProducts.filter(product => 
-      product && product.product_details && product.available !== false
+      product && (product.product_details || product.name || product.product_id)
     );
 
     if (availableProducts.length === 0) {
@@ -208,8 +245,8 @@ const handleAddRecommended = async () => {
     // Показываем пользователю рекомендации для выбора
     const productList = availableProducts
       .map((product, index) => {
-        const productName = product.product_details?.name || product.name || 'Неизвестный товар';
-        const productPrice = product.price || product.product_details?.price_per_item || 0;
+        const productName = product.product_details?.name || product.name || 'Рекомендованный товар';
+        const productPrice = product.price || product.product_details?.price_per_item || product.estimated_price || 0;
         return `${index + 1}. ${productName} - ${formatPrice(productPrice)} ₽`;
       })
       .join('\n');
@@ -222,15 +259,15 @@ const handleAddRecommended = async () => {
       // Добавляем рекомендованные товары в закупку через глобальную функцию
       if (window.addRecommendedProducts) {
         const productsToAdd = availableProducts.map(product => ({
-          id: product.product_id || product.id,
-          name: product.product_details?.name || product.name,
+          id: product.product_id || product.id || `rec-${Date.now()}-${Math.random()}`,
+          name: product.product_details?.name || product.name || 'Рекомендованный товар',
           category_name: product.product_details?.category_name || product.category_name || 'Общее',
-          price_per_item: product.price || product.product_details?.price_per_item || 1000,
+          price_per_item: product.price || product.product_details?.price_per_item || product.estimated_price || 1000,
           quantity: 1
         }));
         
         window.addRecommendedProducts(productsToAdd);
-        alert(`Добавлено ${productsToAdd.length} рекомендованных товаров!`);
+        alert(`✅ Добавлено ${productsToAdd.length} рекомендованных товаров!`);
       } else {
         alert('Товары добавлены. Обновите страницу для отображения изменений.');
       }
