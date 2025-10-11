@@ -367,7 +367,7 @@ window.addRecommendedProducts = (products) => {
     setHighlightAddToProcurement(true);
     setActiveSection('products');
     
-    showNotification('🎯 Выбирайте товары кнопкой "В закупку". Вернитесь к созданию закупки, когда закончите.', 'info');
+    showNotification('Выбирайте товары кнопкой "В закупку". Вернитесь к созданию закупки, когда закончите.', 'info');
   };
 
   const handleReturnToProcurement = () => {
@@ -375,7 +375,7 @@ window.addRecommendedProducts = (products) => {
     setProcurementCreationStep(2);
     setActiveModal('create-procurement');
     
-    showNotification(`📋 Продолжайте создание закупки. Выбрано товаров: ${selectedProducts.length}`, 'info');
+    showNotification(`Продолжайте создание закупки. Выбрано товаров: ${selectedProducts.length}`, 'info');
   };
 
 const handleOpenCreateProcurement = () => {
@@ -880,13 +880,13 @@ function Main({
                   className={`section-btn ${activeSection === 'products' ? 'active' : ''}`}
                   onClick={() => setActiveSection('products')}
                 >
-                  🛍️ Товары
+                  Товары
                 </button>
                 <button 
                   className={`section-btn ${activeSection === 'procurements' ? 'active' : ''}`}
                   onClick={() => setActiveSection('procurements')}
                 >
-                  📊 Закупки
+                  Закупки
                 </button>
               </div>
               <div className="search-info">
