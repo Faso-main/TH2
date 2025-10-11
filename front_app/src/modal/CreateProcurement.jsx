@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 // modal/CreateProcurement.jsx
 import { useState, useEffect } from 'react';
@@ -106,12 +107,20 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
   return (
     <div className="create-procurement">
       <div className="creation-steps">
-        <div className={`step-indicator ${step === 1 ? 'active' : ''}`}>
+        <div 
+          className={`step-indicator ${step === 1 ? 'active' : ''}`}
+          onClick={() => onStepChange && onStepChange(1)}
+          style={{cursor: 'pointer'}}
+        >
           <span className="step-number">1</span>
           <span className="step-label">Основные параметры</span>
         </div>
         <div className="step-connector"></div>
-        <div className={`step-indicator ${step === 2 ? 'active' : ''}`}>
+        <div 
+          className={`step-indicator ${step === 2 ? 'active' : ''}`}
+          onClick={() => onStepChange && onStepChange(2)}
+          style={{cursor: 'pointer'}}
+        >
           <span className="step-number">2</span>
           <span className="step-label">Выбор товаров</span>
         </div>
@@ -367,18 +376,18 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           </div>
         )}
 
-        <div className="form-actions">
-          {step === 1 ? (
-            <>
-              <button type="button" className="btn-outline" onClick={onClose}>
-                Отмена
-              </button>
-              <button 
-                type="submit" 
-                className="btn-primary"
-              >
-                Продолжить → Выбор товаров
-              </button>
+      <div className="form-actions">
+        {step === 1 ? (
+          <>
+            <button type="button" className="btn-outline" onClick={() => {
+              onClearSavedForm && onClearSavedForm();
+              onClose();
+            }}>
+              Отмена и очистить
+            </button>
+            <button type="submit" className="btn-primary">
+              Продолжить → Выбор товаров
+            </button>
             </>
           ) : (
             <>
