@@ -829,3 +829,214 @@ app.get('/api/ml/health', async (req, res) => {
 console.log('✅ ML Recommendation endpoints registered:');
 console.log('   POST /api/ml/recommendations');
 console.log('   GET  /api/ml/health');*/}
+
+// =============================================
+// ML RECOMMENDATION ENDPOINTS
+// =============================================
+
+/**
+ * Health check для ML сервиса
+ */
+app.get('/api/ml/health', async (req, res) => {
+    try {
+        console.log('🔍 ML Health check requested');
+        
+        const response = await fetch('http://127.0.0.1:8000/health', {
+            method: 'GET',
+            timeout: 5000
+        });
+
+        if (!response.ok) {
+            throw new Error(`Python ML service health check failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        res.json({
+            status: 'healthy',
+            python_service: data,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ ML Health check error:', error.message);
+        
+        res.status(503).json({
+            status: 'unhealthy',
+            python_service: 'unavailable',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * Получить рекомендации для пользователя
+ */
+app.post('/api/ml/recommendations', async (req, res) => {
+    try {
+        const { user_id, limit = 10 } = req.body;
+        
+        // Валидация
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'user_id обязателен'
+            });
+        }
+
+        console.log(`🎯 ML Recommendations requested for user: ${user_id}, limit: ${limit}`);
+        
+        // Вызов Python ML сервиса
+        const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: user_id,
+                limit: parseInt(limit)
+            }),
+            timeout: 15000 // 15 секунд таймаут
+        });
+
+        if (!response.ok) {
+            throw new Error(`Python ML service error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        console.log(`✅ ML Recommendations success: ${data.recommendations?.length || 0} items`);
+
+        // Форматируем ответ для фронтенда
+        const formattedResponse = {
+            success: true,
+            user_id: user_id,
+            recommendations: data.recommendations || [],
+            count: data.recommendations?.length || 0,
+            source: 'ml_service',
+            timestamp: new Date().toISOString()
+        };
+
+        res.json(formattedResponse);
+
+    } catch (error) {
+        console.error('❌ ML Recommendations error:', error.message);
+        
+        // Fallback рекомендации
+        const fallbackRecommendations = getFallbackRecommendations(req.body.limit || 10);
+        
+        res.json({
+            success: false,
+            user_id: req.body.user_id,
+            recommendations: fallbackRecommendations,
+            count: fallbackRecommendations.length,
+            source: 'fallback',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * Получить популярные товары (альтернативный эндпоинт)
+ */
+app.get('/api/ml/popular', async (req, res) => {
+    try {
+        const { limit = 10, category } = req.query;
+        
+        console.log(`🔥 Popular items requested, limit: ${limit}, category: ${category || 'all'}`);
+        
+        // Можно добавить логику для популярных товаров из БД
+        const popularItems = await getPopularItemsFromDB(parseInt(limit), category);
+        
+        res.json({
+            success: true,
+            recommendations: popularItems,
+            count: popularItems.length,
+            category: category || 'all',
+            source: 'popular',
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Popular items error:', error.message);
+        
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * Обновить кэш рекомендаций для пользователя
+ */
+app.post('/api/ml/refresh', async (req, res) => {
+    try {
+        const { user_id } = req.body;
+        
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'user_id обязателен'
+            });
+        }
+
+        console.log(`🔄 Refresh cache requested for user: ${user_id}`);
+        
+        // Здесь можно добавить логику принудительного обновления кэша
+        // Например, очистка кэша или пересчет рекомендаций
+        
+        res.json({
+            success: true,
+            message: 'Cache refresh initiated',
+            user_id: user_id,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Refresh cache error:', error.message);
+        
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * Статистика по рекомендациям
+ */
+app.get('/api/ml/stats', async (req, res) => {
+    try {
+        console.log('📊 ML Stats requested');
+        
+        // Базовая статистика
+        const stats = {
+            total_recommendations_served: 0, // Можно добавить счетчик
+            active_users: 0,
+            fallback_usage: 0,
+            average_response_time: 0,
+            service_uptime: process.uptime(),
+            timestamp: new Date().toISOString()
+        };
+
+        res.json({
+            success: true,
+            stats: stats,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ ML Stats error:', error.message);
+        
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
