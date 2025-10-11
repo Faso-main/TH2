@@ -110,23 +110,34 @@ useEffect(() => {
   };
   
   // Функция для добавления рекомендованных товаров
-  window.addRecommendedProducts = (products) => {
-    setSelectedProducts(prev => {
-      const newProducts = [...prev];
-      
-      products.forEach(product => {
+// Функция для добавления рекомендованных товаров
+window.addRecommendedProducts = (products) => {
+  if (!Array.isArray(products)) {
+    console.error('Expected array of products, got:', products);
+    return;
+  }
+  
+  setSelectedProducts(prev => {
+    const newProducts = [...prev];
+    
+    products.forEach(product => {
+      if (product && product.id) {
         const existingProduct = newProducts.find(p => p.id === product.id);
         if (!existingProduct) {
           newProducts.push({
-            ...product,
+            id: product.id,
+            name: product.name || 'Неизвестный товар',
+            category_name: product.category_name || 'Общее',
+            price_per_item: product.price_per_item || 1000,
             quantity: product.quantity || 1
           });
         }
-      });
-      
-      return newProducts;
+      }
     });
-  };
+    
+    return newProducts;
+  });
+};
   
   return () => {
     // Очищаем глобальные функции при размонтировании
