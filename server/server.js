@@ -337,7 +337,7 @@ app.get('/api/categories', async (req, res) => {
 // Получение товаров
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, search, limit = 50 } = req.query;
+    const { category, minPrice, maxPrice, search, limit = 100 } = req.query;
     
     console.log('Products request query:', { category, minPrice, maxPrice, search, limit });
     
