@@ -1,8 +1,8 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 // modal/CreateProcurement.jsx
 import { useState, useEffect } from 'react';
 import './CreateProcurement.css';
-import { unifiedAPI } from '../services/api';
 
 function CreateProcurement({ 
   onClose, 
@@ -34,13 +34,14 @@ function CreateProcurement({
   const [step, setStep] = useState(externalStep || 1);
   const [loading, setLoading] = useState(false);
   const [formValid, setFormValid] = useState(false);
-  const [addingRecommended, setAddingRecommended] = useState(false);
 
   // Инициализация формы из сохраненных данных или профиля пользователя
   useEffect(() => {
     if (initialFormData) {
+      // Восстанавливаем сохраненные данные
       setFormData(initialFormData);
     } else if (currentUser) {
+      // Заполняем из профиля пользователя
       setFormData(prev => ({
         ...prev,
         customer_name: currentUser.company_name || '',
@@ -90,10 +91,12 @@ function CreateProcurement({
       return;
     }
 
+    // Сохраняем данные перед переходом
     if (onFormDataChange) {
       onFormDataChange(formData);
     }
     
+    // Переходим к выбору товаров
     const newStep = 2;
     setStep(newStep);
     if (onStepChange) {
@@ -109,6 +112,7 @@ function CreateProcurement({
       return;
     }
 
+    // Создаем закупку (шаг 2)
     if (selectedProducts.length === 0) {
       alert('Добавьте хотя бы один товар в закупку');
       return;
@@ -138,6 +142,7 @@ function CreateProcurement({
 
       await onCreate(procurementData);
       
+      // Очищаем сохраненные данные после успешного создания
       if (onClearSavedForm) {
         onClearSavedForm();
       }
@@ -156,130 +161,17 @@ function CreateProcurement({
     }));
   };
 
-const handleAddRecommended = async () => {
-  if (!currentUser) {
-    alert('Для использования рекомендаций необходимо войти в систему');
-    return;
-  }
+  const handleAddRecommended = () => {
+    alert('Функция "Добавить рекомендуемые товары" будет доступна в ближайшем обновлении');
+  };
 
-  setAddingRecommended(true);
-  
-  try {
-    console.log('Getting recommendations for user:', currentUser.user_id || currentUser.id);
-    
-    // Сначала получаем историю закупок пользователя
-    let procurementHistory = [];
-    try {
-      const procurementsResponse = await unifiedAPI.user.getMyProcurements();
-      console.log('Procurements response:', procurementsResponse);
-      
-      // Извлекаем массив закупок из ответа
-      const procurements = procurementsResponse.procurements || procurementsResponse.data || procurementsResponse;
-      
-      if (Array.isArray(procurements)) {
-        procurementHistory = procurements.map(procurement => ({
-          procurement_id: procurement.procurement_id || procurement.id,
-          products: procurement.products || [],
-          total_price: procurement.estimated_price || procurement.current_price || 0,
-          date: procurement.procurement_date || procurement.created_at
-        }));
-      }
-    } catch (historyError) {
-      console.warn('Could not load procurement history:', historyError);
+  const handleAddProducts = () => {
+    // Сохраняем данные перед открытием каталога
+    if (onFormDataChange) {
+      onFormDataChange(formData);
     }
-
-    // Получаем рекомендации для пользователя
-    const recommendationsResponse = await unifiedAPI.recommendations.generateBundle({
-      target_budget: formData.current_price || 50000,
-      max_items: 5
-    });
-
-    console.log('Full recommendations response:', recommendationsResponse);
-
-    // Извлекаем рекомендованные товары с правильной обработкой ответа
-    let recommendedProducts = [];
-    
-    // Пробуем разные возможные структуры ответа
-    if (recommendationsResponse && Array.isArray(recommendationsResponse)) {
-      recommendedProducts = recommendationsResponse;
-    } else if (recommendationsResponse && recommendationsResponse.bundle && Array.isArray(recommendationsResponse.bundle.products)) {
-      recommendedProducts = recommendationsResponse.bundle.products;
-    } else if (recommendationsResponse && Array.isArray(recommendationsResponse.recommended_products)) {
-      recommendedProducts = recommendationsResponse.recommended_products;
-    } else if (recommendationsResponse && Array.isArray(recommendationsResponse.recommendations)) {
-      recommendedProducts = recommendationsResponse.recommendations;
-    } else if (recommendationsResponse && recommendationsResponse.data && Array.isArray(recommendationsResponse.data)) {
-      recommendedProducts = recommendationsResponse.data;
-    } else {
-      console.warn('Unexpected recommendations format:', recommendationsResponse);
-      // Пробуем получить любые товары из ответа
-      const possibleProducts = 
-        recommendationsResponse?.products ||
-        recommendationsResponse?.items ||
-        recommendationsResponse?.results;
-      
-      if (Array.isArray(possibleProducts)) {
-        recommendedProducts = possibleProducts;
-      } else {
-        throw new Error('Неверный формат ответа от сервера рекомендаций');
-      }
-    }
-
-    if (!Array.isArray(recommendedProducts) || recommendedProducts.length === 0) {
-      alert('Не удалось получить рекомендации. Сервер вернул пустой список.');
-      return;
-    }
-
-    console.log('Extracted recommended products:', recommendedProducts);
-
-    // Фильтруем только доступные товары с деталями
-    const availableProducts = recommendedProducts.filter(product => 
-      product && (product.product_details || product.name || product.product_id)
-    );
-
-    if (availableProducts.length === 0) {
-      alert('Нет доступных рекомендованных товаров');
-      return;
-    }
-
-    // Показываем пользователю рекомендации для выбора
-    const productList = availableProducts
-      .map((product, index) => {
-        const productName = product.product_details?.name || product.name || 'Рекомендованный товар';
-        const productPrice = product.price || product.product_details?.price_per_item || product.estimated_price || 0;
-        return `${index + 1}. ${productName} - ${formatPrice(productPrice)} ₽`;
-      })
-      .join('\n');
-
-    const shouldAdd = window.confirm(
-      `Рекомендуемые товары для вашей закупки:\n\n${productList}\n\nДобавить эти товары в закупку?`
-    );
-
-    if (shouldAdd) {
-      // Добавляем рекомендованные товары в закупку через глобальную функцию
-      if (window.addRecommendedProducts) {
-        const productsToAdd = availableProducts.map(product => ({
-          id: product.product_id || product.id || `rec-${Date.now()}-${Math.random()}`,
-          name: product.product_details?.name || product.name || 'Рекомендованный товар',
-          category_name: product.product_details?.category_name || product.category_name || 'Общее',
-          price_per_item: product.price || product.product_details?.price_per_item || product.estimated_price || 1000,
-          quantity: 1
-        }));
-        
-        window.addRecommendedProducts(productsToAdd);
-        alert(`✅ Добавлено ${productsToAdd.length} рекомендованных товаров!`);
-      } else {
-        alert('Товары добавлены. Обновите страницу для отображения изменений.');
-      }
-    }
-
-  } catch (error) {
-    console.error('Error adding recommended products:', error);
-    alert('Ошибка при получении рекомендаций: ' + (error.message || 'Неизвестная ошибка'));
-  } finally {
-    setAddingRecommended(false);
-  }
-};
+    onAddProducts();
+  };
 
   const handleStepChange = (newStep) => {
     if (newStep === 2 && !formValid) {
@@ -287,6 +179,7 @@ const handleAddRecommended = async () => {
       return;
     }
     
+    // Сохраняем данные при смене шага
     if (onFormDataChange && newStep === 2) {
       onFormDataChange(formData);
     }
@@ -528,7 +421,7 @@ const handleAddRecommended = async () => {
                   <button 
                     type="button" 
                     className="btn-outline btn-small"
-                    onClick={onAddProducts}
+                    onClick={handleAddProducts}
                   >
                     Добавить еще
                   </button>
@@ -593,7 +486,7 @@ const handleAddRecommended = async () => {
               <button 
                 type="button" 
                 className="btn-outline btn-full"
-                onClick={onAddProducts}
+                onClick={handleAddProducts}
               >
                 📦 Выбрать товары из каталога
               </button>
@@ -602,16 +495,8 @@ const handleAddRecommended = async () => {
                 type="button" 
                 className="btn-outline btn-full"
                 onClick={handleAddRecommended}
-                disabled={addingRecommended}
               >
-                {addingRecommended ? (
-                  <>
-                    <div className="loading-spinner-small"></div>
-                    Получение рекомендаций...
-                  </>
-                ) : (
-                  '💡 Добавить рекомендуемые товары'
-                )}
+                💡 Добавить рекомендуемые товары
               </button>
             </div>
           </div>
