@@ -411,7 +411,7 @@ app.get('/api/products', async (req, res) => {
 
 app.get('/api/procurements', async (req, res) => {
   try {
-    const { status, limit = 20 } = req.query;
+    const { status, limit = 50 } = req.query;
     
     console.log('Procurements request query:', { status, limit });
     
