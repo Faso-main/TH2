@@ -712,331 +712,92 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
 
-app.use('/api/ml', recommendationRoutes);
-
-console.log('✅ ML Recommendation routes registered:');
-console.log('   POST /api/ml/recommendations');
-console.log('   GET  /api/ml/health');
-
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-  console.log(`База данных: pc_db`);
-  console.log(`Пользователь БД: store_app1`);
-  console.log(`API доступно: http://localhost:${PORT}/api`);
-});
-
-{/*app.post('/api/ml/recommendations', async (req, res) => {
-    try {
-        const { user_id, limit = 15 } = req.body;
-        
-        console.log(`🎯 [ML] Getting recommendations for user: ${user_id}`);
-        
-        // Прямой вызов Python ML сервиса
-        const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: user_id,
-                limit: parseInt(limit)
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Python service responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        console.log(`✅ [ML] Successfully received ${data.recommendations?.length || 0} recommendations`);
-        
-        res.json({
-            success: true,
-            ...data
-        });
-
-    } catch (error) {
-        console.error('❌ [ML] Recommendation error:', error.message);
-        
-        // Fallback рекомендации
-        const fallbackRecommendations = [
-            {
-                product_id: "fallback_1",
-                product_name: "Офисный стул",
-                product_category: "Мебель", 
-                total_score: 0.8,
-                price_range: { avg: 4500, min: 3500, max: 6000, source: "fallback" },
-                explanation: "Популярный товар для офиса",
-                in_catalog: true
-            },
-            {
-                product_id: "fallback_2", 
-                product_name: "Принтер лазерный", 
-                product_category: "Офисная техника",
-                total_score: 0.7,
-                price_range: { avg: 12000, min: 8000, max: 15000, source: "fallback" },
-                explanation: "Необходимая офисная техника", 
-                in_catalog: true
-            },
-            {
-                product_id: "fallback_3", 
-                product_name: "Канцелярский набор", 
-                product_category: "Канцелярия",
-                total_score: 0.6,
-                price_range: { avg: 1500, min: 800, max: 2500, source: "fallback" },
-                explanation: "Базовые канцелярские товары", 
-                in_catalog: true
-            }
-        ].slice(0, req.body.limit || 15);
-        
-        res.json({
-            success: false,
-            user_id: req.body.user_id,
-            recommendations: fallbackRecommendations,
-            count: fallbackRecommendations.length,
-            note: 'fallback_recommendations',
-            error: error.message
-        });
-    }
-});
-
+// Health check для ML
 app.get('/api/ml/health', async (req, res) => {
-    try {
-        const response = await fetch('http://127.0.0.1:8000/health', {
-            timeout: 5000
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Python service health check failed: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        res.json({
-            python_service: data,
-            status: 'healthy'
-        });
-    } catch (error) {
-        console.error('❌ [ML] Health check error:', error.message);
-        res.status(503).json({
-            python_service: 'unavailable', 
-            status: 'unhealthy',
-            error: error.message
-        });
+  try {
+    console.log('GET /api/ml/health - проверка ML сервиса');
+    
+    const response = await fetch('http://127.0.0.1:8000/health');
+    
+    if (!response.ok) {
+      throw new Error(`ML service error: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log('ML сервис здоров:', data);
+    
+    res.json({ 
+      status: 'OK', 
+      ml_service: 'connected',
+      python_service: data 
+    });
+    
+  } catch (err) {
+    console.error('Ошибка при проверке ML:', err);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      ml_service: 'disconnected',
+      error: err.message 
+    });
+  }
 });
 
-console.log('✅ ML Recommendation endpoints registered:');
-console.log('   POST /api/ml/recommendations');
-console.log('   GET  /api/ml/health');*/}
-
-// =============================================
-// ML RECOMMENDATION ENDPOINTS
-// =============================================
-
-/**
- * Health check для ML сервиса
- */
-app.get('/api/ml/health', async (req, res) => {
-    try {
-        console.log('🔍 ML Health check requested');
-        
-        const response = await fetch('http://127.0.0.1:8000/health', {
-            method: 'GET',
-            timeout: 5000
-        });
-
-        if (!response.ok) {
-            throw new Error(`Python ML service health check failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        res.json({
-            status: 'healthy',
-            python_service: data,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ ML Health check error:', error.message);
-        
-        res.status(503).json({
-            status: 'unhealthy',
-            python_service: 'unavailable',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-
-/**
- * Получить рекомендации для пользователя
- */
+// Получить рекомендации
 app.post('/api/ml/recommendations', async (req, res) => {
-    try {
-        const { user_id, limit = 10 } = req.body;
-        
-        // Валидация
-        if (!user_id) {
-            return res.status(400).json({
-                success: false,
-                error: 'user_id обязателен'
-            });
-        }
-
-        console.log(`🎯 ML Recommendations requested for user: ${user_id}, limit: ${limit}`);
-        
-        // Вызов Python ML сервиса
-        const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: user_id,
-                limit: parseInt(limit)
-            }),
-            timeout: 15000 // 15 секунд таймаут
-        });
-
-        if (!response.ok) {
-            throw new Error(`Python ML service error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        console.log(`✅ ML Recommendations success: ${data.recommendations?.length || 0} items`);
-
-        // Форматируем ответ для фронтенда
-        const formattedResponse = {
-            success: true,
-            user_id: user_id,
-            recommendations: data.recommendations || [],
-            count: data.recommendations?.length || 0,
-            source: 'ml_service',
-            timestamp: new Date().toISOString()
-        };
-
-        res.json(formattedResponse);
-
-    } catch (error) {
-        console.error('❌ ML Recommendations error:', error.message);
-        
-        // Fallback рекомендации
-        const fallbackRecommendations = getFallbackRecommendations(req.body.limit || 10);
-        
-        res.json({
-            success: false,
-            user_id: req.body.user_id,
-            recommendations: fallbackRecommendations,
-            count: fallbackRecommendations.length,
-            source: 'fallback',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
+  try {
+    const { user_id, limit } = req.body;
+    console.log('POST /api/ml/recommendations - пользователь:', user_id);
+    
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id обязателен' });
     }
+    
+    const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: user_id,
+        limit: parseInt(limit) || 10
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`ML service error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`Получено рекомендаций: ${data.recommendations?.length || 0}`);
+    
+    res.json({
+      success: true,
+      ...data
+    });
+
+  } catch (err) {
+    console.error('Ошибка при получении рекомендаций:', err);
+    
+    // Fallback
+    const fallbackItems = [
+      {
+        product_id: "fallback_1",
+        product_name: "Тестовый товар 1",
+        product_category: "Тест",
+        total_score: 0.8,
+        explanation: "Рекомендация из fallback"
+      }
+    ].slice(0, req.body.limit || 5);
+    
+    res.json({
+      success: false,
+      user_id: req.body.user_id,
+      recommendations: fallbackItems,
+      count: fallbackItems.length,
+      note: 'fallback_mode',
+      error: err.message
+    });
+  }
 });
 
-/**
- * Получить популярные товары (альтернативный эндпоинт)
- */
-app.get('/api/ml/popular', async (req, res) => {
-    try {
-        const { limit = 10, category } = req.query;
-        
-        console.log(`🔥 Popular items requested, limit: ${limit}, category: ${category || 'all'}`);
-        
-        // Можно добавить логику для популярных товаров из БД
-        const popularItems = await getPopularItemsFromDB(parseInt(limit), category);
-        
-        res.json({
-            success: true,
-            recommendations: popularItems,
-            count: popularItems.length,
-            category: category || 'all',
-            source: 'popular',
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ Popular items error:', error.message);
-        
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-
-/**
- * Обновить кэш рекомендаций для пользователя
- */
-app.post('/api/ml/refresh', async (req, res) => {
-    try {
-        const { user_id } = req.body;
-        
-        if (!user_id) {
-            return res.status(400).json({
-                success: false,
-                error: 'user_id обязателен'
-            });
-        }
-
-        console.log(`🔄 Refresh cache requested for user: ${user_id}`);
-        
-        // Здесь можно добавить логику принудительного обновления кэша
-        // Например, очистка кэша или пересчет рекомендаций
-        
-        res.json({
-            success: true,
-            message: 'Cache refresh initiated',
-            user_id: user_id,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ Refresh cache error:', error.message);
-        
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-
-/**
- * Статистика по рекомендациям
- */
-app.get('/api/ml/stats', async (req, res) => {
-    try {
-        console.log('📊 ML Stats requested');
-        
-        // Базовая статистика
-        const stats = {
-            total_recommendations_served: 0, // Можно добавить счетчик
-            active_users: 0,
-            fallback_usage: 0,
-            average_response_time: 0,
-            service_uptime: process.uptime(),
-            timestamp: new Date().toISOString()
-        };
-
-        res.json({
-            success: true,
-            stats: stats,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ ML Stats error:', error.message);
-        
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
+console.log('✅ ML endpoints registered: GET /api/ml/health, POST /api/ml/recommendations');
