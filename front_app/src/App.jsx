@@ -695,27 +695,6 @@ function Main({
           </div>
         )}
 
-        {/* Баннер возврата к закупке */}
-        {savedProcurementData && highlightAddToProcurement && (
-          <div className="procurement-banner">
-            <div className="banner-content">
-              <div className="banner-info">
-                <span className="banner-icon">📋</span>
-                <div>
-                  <div className="banner-title">Закупка в процессе создания</div>
-                  <div className="banner-subtitle">Выбрано товаров: {selectedProducts.length}</div>
-                </div>
-              </div>
-              <button 
-                className="btn-primary"
-                onClick={onReturnToProcurement}
-              >
-                Вернуться к закупке
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="products-layout">
           <section className="products-main">
             <div className="products-header">
