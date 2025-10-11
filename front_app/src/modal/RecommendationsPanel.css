@@ -118,7 +118,8 @@
 }
 
 .recommendation-title {
-  font-size: 0.9rem;
+  text-wrap: wrap;
+  font-size: 0.8rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--text-primary);
