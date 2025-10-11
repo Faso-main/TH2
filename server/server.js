@@ -727,7 +727,7 @@ app.listen(PORT, () => {
   console.log(`API доступно: http://localhost:${PORT}/api`);
 });
 
-app.post('/api/ml/recommendations', async (req, res) => {
+{/*app.post('/api/ml/recommendations', async (req, res) => {
     try {
         const { user_id, limit = 15 } = req.body;
         
@@ -830,4 +830,4 @@ app.get('/api/ml/health', async (req, res) => {
 
 console.log('✅ ML Recommendation endpoints registered:');
 console.log('   POST /api/ml/recommendations');
-console.log('   GET  /api/ml/health');
+console.log('   GET  /api/ml/health');*/}
