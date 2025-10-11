@@ -259,7 +259,11 @@ export const unifiedAPI = {
         
         if (!currentUser) {
           console.warn('No user found for recommendations');
-          return { recommendations: [] };
+          return { 
+            success: false, 
+            recommendations: [],
+            error: 'User not found'
+          };
         }
 
         const response = await fetch('/api/ml/recommendations', {
@@ -280,25 +284,26 @@ export const unifiedAPI = {
 
         const data = await response.json();
         
-        // Преобразуем в формат ожидаемый фронтендом
-        const formattedRecommendations = data.recommendations?.map(rec => ({
+        // ✅ Всегда возвращаем массив рекомендаций
+        const recommendations = data.recommendations?.map(rec => ({
           id: rec.product_id,
           name: rec.product_name,
           category_name: rec.product_category,
           price_per_item: rec.price_range?.avg || 1000,
-          total_score: rec.total_score,
+          total_score: rec.total_score || 0.5,
           explanation: rec.explanation,
           in_catalog: rec.in_catalog
         })) || [];
 
         return {
-          success: data.success,
-          recommendations: formattedRecommendations,
-          count: formattedRecommendations.length
+          success: data.success !== false, // на всякий случай
+          recommendations: recommendations,
+          count: recommendations.length,
+          source: data.source
         };
 
       } catch (error) {
-        console.warn('ML recommendations unavailable, using fallback:', error);
+        console.warn('ML recommendations unavailable:', error);
         return {
           success: false,
           recommendations: [],

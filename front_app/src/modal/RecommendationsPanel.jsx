@@ -9,28 +9,33 @@ function RecommendationsPanel({ currentUser, onAddToProcurement }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadRecommendations = async () => {
-    if (!currentUser) return;
+const loadRecommendations = async () => {
+  if (!currentUser) return;
+  
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const result = await unifiedAPI.recommendations.getQuickRecommendations(6);
     
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = await unifiedAPI.recommendations.getQuickRecommendations(6);
-      
-      if (result.success) {
-        setRecommendations(result.recommendations);
-      } else {
-        setRecommendations(result.recommendations); // fallback
+    // ✅ ПРАВИЛЬНАЯ ОБРАБОТКА
+    if (result.recommendations && result.recommendations.length > 0) {
+      setRecommendations(result.recommendations);
+      if (!result.success) {
         setError('Используются базовые рекомендации');
       }
-    } catch (err) {
-      setError('Не удалось загрузить рекомендации');
-      console.error('Recommendations error:', err);
-    } finally {
-      setLoading(false);
+    } else {
+      setRecommendations([]);
+      setError('Нет доступных рекомендаций');
     }
-  };
+  } catch (err) {
+    setError('Не удалось загрузить рекомендации');
+    setRecommendations([]); // очищаем при ошибке
+    console.error('Recommendations error:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (currentUser) {
