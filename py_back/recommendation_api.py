@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
-from py_back.recommendation_service import PGRecommendationService
+from recommendation_service import PGRecommendationService
 import asyncio
 
 app = FastAPI(title="Procurement Recommendation API")
