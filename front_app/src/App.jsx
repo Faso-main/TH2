@@ -394,9 +394,12 @@ const handleClearSavedProcurementData = () => {
         highlightAddToProcurement={highlightAddToProcurement}
         onReturnToProcurement={handleReturnToProcurement}
         savedProcurementData={savedProcurementData}
-        savedProcurementFormData={savedProcurementFormData} // Добавьте эту строку
+        savedProcurementFormData={savedProcurementFormData}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
+        // Добавьте эти пропсы:
+        setProcurementCreationStep={setProcurementCreationStep}
+        setActiveModal={setActiveModal}
       />
       
       <Footer />
@@ -613,7 +616,6 @@ function Header({
 }
 
 // Компонент Main
-// Компонент Main
 function Main({ 
   products, 
   procurements, 
@@ -630,7 +632,10 @@ function Main({
   savedProcurementData,
   activeSection,
   setActiveSection,
-  savedProcurementFormData // Добавьте этот пропс
+  savedProcurementFormData,
+  // Добавьте эти пропсы:
+  setProcurementCreationStep,
+  setActiveModal
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
@@ -682,11 +687,7 @@ function Main({
     <div className="saved-data-banner">
       <div className="banner-content">
         <div className="banner-info">
-          <span className="banner-icon">📋</span>
           <div>
-            <div className="banner-title">
-              {savedProcurementFormData.formData?.title || 'Закупка без названия'}
-            </div>
             <div className="banner-subtitle">
               {selectedProducts.length > 0 
                 ? `Выбрано товаров: ${selectedProducts.length}` 
