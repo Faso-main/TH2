@@ -3,6 +3,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import pkg from 'pg';
 
+const recommendationRoutes = require('../py_back/recommendation_routes');
 const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
@@ -705,6 +706,12 @@ app.use((error, req, res, next) => {
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
+
+app.use('/api/ml', recommendationRoutes);
+
+console.log('✅ ML Recommendation routes registered:');
+console.log('   POST /api/ml/recommendations');
+console.log('   GET  /api/ml/health');
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
