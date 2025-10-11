@@ -1,6 +1,6 @@
 import asyncpg
 import pandas as pd
-from py_back.combo3_step import HybridProcurementRecommender
+from combo3_step import HybridProcurementRecommender
 import json
 import asyncio
 from datetime import datetime, timedelta
