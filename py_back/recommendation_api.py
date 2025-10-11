@@ -21,7 +21,8 @@ class RecommendationRequest(BaseModel):
     user_id: str
     limit: int = 15
 
-@app.lifespan("startup")
+# Используем старый способ инициализации вместо lifespan
+@app.on_event("startup")
 async def startup_event():
     await service.init_recommender()
     print("✅ Recommendation service initialized")
