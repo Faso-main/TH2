@@ -986,7 +986,7 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement, 
               <div className="product-image-fallback" style={{display: 'none'}}>
                 {product.name}
               </div>
-              <button className="wishlist-btn">💙</button>
+              <button className="wishlist-btn">🖤</button>
             </div>
             <div className="product-info">
               <h3 className="product-title">{product.name}</h3>
