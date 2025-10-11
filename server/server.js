@@ -3,6 +3,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import pkg from 'pg';
 import recommendationRoutes from './recommendation_routes.js';
+import fetch from "node-fetch"; // или require('node-fetch') если CommonJS
 
 
 
