@@ -133,8 +133,16 @@ export const authAPI = {
 // Products API
 export const productsAPI = {
   async getProducts(filters = {}) {
-    const queryString = new URLSearchParams(filters).toString();
-    return apiRequest(`/products?${queryString}`);
+    const queryParams = new URLSearchParams();
+    
+    // Преобразуем параметры под серверные названия
+    if (filters.category) queryParams.append('category', filters.category);
+    if (filters.minPrice) queryParams.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) queryParams.append('maxPrice', filters.maxPrice);
+    if (filters.search) queryParams.append('search', filters.search);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    
+    return apiRequest(`/products?${queryParams.toString()}`);
   },
 
   async getProduct(id) {
@@ -142,15 +150,26 @@ export const productsAPI = {
   },
 
   async searchProducts(query) {
-    return apiRequest(`/products/search?q=${encodeURIComponent(query)}`);
+    return apiRequest(`/products?search=${encodeURIComponent(query)}`);
+  }
+};
+
+// Categories API
+export const categoriesAPI = {
+  async getCategories() {
+    return apiRequest('/categories');
   }
 };
 
 // Procurements API
 export const procurementsAPI = {
   async getProcurements(filters = {}) {
-    const queryString = new URLSearchParams(filters).toString();
-    return apiRequest(`/procurements?${queryString}`);
+    const queryParams = new URLSearchParams();
+    
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    
+    return apiRequest(`/procurements?${queryParams.toString()}`);
   },
 
   async getProcurement(id) {

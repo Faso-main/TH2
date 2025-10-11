@@ -50,11 +50,11 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// PostgreSQL connection
+// PostgreSQL connection - используем базу данных PC_DB
 const pool = new Pool({
   user: 'store_app1',
   host: 'localhost',
-  database: 'online_store1',
+  database: 'pc_db',
   password: '1234',
   port: 5432,
 });
@@ -79,8 +79,8 @@ const checkSession = (req, res, next) => {
 app.get('/api/user/profile', checkSession, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, INN, company_name, phone_number, location, role, created_at FROM store.users WHERE id = $1',
-      [req.user.id]
+      'SELECT user_id, email, inn, company_name, full_name as name, phone_number, created_at FROM users WHERE user_id = $1',
+      [req.user.userId]
     );
     
     if (result.rows.length === 0) {
@@ -97,14 +97,14 @@ app.get('/api/user/profile', checkSession, async (req, res) => {
 // Обновить профиль пользователя
 app.put('/api/user/profile', checkSession, async (req, res) => {
   try {
-    const { name, email, company_name, phone_number, location } = req.body;
+    const { name, email, company_name, phone_number } = req.body;
     
     const result = await pool.query(
-      `UPDATE store.users 
-       SET name = $1, email = $2, company_name = $3, phone_number = $4, location = $5, updated_at = NOW()
-       WHERE id = $6
-       RETURNING id, name, email, INN, company_name, phone_number, location, role, created_at`,
-      [name, email, company_name, phone_number, location, req.user.id]
+      `UPDATE users 
+       SET full_name = $1, email = $2, company_name = $3, phone_number = $4, updated_at = NOW()
+       WHERE user_id = $5
+       RETURNING user_id, email, inn, company_name, full_name as name, phone_number, created_at`,
+      [name, email, company_name, phone_number, req.user.userId]
     );
     
     if (result.rows.length === 0) {
@@ -133,14 +133,21 @@ app.put('/api/user/profile', checkSession, async (req, res) => {
 app.get('/api/user/my-procurements', checkSession, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT p.id, p.session_number, p.title, p.status, p.current_price, 
-              p.customer_name, p.customer_inn, p.start_date, p.end_date,
-              p.created_at, p.updated_at,
-              COUNT(pp.id) as participants_count
-       FROM store.procurements p
-       LEFT JOIN store.procurement_participants pp ON p.id = pp.procurement_id
-       WHERE p.created_by = $1
-       GROUP BY p.id
+      `SELECT 
+        p.procurement_id as id,
+        p.name as title,
+        p.status,
+        p.estimated_price as current_price,
+        p.organization_name as customer_name,
+        p.organization_inn as customer_inn,
+        p.procurement_date,
+        p.created_at,
+        COUNT(pi.procurement_item_id) as products_count
+       FROM procurements p
+       LEFT JOIN procurement_items pi ON p.procurement_id = pi.procurement_id
+       WHERE p.user_id = $1
+       GROUP BY p.procurement_id, p.name, p.status, p.estimated_price, 
+                p.organization_name, p.organization_inn, p.procurement_date, p.created_at
        ORDER BY p.created_at DESC`,
       [req.user.userId]
     );
@@ -158,13 +165,19 @@ app.get('/api/user/my-procurements', checkSession, async (req, res) => {
 app.get('/api/user/my-participations', checkSession, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT pp.id, pp.proposed_price, pp.status, pp.proposal_text, pp.created_at,
-              p.title as procurement_title, p.session_number, p.customer_name, p.customer_inn
-       FROM store.procurement_participants pp
-       JOIN store.procurements p ON pp.procurement_id = p.id
+      `SELECT 
+        pp.procurement_id,
+        pp.proposed_price,
+        pp.status,
+        pp.created_at,
+        p.name as procurement_title,
+        p.organization_name as customer_name,
+        p.organization_inn as customer_inn
+       FROM procurement_participants pp
+       JOIN procurements p ON pp.procurement_id = p.procurement_id
        WHERE pp.user_id = $1
        ORDER BY pp.created_at DESC`,
-      [req.user.id]
+      [req.user.userId]
     );
     
     res.json({ participations: result.rows });
@@ -180,7 +193,7 @@ app.get('/api/health', async (req, res) => {
     const result = await pool.query('SELECT NOW() as time');
     res.json({ 
       status: 'OK', 
-      database: 'online_store1',
+      database: 'pc_db',
       time: result.rows[0].time,
       sessions: sessions.size
     });
@@ -195,14 +208,14 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     console.log('Register request body:', req.body);
     
-    const { name, email, password, INN, company_name, location, phone_number } = req.body;
+    const { name, email, password, INN, company_name, phone_number } = req.body;
 
     if (!name || !email || !password || !INN) {
       return res.status(400).json({ error: 'Все обязательные поля должны быть заполнены' });
     }
 
     // Проверка существующего пользователя
-    const userExists = await pool.query('SELECT id FROM store.users WHERE email = $1', [email]);
+    const userExists = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
     if (userExists.rows.length > 0) {
       return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
     }
@@ -212,17 +225,17 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Создание пользователя
     const result = await pool.query(
-      `INSERT INTO store.users (name, email, password_hash, INN, company_name, location, phone_number) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING id, name, email, INN, company_name, location, phone_number, role`,
-      [name, email, passwordHash, INN, company_name, location, phone_number]
+      `INSERT INTO users (email, password_hash, inn, company_name, full_name, phone_number) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING user_id, email, inn, company_name, full_name as name, phone_number, created_at`,
+      [email, passwordHash, INN, company_name, name, phone_number]
     );
 
     const user = result.rows[0];
     const sessionId = generateSessionId();
-    sessions.set(sessionId, { userId: user.id, email: user.email, role: user.role });
+    sessions.set(sessionId, { userId: user.user_id, email: user.email });
 
-    console.log('User registered:', { userId: user.id, email: user.email });
+    console.log('User registered:', { userId: user.user_id, email: user.email });
 
     res.json({
       message: 'Пользователь успешно зарегистрирован',
@@ -249,7 +262,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Поиск пользователя
     const result = await pool.query(
-      'SELECT id, name, email, password_hash, role, is_active FROM store.users WHERE email = $1',
+      'SELECT user_id, email, password_hash, full_name as name, company_name, inn, phone_number FROM users WHERE email = $1',
       [email]
     );
 
@@ -267,17 +280,19 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Создание сессии
     const sessionId = generateSessionId();
-    sessions.set(sessionId, { userId: user.id, email: user.email, role: user.role });
+    sessions.set(sessionId, { userId: user.user_id, email: user.email });
 
-    console.log('User logged in:', { userId: user.id, email: user.email });
+    console.log('User logged in:', { userId: user.user_id, email: user.email });
 
     res.json({
       message: 'Успешный вход',
       user: {
-        id: user.id,
+        user_id: user.user_id,
         name: user.name,
         email: user.email,
-        role: user.role
+        company_name: user.company_name,
+        INN: user.inn,
+        phone_number: user.phone_number
       },
       sessionId
     });
@@ -300,10 +315,9 @@ app.post('/api/auth/logout', checkSession, (req, res) => {
 app.get('/api/categories', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, name, parent_id, level, description
-      FROM store.categories 
-      WHERE is_active = true
-      ORDER BY level, parent_id NULLS FIRST, sort_order
+      SELECT category_id, name, parent_category_id, level, description
+      FROM categories 
+      ORDER BY level, parent_category_id NULLS FIRST, name
     `);
     
     res.json({ categories: result.rows });
@@ -322,38 +336,44 @@ app.get('/api/products', async (req, res) => {
     
     let query = `
       SELECT 
-        p.*, 
+        p.product_id as id,
+        p.name,
+        p.description,
+        p.manufacturer as company,
+        p.average_price as price_per_item,
+        p.unit_of_measure,
+        p.specifications,
+        p.is_available,
         c.name as category_name,
-        c2.name as parent_category_name
-      FROM store.products p 
-      LEFT JOIN store.categories c ON p.category_id = c.id
-      LEFT JOIN store.categories c2 ON c.parent_id = c2.id
-      WHERE p.is_active = true
+        c.category_id
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      WHERE p.is_available = true
     `;
     const params = [];
     let paramCount = 0;
 
     if (category) {
       paramCount++;
-      query += ` AND (c.name ILIKE $${paramCount} OR c2.name ILIKE $${paramCount})`;
+      query += ` AND (c.name ILIKE $${paramCount})`;
       params.push(`%${category}%`);
     }
 
     if (minPrice) {
       paramCount++;
-      query += ` AND p.price_per_item >= $${paramCount}`;
+      query += ` AND p.average_price >= $${paramCount}`;
       params.push(parseFloat(minPrice));
     }
 
     if (maxPrice) {
       paramCount++;
-      query += ` AND p.price_per_item <= $${paramCount}`;
+      query += ` AND p.average_price <= $${paramCount}`;
       params.push(parseFloat(maxPrice));
     }
 
     if (search) {
       paramCount++;
-      query += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount} OR p.company ILIKE $${paramCount})`;
+      query += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount} OR p.manufacturer ILIKE $${paramCount})`;
       params.push(`%${search}%`);
     }
 
@@ -362,11 +382,18 @@ app.get('/api/products', async (req, res) => {
 
     const result = await pool.query(query, params);
     
-    console.log(`Found ${result.rows.length} products`);
+    // Преобразуем данные для фронтенда
+    const products = result.rows.map(row => ({
+      ...row,
+      amount: 10, // дефолтное значение
+      category_name: row.category_name || 'Без категории'
+    }));
+    
+    console.log(`Found ${products.length} products`);
     
     res.json({
-      products: result.rows,
-      total: result.rows.length
+      products: products,
+      total: products.length
     });
 
   } catch (error) {
@@ -384,12 +411,21 @@ app.get('/api/procurements', async (req, res) => {
     
     let query = `
       SELECT 
-        p.*,
-        u.name as created_by_name,
-        u.company_name as created_by_company
-      FROM store.procurements p
-      LEFT JOIN store.users u ON p.created_by = u.id
-      WHERE p.is_active = true
+        p.procurement_id as id,
+        p.name as title,
+        p.description,
+        p.estimated_price as current_price,
+        p.actual_price,
+        p.status,
+        p.procurement_date,
+        p.publication_date,
+        p.organization_name as customer_name,
+        p.organization_inn as customer_inn,
+        p.created_at,
+        u.email as created_by_email
+      FROM procurements p
+      LEFT JOIN users u ON p.user_id = u.user_id
+      WHERE 1=1
     `;
     const params = [];
     let paramCount = 0;
@@ -400,7 +436,7 @@ app.get('/api/procurements', async (req, res) => {
       params.push(status);
     }
 
-    query += ' ORDER BY p.start_date DESC LIMIT $' + (paramCount + 1);
+    query += ' ORDER BY p.procurement_date DESC LIMIT $' + (paramCount + 1);
     params.push(parseInt(limit));
 
     const result = await pool.query(query, params);
@@ -410,27 +446,31 @@ app.get('/api/procurements', async (req, res) => {
       result.rows.map(async (procurement) => {
         const productsResult = await pool.query(`
           SELECT 
-            pp.*,
+            pi.quantity as required_quantity,
+            pi.unit_price,
+            p.product_id,
             p.name as product_name,
-            p.price_per_item as market_price,
             p.description as product_description,
+            p.average_price as market_price,
             c.name as category_name
-          FROM store.procurement_products pp
-          JOIN store.products p ON pp.product_id = p.id
-          JOIN store.categories c ON p.category_id = c.id
-          WHERE pp.procurement_id = $1
+          FROM procurement_items pi
+          JOIN products p ON pi.product_id = p.product_id
+          LEFT JOIN categories c ON p.category_id = c.category_id
+          WHERE pi.procurement_id = $1
         `, [procurement.id]);
 
-        const participantsResult = await pool.query(`
-          SELECT COUNT(*) as participants_count 
-          FROM store.procurement_participants 
-          WHERE procurement_id = $1
-        `, [procurement.id]);
+        // Получаем количество участников
+        const participantsResult = await pool.query(
+          `SELECT COUNT(*) as participants_count 
+           FROM procurement_participants 
+           WHERE procurement_id = $1`,
+          [procurement.id]
+        );
 
         return {
           ...procurement,
           products: productsResult.rows,
-          participants_count: parseInt(participantsResult.rows[0].participants_count)
+          participants_count: parseInt(participantsResult.rows[0]?.participants_count || 0)
         };
       })
     );
@@ -448,52 +488,43 @@ app.get('/api/procurements', async (req, res) => {
   }
 });
 
-// Участие в закупке
+// Создание закупки
 app.post('/api/procurements', checkSession, async (req, res) => {
   try {
     const {
       title,
       description,
-      session_number,
       customer_name,
       customer_inn,
       current_price,
-      start_date,
-      end_date,
-      law_type = '44-ФЗ',
-      contract_terms,
-      contract_security,
       products = []
     } = req.body;
 
     console.log('Create procurement request:', req.body);
 
     // Валидация обязательных полей
-    if (!title || !session_number || !current_price || !start_date || !end_date) {
-      return res.status(400).json({ error: 'Заполните все обязательные поля: название, номер сессии, цена, даты начала и окончания' });
+    if (!title || !current_price) {
+      return res.status(400).json({ error: 'Заполните все обязательные поля: название и цена' });
     }
+
+    // Генерация ID закупки
+    const procurementId = `PROC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Создаем закупку
     const procurementResult = await pool.query(
-      `INSERT INTO store.procurements 
-       (title, description, session_number, customer_name, customer_inn, 
-        current_price, start_date, end_date, law_type, contract_terms, 
-        contract_security, created_by, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
+      `INSERT INTO procurements 
+       (procurement_id, user_id, name, estimated_price, status, procurement_date, organization_name, organization_inn)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
+        procurementId,
+        req.user.userId,
         title,
-        description,
-        session_number,
-        customer_name,
-        customer_inn,
         parseFloat(current_price),
-        new Date(start_date),
-        new Date(end_date),
-        law_type,
-        contract_terms,
-        contract_security,
-        req.user.userId
+        'active',
+        new Date(),
+        customer_name,
+        customer_inn
       ]
     );
 
@@ -505,14 +536,14 @@ app.post('/api/procurements', checkSession, async (req, res) => {
       for (const product of products) {
         if (product.product_id && product.required_quantity > 0) {
           await pool.query(
-            `INSERT INTO store.procurement_products 
-             (procurement_id, product_id, required_quantity, max_price)
+            `INSERT INTO procurement_items 
+             (procurement_id, product_id, quantity, unit_price)
              VALUES ($1, $2, $3, $4)`,
             [
-              procurement.id,
+              procurementId,
               product.product_id,
               product.required_quantity,
-              product.max_price ? parseFloat(product.max_price) : null
+              product.max_price || product.price_per_item
             ]
           );
         }
@@ -521,32 +552,32 @@ app.post('/api/procurements', checkSession, async (req, res) => {
 
     // Получаем полные данные закупки для ответа
     const fullProcurementResult = await pool.query(
-      `SELECT p.*, u.name as created_by_name, u.company_name as created_by_company
-       FROM store.procurements p
-       LEFT JOIN store.users u ON p.created_by = u.id
-       WHERE p.id = $1`,
-      [procurement.id]
+      `SELECT p.*, u.email as created_by_email
+       FROM procurements p
+       LEFT JOIN users u ON p.user_id = u.user_id
+       WHERE p.procurement_id = $1`,
+      [procurementId]
     );
 
     const productsResult = await pool.query(
-      `SELECT pp.*, p.name as product_name
-       FROM store.procurement_products pp
-       JOIN store.products p ON pp.product_id = p.id
-       WHERE pp.procurement_id = $1`,
-      [procurement.id]
+      `SELECT pi.*, p.name as product_name
+       FROM procurement_items pi
+       JOIN products p ON pi.product_id = p.product_id
+       WHERE pi.procurement_id = $1`,
+      [procurementId]
     );
 
     const participantsResult = await pool.query(
       `SELECT COUNT(*) as participants_count 
-       FROM store.procurement_participants 
+       FROM procurement_participants 
        WHERE procurement_id = $1`,
-      [procurement.id]
+      [procurementId]
     );
 
     const procurementWithProducts = {
       ...fullProcurementResult.rows[0],
       products: productsResult.rows,
-      participants_count: parseInt(participantsResult.rows[0].participants_count)
+      participants_count: parseInt(participantsResult.rows[0]?.participants_count || 0)
     };
 
     console.log('Final procurement data:', procurementWithProducts);
@@ -559,6 +590,38 @@ app.post('/api/procurements', checkSession, async (req, res) => {
   } catch (error) {
     console.error('Create procurement error:', error);
     res.status(500).json({ error: 'Ошибка при создании закупки: ' + error.message });
+  }
+});
+
+// Участие в закупке
+app.post('/api/procurements/:id/participate', checkSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { proposed_price, proposal_text } = req.body;
+
+    // Проверяем существование закупки
+    const procurementResult = await pool.query(
+      'SELECT * FROM procurements WHERE procurement_id = $1 AND status = $2',
+      [id, 'active']
+    );
+
+    if (procurementResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Закупка не найдена или не активна' });
+    }
+
+    // Создаем участие
+    await pool.query(
+      `INSERT INTO procurement_participants 
+       (procurement_id, user_id, proposed_price, proposal_text, status)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, req.user.userId, proposed_price, proposal_text, 'pending']
+    );
+
+    res.json({ message: 'Заявка на участие успешно отправлена' });
+
+  } catch (error) {
+    console.error('Participate error:', error);
+    res.status(500).json({ error: 'Ошибка при отправке заявки' });
   }
 });
 
@@ -575,7 +638,7 @@ app.use('/api/*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
-  console.log(`База данных: online_store1`);
+  console.log(`База данных: pc_db`);
   console.log(`Пользователь БД: store_app1`);
   console.log(`API доступно: http://localhost:${PORT}/api`);
 });

@@ -41,7 +41,7 @@ function App() {
       // Тестовые данные для демонстрации
       const testProducts = [
         {
-          id: 1,
+          id: 'prod-1',
           name: 'Смартфон Apple iPhone 15 Pro',
           category_name: 'Электроника',
           price_per_item: 89999,
@@ -49,58 +49,26 @@ function App() {
           company: 'Apple'
         },
         {
-          id: 2,
+          id: 'prod-2', 
           name: 'Ноутбук Dell XPS 13',
           category_name: 'Компьютеры',
           price_per_item: 129999,
           amount: 5,
           company: 'Dell'
-        },
-        {
-          id: 3,
-          name: 'Холодильник Samsung',
-          category_name: 'Бытовая техника',
-          price_per_item: 54999,
-          amount: 8,
-          company: 'Samsung'
-        },
-        {
-          id: 4,
-          name: 'Диван угловой',
-          category_name: 'Мебель',
-          price_per_item: 32999,
-          amount: 3,
-          company: 'Ikea'
         }
       ];
 
       const testProcurements = [
         {
-          id: 1,
-          session_number: '10055209',
+          id: 'PROC-12345',
           title: 'Оказание услуг по проведению специальной оценки условий труда',
           status: 'active',
           current_price: 92500,
           description: 'Закупка услуг по специальной оценке условий труда для образовательного учреждения',
           customer_name: '«Школа № 1811 «Восточное Измайлово»',
           customer_inn: '7719894832',
-          start_date: '2024-01-15T00:00:00Z',
-          end_date: '2024-02-15T23:59:59Z',
+          procurement_date: '2024-01-15T00:00:00Z',
           participants_count: 7,
-          products: []
-        },
-        {
-          id: 2,
-          session_number: '10055210',
-          title: 'Поставка компьютерной техники для офиса',
-          status: 'active',
-          current_price: 450000,
-          description: 'Закупка компьютеров, мониторов и периферии для оснащения рабочего места',
-          customer_name: 'ООО «ТехноПарк»',
-          customer_inn: '7734567890',
-          start_date: '2024-01-20T00:00:00Z',
-          end_date: '2024-02-10T23:59:59Z',
-          participants_count: 3,
           products: []
         }
       ];
@@ -280,15 +248,19 @@ function App() {
     }
   };
 
-  const handleCreateProcurement = async (procurementData) => {
-    try {
-      console.log('Creating procurement:', procurementData);
-      
-      // Добавляем выбранные товары к данным закупки
+const handleCreateProcurement = async (procurementData) => {
+  try {
+    console.log('Creating procurement:', procurementData);
+    
+    // Преобразуем данные под структуру БД
       const procurementWithProducts = {
-        ...procurementData,
+        title: procurementData.title,
+        description: procurementData.description,
+        customer_name: procurementData.customer_name || currentUser?.company_name,
+        customer_inn: procurementData.customer_inn || currentUser?.INN,
+        current_price: procurementData.current_price,
         products: selectedProducts.map(product => ({
-          product_id: product.id,
+          product_id: product.id, // используем product_id из БД
           required_quantity: product.quantity,
           max_price: product.price_per_item
         }))
@@ -758,7 +730,6 @@ function Main({
   );
 }
 
-// Компонент сетки товаров
 function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }) {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
@@ -807,10 +778,11 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }
             <div className="product-info">
               <h3 className="product-title">{product.name}</h3>
               <p className="product-category">{product.category_name}</p>
+              <p className="product-company">{product.company}</p>
               <div className="product-price">
                 <span className="current-price">{formatPrice(product.price_per_item)} ₽</span>
               </div>
-              <p className="product-stock">В наличии: {product.amount} шт.</p>
+              <p className="product-stock">В наличии: {product.amount || 10} шт.</p>
               <button 
                 className="add-to-cart-btn"
                 onClick={() => onAddToProcurement(product)}
