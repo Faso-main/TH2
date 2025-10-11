@@ -5,3 +5,4 @@ recommendation_results__/
 ML/
 old/
 *.csv
+__pycache__/
