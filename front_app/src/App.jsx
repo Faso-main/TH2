@@ -681,7 +681,7 @@ function Main({
         {savedProcurementFormData && savedProcurementData && highlightAddToProcurement && (
           <div className="saved-data-banner">
             <div className="banner-content">
-              <span>📋 Есть сохраненные данные закупки</span>
+              <span>Есть сохраненные данные закупки</span>
               <button 
                 className="btn-outline btn-small"
                 onClick={() => {
