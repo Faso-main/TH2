@@ -842,7 +842,7 @@ function Main({
           <div className="saved-data-banner">
             <div className="banner-content">
               <div className="banner-info">
-                <div className="banner-title">📋 Черновик закупки</div>
+                <div className="banner-title">Черновик закупки</div>
                 <div className="banner-subtitle">
                   {selectedProducts.length > 0 
                     ? `Выбрано товаров: ${selectedProducts.length}` 

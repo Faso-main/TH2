@@ -50,7 +50,7 @@ const loadRecommendations = async () => {
   if (!currentUser) {
     return (
       <div className="recommendations-panel">
-        <h3>🎯 Персональные рекомендации</h3>
+        <h3>Персональные рекомендации</h3>
         <div className="auth-required">
           <p>Войдите в систему для получения персональных рекомендаций</p>
         </div>
@@ -61,13 +61,13 @@ const loadRecommendations = async () => {
   return (
     <div className="recommendations-panel">
       <div className="recommendations-header">
-        <h3>🎯 Персональные рекомендации</h3>
+        <h3>Персональные рекомендации</h3>
         <button 
           className="refresh-btn"
           onClick={loadRecommendations}
           disabled={loading}
         >
-          {loading ? '🔄' : '🔄'}
+          {loading ? '♾️' : '♾️'}
         </button>
       </div>
 
