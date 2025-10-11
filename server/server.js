@@ -718,6 +718,10 @@ console.log('✅ ML Recommendation routes registered:');
 console.log('   POST /api/ml/recommendations');
 console.log('   GET  /api/ml/health');
 
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API маршрут не найден' });
+});
+
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   console.log(`База данных: pc_db`);
@@ -725,92 +729,3 @@ app.listen(PORT, () => {
   console.log(`API доступно: http://localhost:${PORT}/api`);
 });
 
-// Health check для ML
-app.get('/api/ml/health', async (req, res) => {
-  try {
-    console.log('GET /api/ml/health - проверка ML сервиса');
-    
-    const response = await fetch('http://127.0.0.1:8000/health');
-    
-    if (!response.ok) {
-      throw new Error(`ML service error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('ML сервис здоров:', data);
-    
-    res.json({ 
-      status: 'OK', 
-      ml_service: 'connected',
-      python_service: data 
-    });
-    
-  } catch (err) {
-    console.error('Ошибка при проверке ML:', err);
-    res.status(500).json({ 
-      status: 'ERROR', 
-      ml_service: 'disconnected',
-      error: err.message 
-    });
-  }
-});
-
-// Получить рекомендации
-app.post('/api/ml/recommendations', async (req, res) => {
-  try {
-    const { user_id, limit } = req.body;
-    console.log('POST /api/ml/recommendations - пользователь:', user_id);
-    
-    if (!user_id) {
-      return res.status(400).json({ error: 'user_id обязателен' });
-    }
-    
-    const response = await fetch('http://127.0.0.1:8000/api/recommendations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: user_id,
-        limit: parseInt(limit) || 10
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`ML service error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log(`Получено рекомендаций: ${data.recommendations?.length || 0}`);
-    
-    res.json({
-      success: true,
-      ...data
-    });
-
-  } catch (err) {
-    console.error('Ошибка при получении рекомендаций:', err);
-    
-    // Fallback
-    const fallbackItems = [
-      {
-        product_id: "fallback_1",
-        product_name: "Тестовый товар 1",
-        product_category: "Тест",
-        total_score: 0.8,
-        explanation: "Рекомендация из fallback"
-      }
-    ].slice(0, req.body.limit || 5);
-    
-    res.json({
-      success: false,
-      user_id: req.body.user_id,
-      recommendations: fallbackItems,
-      count: fallbackItems.length,
-      note: 'fallback_mode',
-      error: err.message
-    });
-  }
-});
-
-console.log('✅ ML endpoints registered: GET /api/ml/health, POST /api/ml/recommendations');
