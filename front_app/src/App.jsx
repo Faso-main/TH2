@@ -7,10 +7,9 @@ import Modal from './modal/Modal';
 import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
 import UserProfile from './modal/UserProfile';
-import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import CreateProcurement from './modal/CreateProcurement';
+import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
-
 
 function App() {
   const [activeModal, setActiveModal] = useState(null);
@@ -24,6 +23,10 @@ function App() {
   const [searchResults, setSearchResults] = useState({ products: [], procurements: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [procurementCreationStep, setProcurementCreationStep] = useState(1);
+  const [activeSection, setActiveSection] = useState('products');
+  const [highlightAddToProcurement, setHighlightAddToProcurement] = useState(false);
+  const [savedProcurementData, setSavedProcurementData] = useState(null);
 
   // Загрузка данных при старте
   useEffect(() => {
@@ -38,7 +41,6 @@ function App() {
     try {
       setLoading(true);
       
-      // Тестовые данные для демонстрации
       const testProducts = [
         {
           id: 'prod-1',
@@ -49,7 +51,7 @@ function App() {
           company: 'Apple'
         },
         {
-          id: 'prod-2', 
+          id: 'prod-2',
           name: 'Ноутбук Dell XPS 13',
           category_name: 'Компьютеры',
           price_per_item: 129999,
@@ -94,107 +96,7 @@ function App() {
     }
   };
 
-  // Функция поиска
-  const handleSearch = async (query) => {
-    if (!query.trim()) {
-      setSearchResults({ products: [], procurements: [] });
-      return;
-    }
-
-    setIsSearching(true);
-    
-    try {
-      const searchLower = query.toLowerCase().trim();
-      
-      const foundProducts = products.filter(product => 
-        product.name.toLowerCase().includes(searchLower) ||
-        product.category_name?.toLowerCase().includes(searchLower) ||
-        product.company?.toLowerCase().includes(searchLower) ||
-        product.description?.toLowerCase().includes(searchLower)
-      );
-
-      const foundProcurements = procurements.filter(procurement =>
-        procurement.title.toLowerCase().includes(searchLower) ||
-        procurement.description?.toLowerCase().includes(searchLower) ||
-        procurement.customer_name?.toLowerCase().includes(searchLower) ||
-        procurement.session_number?.toLowerCase().includes(searchLower)
-      );
-
-      setSearchResults({
-        products: foundProducts,
-        procurements: foundProcurements
-      });
-      
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults({ products: [], procurements: [] });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Обработчик изменения поискового запроса
-  const handleSearchChange = (query) => {
-    setSearchQuery(query);
-    handleSearch(query);
-  };
-
-  // Очистка поиска
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults({ products: [], procurements: [] });
-  };
-
-  // Получаем данные для отображения
-  const getDisplayProducts = () => {
-    return searchQuery ? searchResults.products : products;
-  };
-
-  const getDisplayProcurements = () => {
-    return searchQuery ? searchResults.procurements : procurements;
-  };
-
-  // Функции для работы с выбранными товарами
-  const handleAddToProcurement = (product) => {
-    if (!currentUser) {
-      openModal('auth');
-      return;
-    }
-
-    setSelectedProducts(prev => {
-      const existingProduct = prev.find(p => p.id === product.id);
-      if (existingProduct) {
-        return prev.map(p => 
-          p.id === product.id 
-            ? { ...p, quantity: (p.quantity || 1) + 1 }
-            : p
-        );
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-
-    alert(`Товар "${product.name}" добавлен в закупку`);
-  };
-
-  const handleRemoveFromProcurement = (productId) => {
-    setSelectedProducts(prev => prev.filter(p => p.id !== productId));
-  };
-
-  const handleUpdateQuantity = (productId, quantity) => {
-    if (quantity < 1) {
-      handleRemoveFromProcurement(productId);
-      return;
-    }
-    
-    setSelectedProducts(prev => 
-      prev.map(p => p.id === productId ? { ...p, quantity } : p)
-    );
-  };
-
-  const clearSelectedProducts = () => {
-    setSelectedProducts([]);
-  };
-
+  // Функции для работы с модальными окнами
   const openModal = (modalName) => {
     setActiveModal(modalName);
   };
@@ -208,6 +110,7 @@ function App() {
     setAuthMode(mode);
   };
 
+  // Функции авторизации
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     closeModal();
@@ -248,19 +151,57 @@ function App() {
     }
   };
 
-const handleCreateProcurement = async (procurementData) => {
-  try {
-    console.log('Creating procurement:', procurementData);
+  // Функции для работы с товарами
+  const handleAddToProcurement = (product) => {
+    if (!currentUser) {
+      openModal('auth');
+      return;
+    }
+
+    setSelectedProducts(prev => {
+      const existingProduct = prev.find(p => p.id === product.id);
+      if (existingProduct) {
+        return prev.map(p => 
+          p.id === product.id 
+            ? { ...p, quantity: (p.quantity || 1) + 1 }
+            : p
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+
+    // Показываем уведомление о добавлении
+    showNotification(`Товар "${product.name}" добавлен в закупку`, 'success');
+  };
+
+  const handleRemoveFromProcurement = (productId) => {
+    setSelectedProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleUpdateQuantity = (productId, quantity) => {
+    if (quantity < 1) {
+      handleRemoveFromProcurement(productId);
+      return;
+    }
     
-    // Преобразуем данные под структуру БД
+    setSelectedProducts(prev => 
+      prev.map(p => p.id === productId ? { ...p, quantity } : p)
+    );
+  };
+
+  const clearSelectedProducts = () => {
+    setSelectedProducts([]);
+  };
+
+  // Функции для работы с закупками
+  const handleCreateProcurement = async (procurementData) => {
+    try {
+      console.log('Creating procurement:', procurementData);
+      
       const procurementWithProducts = {
-        title: procurementData.title,
-        description: procurementData.description,
-        customer_name: procurementData.customer_name || currentUser?.company_name,
-        customer_inn: procurementData.customer_inn || currentUser?.INN,
-        current_price: procurementData.current_price,
+        ...procurementData,
         products: selectedProducts.map(product => ({
-          product_id: product.id, // используем product_id из БД
+          product_id: product.id,
           required_quantity: product.quantity,
           max_price: product.price_per_item
         }))
@@ -270,12 +211,12 @@ const handleCreateProcurement = async (procurementData) => {
       
       setProcurements(prev => [response.procurement, ...prev]);
       clearSelectedProducts();
+      setHighlightAddToProcurement(false);
+      setSavedProcurementData(null);
       
       closeModal();
       
-      setTimeout(() => {
-        alert('Закупка успешно создана!');
-      }, 100);
+      showNotification('Закупка успешно создана!', 'success');
       
       return response;
       
@@ -296,12 +237,109 @@ const handleCreateProcurement = async (procurementData) => {
         proposed_price: proposedPrice,
         proposal_text: `Готов поставить товары по цене ${proposedPrice} ₽`
       });
-      alert('Заявка на участие отправлена!');
+      showNotification('Заявка на участие отправлена!', 'success');
       const response = await procurementsAPI.getProcurements();
       setProcurements(response.procurements);
     } catch (error) {
-      alert(`Ошибка: ${error.message}`);
+      showNotification(`Ошибка: ${error.message}`, 'error');
     }
+  };
+
+  // Функции для переключения между созданием закупки и выбором товаров
+  const handleAddProducts = () => {
+    setSavedProcurementData({
+      hasUnsavedData: true,
+      timestamp: new Date().toISOString()
+    });
+
+    setActiveModal(null);
+    setHighlightAddToProcurement(true);
+    setActiveSection('products');
+    
+    showNotification('🎯 Выбирайте товары кнопкой "В закупку". Вернитесь к созданию закупки, когда закончите.', 'info');
+  };
+
+  const handleReturnToProcurement = () => {
+    setHighlightAddToProcurement(false);
+    setProcurementCreationStep(2);
+    setActiveModal('create-procurement');
+    
+    showNotification(`📋 Продолжайте создание закупки. Выбрано товаров: ${selectedProducts.length}`, 'info');
+  };
+
+  const handleOpenCreateProcurement = () => {
+    setProcurementCreationStep(1);
+    setSavedProcurementData(null);
+    openModal('create-procurement');
+  };
+
+  const handleCloseCreateProcurement = () => {
+    setProcurementCreationStep(1);
+    setSavedProcurementData(null);
+    closeModal();
+  };
+
+  // Функции поиска
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults({ products: [], procurements: [] });
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const searchLower = query.toLowerCase().trim();
+      
+      const foundProducts = products.filter(product => 
+        product.name.toLowerCase().includes(searchLower) ||
+        product.category_name?.toLowerCase().includes(searchLower) ||
+        product.company?.toLowerCase().includes(searchLower) ||
+        product.description?.toLowerCase().includes(searchLower)
+      );
+
+      const foundProcurements = procurements.filter(procurement =>
+        procurement.title.toLowerCase().includes(searchLower) ||
+        procurement.description?.toLowerCase().includes(searchLower) ||
+        procurement.customer_name?.toLowerCase().includes(searchLower) ||
+        procurement.session_number?.toLowerCase().includes(searchLower)
+      );
+
+      setSearchResults({
+        products: foundProducts,
+        procurements: foundProcurements
+      });
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults({ products: [], procurements: [] });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults({ products: [], procurements: [] });
+  };
+
+  // Вспомогательные функции
+  const showNotification = (message, type = 'info') => {
+    // Простая реализация уведомлений
+    console.log(`[${type.toUpperCase()}] ${message}`);
+  };
+
+  const getDisplayProducts = () => {
+    return searchQuery ? searchResults.products : products;
+  };
+
+  const getDisplayProcurements = () => {
+    return searchQuery ? searchResults.procurements : procurements;
   };
 
   return (
@@ -310,7 +348,7 @@ const handleCreateProcurement = async (procurementData) => {
         currentUser={currentUser}
         onLogout={handleLogout}
         onUserProfileClick={handleUserProfileClick}
-        onCreateProcurement={() => openModal('create-procurement')}
+        onCreateProcurement={handleOpenCreateProcurement}
         authLoading={authLoading}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
@@ -330,11 +368,16 @@ const handleCreateProcurement = async (procurementData) => {
         isSearching={isSearching}
         onAddToProcurement={handleAddToProcurement}
         selectedProducts={selectedProducts}
+        highlightAddToProcurement={highlightAddToProcurement}
+        onReturnToProcurement={handleReturnToProcurement}
+        savedProcurementData={savedProcurementData}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
       />
       
       <Footer />
 
-      {/* Модальное окно авторизации */}
+      {/* Модальные окна */}
       <Modal
         isOpen={activeModal === 'auth'}
         onClose={closeModal}
@@ -356,23 +399,27 @@ const handleCreateProcurement = async (procurementData) => {
         )}
       </Modal>
 
-      {/* Модальное окно создания закупки */}
       <Modal
         isOpen={activeModal === 'create-procurement'}
-        onClose={closeModal}
-        title="Создание закупки"
+        onClose={handleCloseCreateProcurement}
+        title={procurementCreationStep === 1 ? "Создание закупки - Основные параметры" : "Создание закупки - Выбор товаров"}
         size="large"
       >
         <CreateProcurement 
-          onClose={closeModal}
+          onClose={handleCloseCreateProcurement}
           onCreate={handleCreateProcurement}
           selectedProducts={selectedProducts}
           onUpdateQuantity={handleUpdateQuantity}
           onRemoveProduct={handleRemoveFromProcurement}
+          onAddProducts={handleAddProducts}
+          currentUser={currentUser}
+          step={procurementCreationStep}
+          onStepChange={setProcurementCreationStep}
+          initialFormData={savedProcurementData?.formData}
+          onFormDataChange={(formData) => setSavedProcurementData(prev => ({ ...prev, formData }))}
         />
       </Modal>
 
-      {/* Модальное окно личного кабинета */}
       <Modal
         isOpen={activeModal === 'profile'}
         onClose={closeModal}
@@ -388,6 +435,7 @@ const handleCreateProcurement = async (procurementData) => {
   );
 }
 
+// Компонент Header
 function Header({ 
   currentUser, 
   onLogout, 
@@ -397,11 +445,11 @@ function Header({
   searchQuery,
   onSearchChange,
   onClearSearch,
-  isSearching 
+  isSearching,
+  selectedProductsCount
 }) {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    // Поиск уже происходит при вводе, так что просто предотвращаем перезагрузку
   };
 
   const handleInputChange = (e) => {
@@ -434,7 +482,6 @@ function Header({
               }}
             />
             
-            {/* Кнопка очистки */}
             {searchQuery && (
               <button 
                 type="button"
@@ -463,10 +510,9 @@ function Header({
         </div>
 
         <div className="header-actions">
-          {/* Кнопка создания закупки */}
           {currentUser && (
             <button 
-              className="user-icon-btn create-procurement-btn" 
+              className={`user-icon-btn create-procurement-btn ${selectedProductsCount > 0 ? 'has-products' : ''}`}
               onClick={onCreateProcurement}
               title="Создать закупку"
             >
@@ -483,10 +529,12 @@ function Header({
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
+              {selectedProductsCount > 0 && (
+                <span className="selected-products-badge">{selectedProductsCount}</span>
+              )}
             </button>
           )}
 
-          {/* Иконка личного кабинета */}
           <button 
             className={`user-icon-btn ${currentUser ? 'user-authenticated' : ''}`} 
             onClick={onUserProfileClick} 
@@ -508,7 +556,6 @@ function Header({
             </svg>
           </button>
 
-          {/* Кнопка выхода */}
           {currentUser && (
             <button 
               className="user-icon-btn logout-btn" 
@@ -540,8 +587,7 @@ function Header({
   );
 }
 
-
-
+// Компонент Main
 function Main({ 
   products, 
   procurements, 
@@ -552,72 +598,16 @@ function Main({
   searchQuery,
   isSearching,
   onAddToProcurement,
-  selectedProducts
+  selectedProducts,
+  highlightAddToProcurement,
+  onReturnToProcurement,
+  savedProcurementData,
+  activeSection,
+  setActiveSection
 }) {
-  const [activeSection, setActiveSection] = useState('products');
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
 
-  // Функция фильтрации товаров
-  const filterProducts = (filters) => {
-    let filtered = [...products];
-    
-    // Фильтр по категориям
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter(product => 
-        filters.categories.some(catId => 
-          product.category_name?.toLowerCase().includes(
-            getCategoryNameById(catId).toLowerCase()
-          )
-        )
-      );
-    }
-    
-    // Фильтр по цене
-    if (filters.priceRange.min) {
-      filtered = filtered.filter(product => product.price_per_item >= parseFloat(filters.priceRange.min));
-    }
-    if (filters.priceRange.max) {
-      filtered = filtered.filter(product => product.price_per_item <= parseFloat(filters.priceRange.max));
-    }
-    
-    setFilteredProducts(filtered);
-  };
-
-  // Функция фильтрации закупок
-  const filterProcurements = (filters) => {
-    let filtered = [...procurements];
-    
-    // Фильтр по статусу
-    if (filters.procurementStatus.length > 0) {
-      filtered = filtered.filter(procurement => 
-        filters.procurementStatus.includes(procurement.status)
-      );
-    }
-    
-    setFilteredProcurements(filtered);
-  };
-
-  const handleFiltersChange = (filters) => {
-    if (activeSection === 'products') {
-      filterProducts(filters);
-    } else {
-      filterProcurements(filters);
-    }
-  };
-
-  // Вспомогательная функция для получения названия категории по ID
-  const getCategoryNameById = (id) => {
-    const categories = {
-      1: 'Электроника',
-      2: 'Бытовая техника', 
-      3: 'Одежда',
-      4: 'Мебель'
-    };
-    return categories[id] || '';
-  };
-
-  // Обновляем filtered данные при изменении исходных данных
   useEffect(() => {
     setFilteredProducts(products);
   }, [products]);
@@ -626,7 +616,6 @@ function Main({
     setFilteredProcurements(procurements);
   }, [procurements]);
 
-  // Получаем данные для отображения с учетом поиска
   const getDisplayProducts = () => {
     return searchQuery ? filteredProducts.filter(product => 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -661,6 +650,27 @@ function Main({
   return (
     <main className="main">
       <div className="products-container">
+        {/* Баннер возврата к закупке */}
+        {savedProcurementData && highlightAddToProcurement && (
+          <div className="procurement-banner">
+            <div className="banner-content">
+              <div className="banner-info">
+                <span className="banner-icon">📋</span>
+                <div>
+                  <div className="banner-title">Закупка в процессе создания</div>
+                  <div className="banner-subtitle">Выбрано товаров: {selectedProducts.length}</div>
+                </div>
+              </div>
+              <button 
+                className="btn-primary"
+                onClick={onReturnToProcurement}
+              >
+                Вернуться к закупке
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="products-layout">
           <section className="products-main">
             <div className="products-header">
@@ -705,6 +715,7 @@ function Main({
                 searchQuery={searchQuery}
                 isSearching={isSearching}
                 onAddToProcurement={onAddToProcurement}
+                highlightAddToProcurement={highlightAddToProcurement}
               />
             ) : (
               <ProcurementsGrid 
@@ -722,7 +733,7 @@ function Main({
             activeSection={activeSection}
             products={products}
             procurements={procurements}
-            onFiltersChange={handleFiltersChange}
+            onFiltersChange={() => {}}
           />
         </div>
       </div>
@@ -730,7 +741,8 @@ function Main({
   );
 }
 
-function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }) {
+// Компонент ProductsGrid
+function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement, highlightAddToProcurement }) {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
@@ -760,7 +772,7 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }
         const imageUrl = generateProductImage(product.name, categoryColor);
         
         return (
-          <div key={product.id} className="product-card">
+          <div key={product.id} className={`product-card ${highlightAddToProcurement ? 'highlight-add' : ''}`}>
             <div className="product-image">
               <img 
                 src={imageUrl}
@@ -787,7 +799,7 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }
                 className="add-to-cart-btn"
                 onClick={() => onAddToProcurement(product)}
               >
-                В закупку
+                {highlightAddToProcurement ? '➕ В закупку' : 'В закупку'}
               </button>
             </div>
           </div>
@@ -797,8 +809,7 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }
   );
 }
 
-// Компонент сетки закупок
-// В компоненте ProcurementsGrid исправим форматирование дат
+// Компонент ProcurementsGrid
 function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearching }) {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
@@ -809,7 +820,6 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
     
     try {
       const date = new Date(dateString);
-      // Проверяем, что дата валидна
       if (isNaN(date.getTime())) {
         return 'Не указана';
       }
@@ -823,9 +833,9 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
   const getStatusInfo = (status) => {
     switch (status) {
       case 'active': return { class: 'active', text: 'Активна' };
+      case 'soon': return { class: 'soon', text: 'Скоро' };
       case 'completed': return { class: 'completed', text: 'Завершена' };
-      case 'draft': return { class: 'draft', text: 'Черновик' };
-      default: return { class: 'active', text: status || 'Активна' };
+      default: return { class: 'active', text: status };
     }
   };
 
@@ -875,18 +885,12 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Заказчик:</span>
-                  <span className="detail-value">{procurement.customer_name || 'Не указан'}</span>
+                  <span className="detail-value">{procurement.customer_name}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Дата закупки:</span>
                   <span className="detail-value">
                     {formatDate(procurement.procurement_date)}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Дата публикации:</span>
-                  <span className="detail-value">
-                    {formatDate(procurement.publication_date)}
                   </span>
                 </div>
                 <div className="detail-item">
@@ -899,7 +903,6 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
                 </div>
               </div>
 
-              {/* Товары в закупке */}
               {procurement.products && procurement.products.length > 0 && (
                 <div className="procurement-products">
                   <h4>Товары в закупке:</h4>
@@ -913,13 +916,18 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
                 </div>
               )}
 
-              {/* Кнопки действий */}
               {procurement.status === 'active' && (
                 <button 
                   className="participate-btn"
                   onClick={() => onParticipate(procurement.id, procurement.current_price * 0.95)}
                 >
                   Участвовать
+                </button>
+              )}
+              
+              {procurement.status === 'soon' && (
+                <button className="notify-btn">
+                  Уведомить о старте
                 </button>
               )}
               
@@ -936,14 +944,14 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
   );
 }
 
-function FiltersSidebar({ activeSection, products, procurements, onFiltersChange }) {
+// Компонент FiltersSidebar
+function FiltersSidebar({ activeSection, onFiltersChange }) {
   const [filters, setFilters] = useState({
     categories: [],
     priceRange: { min: '', max: '' },
     procurementStatus: ['active']
   });
 
-  // Категории верхнего уровня
   const topLevelCategories = [
     { id: 1, name: 'Электроника' },
     { id: 2, name: 'Бытовая техника' },
@@ -1075,6 +1083,7 @@ function FiltersSidebar({ activeSection, products, procurements, onFiltersChange
   );
 }
 
+// Компонент Footer
 function Footer() {
   return (
     <footer className="footer">
