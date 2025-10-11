@@ -755,3 +755,50 @@
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+/* Добавьте в App.css или Body.css */
+.saved-data-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.saved-data-banner .banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.saved-data-banner span {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.saved-data-banner .btn-outline {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-color: white;
+}
+
+.saved-data-banner .btn-outline:hover {
+  background: white;
+  color: #667eea;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .saved-data-banner .banner-content {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .saved-data-banner {
+    padding: 1rem;
+  }
+}

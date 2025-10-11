@@ -4,7 +4,20 @@
 import { useState, useEffect } from 'react';
 import './CreateProcurement.css';
 
-function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuantity, onRemoveProduct, currentUser, onAddProducts }) {
+function CreateProcurement({ 
+  onClose, 
+  onCreate, 
+  selectedProducts, 
+  onUpdateQuantity, 
+  onRemoveProduct, 
+  currentUser, 
+  onAddProducts,
+  step: externalStep,
+  onStepChange,
+  initialFormData,
+  onFormDataChange,
+  onClearSavedForm
+}) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,13 +30,18 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     start_date: '',
     end_date: ''
   });
-  const [step, setStep] = useState(1); // 1 - основные параметры, 2 - выбор товаров
+  
+  const [step, setStep] = useState(externalStep || 1);
   const [loading, setLoading] = useState(false);
   const [formValid, setFormValid] = useState(false);
 
-  // Установка данных заказчика из профиля пользователя
+  // Инициализация формы из сохраненных данных или профиля пользователя
   useEffect(() => {
-    if (currentUser) {
+    if (initialFormData) {
+      // Восстанавливаем сохраненные данные
+      setFormData(initialFormData);
+    } else if (currentUser) {
+      // Заполняем из профиля пользователя
       setFormData(prev => ({
         ...prev,
         customer_name: currentUser.company_name || '',
@@ -31,7 +49,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         location: currentUser.location || ''
       }));
     }
-  }, [currentUser]);
+  }, [currentUser, initialFormData]);
+
+  // Синхронизация с внешним step
+  useEffect(() => {
+    if (externalStep !== undefined) {
+      setStep(externalStep);
+    }
+  }, [externalStep]);
 
   // Валидация формы
   useEffect(() => {
@@ -40,6 +65,13 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                    formData.customer_inn.trim() !== '';
     setFormValid(isValid);
   }, [formData]);
+
+  // Сохранение данных формы при изменении
+  useEffect(() => {
+    if (onFormDataChange && formData.title) {
+      onFormDataChange(formData);
+    }
+  }, [formData, onFormDataChange]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
@@ -59,8 +91,17 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       return;
     }
 
-    // Сохраняем данные формы и переходим к выбору товаров
-    setStep(2);
+    // Сохраняем данные перед переходом
+    if (onFormDataChange) {
+      onFormDataChange(formData);
+    }
+    
+    // Переходим к выбору товаров
+    const newStep = 2;
+    setStep(newStep);
+    if (onStepChange) {
+      onStepChange(newStep);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -100,6 +141,11 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       };
 
       await onCreate(procurementData);
+      
+      // Очищаем сохраненные данные после успешного создания
+      if (onClearSavedForm) {
+        onClearSavedForm();
+      }
     } catch (error) {
       alert('Ошибка при создании закупки: ' + error.message);
     } finally {
@@ -108,18 +154,22 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleAddRecommended = () => {
-    // Заглушка для будущей функциональности
     alert('Функция "Добавить рекомендуемые товары" будет доступна в ближайшем обновлении');
   };
 
   const handleAddProducts = () => {
+    // Сохраняем данные перед открытием каталога
+    if (onFormDataChange) {
+      onFormDataChange(formData);
+    }
     onAddProducts();
   };
 
@@ -128,7 +178,47 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       alert('Заполните обязательные поля на первом шаге');
       return;
     }
+    
+    // Сохраняем данные при смене шага
+    if (onFormDataChange && newStep === 2) {
+      onFormDataChange(formData);
+    }
+    
     setStep(newStep);
+    if (onStepChange) {
+      onStepChange(newStep);
+    }
+  };
+
+  const handleCancel = () => {
+    if (formData.title || formData.description || selectedProducts.length > 0) {
+      const shouldSave = window.confirm('Сохранить введенные данные для продолжения позже?');
+      if (!shouldSave && onClearSavedForm) {
+        onClearSavedForm();
+      }
+    }
+    onClose();
+  };
+
+  const handleClearForm = () => {
+    const confirmClear = window.confirm('Очистить все введенные данные?');
+    if (confirmClear) {
+      setFormData({
+        title: '',
+        description: '',
+        customer_name: currentUser?.company_name || '',
+        customer_inn: currentUser?.INN || '',
+        current_price: '',
+        law_type: '44-ФЗ',
+        contract_terms: '',
+        location: currentUser?.location || '',
+        start_date: '',
+        end_date: ''
+      });
+      if (onClearSavedForm) {
+        onClearSavedForm();
+      }
+    }
   };
 
   return (
@@ -322,6 +412,8 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                 <p><strong>Заказчик:</strong> {formData.customer_name}</p>
                 <p><strong>Тип закупки:</strong> {formData.law_type}</p>
                 {formData.description && <p><strong>Описание:</strong> {formData.description}</p>}
+                {formData.start_date && <p><strong>Дата начала:</strong> {formData.start_date}</p>}
+                {formData.end_date && <p><strong>Дата окончания:</strong> {formData.end_date}</p>}
               </div>
             </div>
 
@@ -417,7 +509,18 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         <div className="form-actions">
           {step === 1 ? (
             <>
-              <button type="button" className="btn-outline" onClick={onClose}>
+              <button 
+                type="button" 
+                className="btn-outline"
+                onClick={handleClearForm}
+              >
+                Очистить форму
+              </button>
+              <button 
+                type="button" 
+                className="btn-outline"
+                onClick={handleCancel}
+              >
                 Отмена
               </button>
               <button 
@@ -434,7 +537,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
               <button 
                 type="button" 
                 className="btn-outline"
-                onClick={() => setStep(1)}
+                onClick={() => handleStepChange(1)}
               >
                 ← Назад к параметрам
               </button>

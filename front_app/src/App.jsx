@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import './App.css';
@@ -12,6 +13,7 @@ import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
 
 function App() {
+  const [savedProcurementFormData, setSavedProcurementFormData] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
   const [authMode, setAuthMode] = useState('login');
   const [currentUser, setCurrentUser] = useState(null);
@@ -267,17 +269,38 @@ function App() {
     showNotification(`📋 Продолжайте создание закупки. Выбрано товаров: ${selectedProducts.length}`, 'info');
   };
 
-  const handleOpenCreateProcurement = () => {
-    setProcurementCreationStep(1);
-    setSavedProcurementData(null);
-    openModal('create-procurement');
-  };
+const handleOpenCreateProcurement = () => {
+  setProcurementCreationStep(1);
+  // Не очищаем savedProcurementData, чтобы сохранить данные
+  openModal('create-procurement');
+};
 
-  const handleCloseCreateProcurement = () => {
-    setProcurementCreationStep(1);
-    setSavedProcurementData(null);
-    closeModal();
-  };
+const handleCloseCreateProcurement = () => {
+  // При закрытии модалки спрашиваем, сохранять ли данные
+  if (savedProcurementFormData && savedProcurementFormData.hasUnsavedData) {
+    const shouldSave = window.confirm('Сохранить введенные данные для продолжения позже?');
+    if (!shouldSave) {
+      setSavedProcurementFormData(null);
+    }
+  } else {
+    setSavedProcurementFormData(null);
+  }
+  setProcurementCreationStep(1);
+  closeModal();
+};
+
+const handleSaveProcurementFormData = (formData) => {
+  setSavedProcurementFormData({
+    hasUnsavedData: true,
+    formData: formData,
+    timestamp: new Date().toISOString()
+  });
+};
+
+// Добавьте функцию для очистки сохраненных данных:
+const handleClearSavedProcurementData = () => {
+  setSavedProcurementFormData(null);
+};
 
   // Функции поиска
   const handleSearch = async (query) => {
@@ -371,6 +394,7 @@ function App() {
         highlightAddToProcurement={highlightAddToProcurement}
         onReturnToProcurement={handleReturnToProcurement}
         savedProcurementData={savedProcurementData}
+        savedProcurementFormData={savedProcurementFormData} // Добавьте эту строку
         activeSection={activeSection}
         setActiveSection={setActiveSection}
       />
@@ -415,8 +439,9 @@ function App() {
           currentUser={currentUser}
           step={procurementCreationStep}
           onStepChange={setProcurementCreationStep}
-          initialFormData={savedProcurementData?.formData}
-          onFormDataChange={(formData) => setSavedProcurementData(prev => ({ ...prev, formData }))}
+          initialFormData={savedProcurementFormData?.formData}
+          onFormDataChange={handleSaveProcurementFormData}
+          onClearSavedForm={handleClearSavedProcurementData}
         />
       </Modal>
 
@@ -588,6 +613,7 @@ function Header({
 }
 
 // Компонент Main
+// Компонент Main
 function Main({ 
   products, 
   procurements, 
@@ -603,7 +629,8 @@ function Main({
   onReturnToProcurement,
   savedProcurementData,
   activeSection,
-  setActiveSection
+  setActiveSection,
+  savedProcurementFormData // Добавьте этот пропс
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
@@ -650,6 +677,24 @@ function Main({
   return (
     <main className="main">
       <div className="products-container">
+        {/* Баннер сохраненных данных закупки */}
+        {savedProcurementFormData && (
+          <div className="saved-data-banner">
+            <div className="banner-content">
+              <span>📋 Есть сохраненные данные закупки</span>
+              <button 
+                className="btn-outline btn-small"
+                onClick={() => {
+                  setProcurementCreationStep(1);
+                  setActiveModal('create-procurement');
+                }}
+              >
+                Продолжить создание
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Баннер возврата к закупке */}
         {savedProcurementData && highlightAddToProcurement && (
           <div className="procurement-banner">
