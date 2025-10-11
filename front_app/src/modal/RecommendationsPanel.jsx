@@ -1,4 +1,3 @@
-// src/components/RecommendationsPanel.jsx
 import { useState, useEffect } from 'react';
 import { unifiedAPI } from '../services/api';
 import { generateProductImage, getCategoryColor } from '../utils/productImages';
