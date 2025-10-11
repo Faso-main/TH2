@@ -798,10 +798,37 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement }
 }
 
 // Компонент сетки закупок
+// В компоненте ProcurementsGrid исправим форматирование дат
 function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearching }) {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Не указана';
+    
+    try {
+      const date = new Date(dateString);
+      // Проверяем, что дата валидна
+      if (isNaN(date.getTime())) {
+        return 'Не указана';
+      }
+      return date.toLocaleDateString('ru-RU');
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Не указана';
+    }
+  };
+
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'active': return { class: 'active', text: 'Активна' };
+      case 'completed': return { class: 'completed', text: 'Завершена' };
+      case 'draft': return { class: 'draft', text: 'Черновик' };
+      default: return { class: 'active', text: status || 'Активна' };
+    }
+  };
+
   if (isSearching) {
     return (
       <div className="procurements-grid">
@@ -819,18 +846,6 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
       </div>
     );
   }
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('ru-RU');
-  };
-
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case 'active': return { class: 'active', text: 'Активна' };
-      case 'soon': return { class: 'soon', text: 'Скоро' };
-      case 'completed': return { class: 'completed', text: 'Завершена' };
-      default: return { class: 'active', text: status };
-    }
-  };
 
   return (
     <div className="procurements-grid">
@@ -847,9 +862,11 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
             </div>
             
             <div className="procurement-info">
-              <p className="procurement-description">
-                {procurement.description}
-              </p>
+              {procurement.description && (
+                <p className="procurement-description">
+                  {procurement.description}
+                </p>
+              )}
               
               <div className="procurement-details">
                 <div className="detail-item">
@@ -858,12 +875,18 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Заказчик:</span>
-                  <span className="detail-value">{procurement.customer_name}</span>
+                  <span className="detail-value">{procurement.customer_name || 'Не указан'}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Даты проведения:</span>
+                  <span className="detail-label">Дата закупки:</span>
                   <span className="detail-value">
-                    {formatDate(procurement.start_date)} - {formatDate(procurement.end_date)}
+                    {formatDate(procurement.procurement_date)}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Дата публикации:</span>
+                  <span className="detail-value">
+                    {formatDate(procurement.publication_date)}
                   </span>
                 </div>
                 <div className="detail-item">
@@ -880,10 +903,11 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
               {procurement.products && procurement.products.length > 0 && (
                 <div className="procurement-products">
                   <h4>Товары в закупке:</h4>
-                  {procurement.products.map(product => (
-                    <div key={product.id} className="procurement-product-item">
-                      <span>{product.product_name}</span><span> </span>
+                  {procurement.products.map((product, index) => (
+                    <div key={product.product_id || index} className="procurement-product-item">
+                      <span>{product.product_name}</span>
                       <span>{product.required_quantity} шт.</span>
+                      <span>{formatPrice(product.unit_price)} ₽/шт</span>
                     </div>
                   ))}
                 </div>
@@ -896,12 +920,6 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
                   onClick={() => onParticipate(procurement.id, procurement.current_price * 0.95)}
                 >
                   Участвовать
-                </button>
-              )}
-              
-              {procurement.status === 'soon' && (
-                <button className="notify-btn">
-                  Уведомить о старте
                 </button>
               )}
               

@@ -441,46 +441,56 @@ app.get('/api/procurements', async (req, res) => {
     const result = await pool.query(query, params);
     
     // Получаем товары для каждой закупки
-    const procurementsWithProducts = await Promise.all(
-      result.rows.map(async (procurement) => {
-        try {
-          // Получаем товары для закупки
-          const productsResult = await pool.query(`
-            SELECT 
-              pi.quantity as required_quantity,
-              pi.unit_price,
-              p.product_id,
-              p.name as product_name,
-              p.description as product_description,
-              p.average_price as market_price,
-              c.name as category_name
-            FROM procurement_items pi
-            JOIN products p ON pi.product_id = p.product_id
-            LEFT JOIN categories c ON p.category_id = c.category_id
-            WHERE pi.procurement_id = $1
-          `, [procurement.id]);
+// В server.js в GET /api/procurements добавим обработку дат
+const procurementsWithProducts = await Promise.all(
+  result.rows.map(async (procurement) => {
+    try {
+      // Получаем товары для закупки
+      const productsResult = await pool.query(`
+        SELECT 
+          pi.quantity as required_quantity,
+          pi.unit_price,
+          p.product_id,
+          p.name as product_name,
+          p.description as product_description,
+          p.average_price as market_price,
+          c.name as category_name
+        FROM procurement_items pi
+        JOIN products p ON pi.product_id = p.product_id
+        LEFT JOIN categories c ON p.category_id = c.category_id
+        WHERE pi.procurement_id = $1
+      `, [procurement.id]);
 
-          // Временно устанавливаем participants_count = 0
-          const participants_count = 0;
+      // Временно устанавливаем participants_count = 0
+      const participants_count = 0;
 
-          return {
-            ...procurement,
-            products: productsResult.rows,
-            participants_count: participants_count,
-            description: procurement.name // используем name как description
-          };
-        } catch (error) {
-          console.error(`Error loading products for procurement ${procurement.id}:`, error);
-          // Возвращаем закупку без товаров в случае ошибки
-          return {
-            ...procurement,
-            products: [],
-            participants_count: 0,
-            description: procurement.name
-          };
-        }
-      })
-    );
+      return {
+        ...procurement,
+        products: productsResult.rows,
+        participants_count: participants_count,
+        description: procurement.name, // используем name как description
+        // Форматируем даты для фронтенда
+        procurement_date: procurement.procurement_date ? 
+          new Date(procurement.procurement_date).toISOString() : null,
+        publication_date: procurement.publication_date ? 
+          new Date(procurement.publication_date).toISOString() : null
+      };
+    } catch (error) {
+      console.error(`Error loading products for procurement ${procurement.id}:`, error);
+      // Возвращаем закупку без товаров в случае ошибки
+      return {
+        ...procurement,
+        products: [],
+        participants_count: 0,
+        description: procurement.name,
+        procurement_date: procurement.procurement_date ? 
+          new Date(procurement.procurement_date).toISOString() : null,
+        publication_date: procurement.publication_date ? 
+          new Date(procurement.publication_date).toISOString() : null
+      };
+    }
+  })
+);
 
     console.log(`Found ${procurementsWithProducts.length} procurements`);
     

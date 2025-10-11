@@ -720,3 +720,38 @@
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
 }
+
+/* Добавим в Body.css */
+
+.procurement-product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: var(--accent-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.procurement-product-item span {
+  flex: 1;
+  text-align: center;
+}
+
+.procurement-product-item span:first-child {
+  text-align: left;
+  flex: 2;
+}
+
+.procurement-product-item span:last-child {
+  text-align: right;
+  flex: 1;
+}
+
+.procurement-products h4 {
+  margin: 1rem 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
