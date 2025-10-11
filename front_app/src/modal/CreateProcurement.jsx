@@ -247,9 +247,7 @@ function CreateProcurement({
         {step === 1 ? (
           // Шаг 1: Основные параметры
           <div className="step-content">
-            <div className="form-section">
-              <h4>Основная информация о закупке</h4>
-              
+            <div className="form-section">              
               <div className="form-group">
                 <label htmlFor="title">Название закупки *</label>
                 <input
@@ -305,9 +303,7 @@ function CreateProcurement({
               </div>
             </div>
 
-            <div className="form-section">
-              <h4>Информация о заказчике</h4>
-              
+            <div className="form-section">              
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="customer_name">Название организации *</label>
@@ -345,14 +341,12 @@ function CreateProcurement({
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  placeholder="Например: Москва, Московская область"
+                  placeholder="Москва, Московская область"
                 />
               </div>
             </div>
 
             <div className="form-section">
-              <h4>Сроки проведения</h4>
-              
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="start_date">Дата начала</label>
@@ -381,8 +375,6 @@ function CreateProcurement({
             </div>
 
             <div className="form-section">
-              <h4>Условия контракта</h4>
-              
               <div className="form-group">
                 <label htmlFor="contract_terms">Условия поставки и оплаты</label>
                 <textarea
