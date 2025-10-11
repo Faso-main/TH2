@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import pkg from 'pg';
 import recommendationRoutes from './recommendation_routes.js';
 
+
+
 const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
