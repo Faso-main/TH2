@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
-from recommendation_service import PGRecommendationService
+from py_back.recommendation_service import PGRecommendationService
 import asyncio
 
 app = FastAPI(title="Procurement Recommendation API")
@@ -21,7 +21,7 @@ class RecommendationRequest(BaseModel):
     user_id: str
     limit: int = 15
 
-@app.on_event("startup")
+@app.lifespan("startup")
 async def startup_event():
     await service.init_recommender()
     print("✅ Recommendation service initialized")
