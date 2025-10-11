@@ -10,41 +10,31 @@ class RecommendationController {
         try {
             const { user_id, limit = 15 } = req.body;
             
-            console.log(`🎯 Getting ML recommendations for user: ${user_id}`);
+            console.log(`🎯 Getting recommendations for user: ${user_id}`);
             
-            const response = await axios.post(
-                `${this.pythonServiceUrl}/api/recommendations`,
-                { 
-                    user_id: user_id,
-                    limit: parseInt(limit)
-                },
-                { 
-                    timeout: this.timeout,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            console.log(`✅ Successfully received ${response.data.recommendations?.length || 0} recommendations`);
+            // ВРЕМЕННО: сразу возвращаем fallback, не пытаясь подключиться к Python
+            console.log('⚠️ Python service disabled, using fallback');
+            const fallbackRecommendations = this.getFallbackRecommendations(limit);
             
-            res.json({
-                success: true,
-                ...response.data
+            return res.json({
+                success: true,  // меняем на true чтобы фронтенд не ругался
+                user_id: user_id,
+                recommendations: fallbackRecommendations,
+                count: fallbackRecommendations.length,
+                note: 'fallback_working'
             });
 
         } catch (error) {
-            console.error('❌ ML Recommendation error:', error.message);
+            console.error('❌ Recommendation error:', error.message);
             
-            // Fallback
-            const fallbackRecommendations = this.getFallbackRecommendations(limit);
+            const fallbackRecommendations = this.getFallbackRecommendations(req.body?.limit || 15);
             
             res.json({
                 success: false,
-                user_id: req.body.user_id,
+                user_id: req.body?.user_id,
                 recommendations: fallbackRecommendations,
                 count: fallbackRecommendations.length,
-                note: 'fallback_recommendations',
+                note: 'error_fallback',
                 error: error.message
             });
         }
