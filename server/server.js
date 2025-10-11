@@ -402,18 +402,17 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Получение закупок
 app.get('/api/procurements', async (req, res) => {
   try {
     const { status, limit = 20 } = req.query;
     
     console.log('Procurements request query:', { status, limit });
     
+    // Используем реальные названия столбцов из БД
     let query = `
       SELECT 
         p.procurement_id as id,
         p.name as title,
-        p.description,
         p.estimated_price as current_price,
         p.actual_price,
         p.status,
@@ -421,10 +420,8 @@ app.get('/api/procurements', async (req, res) => {
         p.publication_date,
         p.organization_name as customer_name,
         p.organization_inn as customer_inn,
-        p.created_at,
-        u.email as created_by_email
+        p.created_at
       FROM procurements p
-      LEFT JOIN users u ON p.user_id = u.user_id
       WHERE 1=1
     `;
     const params = [];
@@ -436,15 +433,18 @@ app.get('/api/procurements', async (req, res) => {
       params.push(status);
     }
 
-    query += ' ORDER BY p.procurement_date DESC LIMIT $' + (paramCount + 1);
+    query += ' ORDER BY p.created_at DESC LIMIT $' + (paramCount + 1);
     params.push(parseInt(limit));
 
+    console.log('Executing procurements query:', query, params);
+    
     const result = await pool.query(query, params);
     
     // Получаем товары для каждой закупки
     const procurementsWithProducts = await Promise.all(
       result.rows.map(async (procurement) => {
         try {
+          // Получаем товары для закупки
           const productsResult = await pool.query(`
             SELECT 
               pi.quantity as required_quantity,
@@ -460,13 +460,14 @@ app.get('/api/procurements', async (req, res) => {
             WHERE pi.procurement_id = $1
           `, [procurement.id]);
 
-          // ВРЕМЕННО: устанавливаем participants_count = 0 вместо запроса к procurement_participants
+          // Временно устанавливаем participants_count = 0
           const participants_count = 0;
 
           return {
             ...procurement,
             products: productsResult.rows,
-            participants_count: participants_count
+            participants_count: participants_count,
+            description: procurement.name // используем name как description
           };
         } catch (error) {
           console.error(`Error loading products for procurement ${procurement.id}:`, error);
@@ -474,7 +475,8 @@ app.get('/api/procurements', async (req, res) => {
           return {
             ...procurement,
             products: [],
-            participants_count: 0
+            participants_count: 0,
+            description: procurement.name
           };
         }
       })
@@ -536,7 +538,7 @@ app.post('/api/procurements', checkSession, async (req, res) => {
 
     console.log('Creating procurement with ID:', procurementId);
 
-    // Создаем закупку
+    // Создаем закупку - используем name вместо description
     const procurementResult = await client.query(
       `INSERT INTO procurements 
        (procurement_id, user_id, name, estimated_price, status, procurement_date, organization_name, organization_inn)
@@ -545,7 +547,7 @@ app.post('/api/procurements', checkSession, async (req, res) => {
       [
         procurementId,
         req.user.userId,
-        title,
+        title, // используем title как name
         parseFloat(current_price),
         'active',
         new Date(),
@@ -587,9 +589,8 @@ app.post('/api/procurements', checkSession, async (req, res) => {
 
     // Получаем полные данные закупки для ответа
     const fullProcurementResult = await pool.query(
-      `SELECT p.*, u.email as created_by_email
+      `SELECT p.*
        FROM procurements p
-       LEFT JOIN users u ON p.user_id = u.user_id
        WHERE p.procurement_id = $1`,
       [procurementId]
     );
@@ -602,13 +603,12 @@ app.post('/api/procurements', checkSession, async (req, res) => {
       [procurementId]
     );
 
-    // ВРЕМЕННО: устанавливаем participants_count = 0 вместо запроса к procurement_participants
-    const participants_count = 0;
-
     const procurementWithProducts = {
       ...fullProcurementResult.rows[0],
       products: productsResult.rows,
-      participants_count: participants_count
+      participants_count: 0,
+      title: fullProcurementResult.rows[0].name, // добавляем title для фронтенда
+      description: fullProcurementResult.rows[0].name // добавляем description для фронтенда
     };
 
     console.log('Final procurement data prepared');
@@ -633,17 +633,6 @@ app.post('/api/procurements', checkSession, async (req, res) => {
       table: error.table,
       constraint: error.constraint
     });
-    
-    // Более информативные ошибки
-    if (error.code === '23505') { // unique violation
-      return res.status(400).json({ error: 'Закупка с таким ID уже существует' });
-    }
-    if (error.code === '23503') { // foreign key violation
-      return res.status(400).json({ error: 'Ошибка связи с таблицей. Проверьте существование товаров.' });
-    }
-    if (error.code === '23502') { // not null violation
-      return res.status(400).json({ error: 'Обязательные поля не заполнены' });
-    }
     
     res.status(500).json({ 
       error: 'Ошибка при создании закупки',
