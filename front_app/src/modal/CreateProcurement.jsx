@@ -19,6 +19,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
   });
   const [step, setStep] = useState(1); // 1 - основные параметры, 2 - выбор товаров
   const [loading, setLoading] = useState(false);
+  const [formValid, setFormValid] = useState(false);
 
   // Установка данных заказчика из профиля пользователя
   useEffect(() => {
@@ -32,6 +33,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     }
   }, [currentUser]);
 
+  // Валидация формы
+  useEffect(() => {
+    const isValid = formData.title.trim() !== '' && 
+                   formData.customer_name.trim() !== '' && 
+                   formData.customer_inn.trim() !== '';
+    setFormValid(isValid);
+  }, [formData]);
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
@@ -42,24 +51,35 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
     }, 0);
   };
 
+  const handleContinueToProducts = (e) => {
+    e.preventDefault();
+    
+    if (!formValid) {
+      alert('Заполните обязательные поля: название закупки, название организации и ИНН');
+      return;
+    }
+
+    // Сохраняем данные формы и переходим к выбору товаров
+    setStep(2);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (step === 1) {
-      // Переходим к выбору товаров
-      setStep(2);
+      handleContinueToProducts(e);
       return;
     }
 
-    // Создаем закупку
+    // Создаем закупку (шаг 2)
+    if (selectedProducts.length === 0) {
+      alert('Добавьте хотя бы один товар в закупку');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      if (!formData.title) {
-        alert('Заполните название закупки');
-        return;
-      }
-
       const totalPrice = calculateTotalPrice();
       const procurementData = {
         title: formData.title,
@@ -101,7 +121,14 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
 
   const handleAddProducts = () => {
     onAddProducts();
-    setStep(2);
+  };
+
+  const handleStepChange = (newStep) => {
+    if (newStep === 2 && !formValid) {
+      alert('Заполните обязательные поля на первом шаге');
+      return;
+    }
+    setStep(newStep);
   };
 
   return (
@@ -109,7 +136,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
       <div className="creation-steps">
         <div 
           className={`step-indicator ${step === 1 ? 'active' : ''}`}
-          onClick={() => onStepChange && onStepChange(1)}
+          onClick={() => handleStepChange(1)}
           style={{cursor: 'pointer'}}
         >
           <span className="step-number">1</span>
@@ -118,7 +145,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
         <div className="step-connector"></div>
         <div 
           className={`step-indicator ${step === 2 ? 'active' : ''}`}
-          onClick={() => onStepChange && onStepChange(2)}
+          onClick={() => handleStepChange(2)}
           style={{cursor: 'pointer'}}
         >
           <span className="step-number">2</span>
@@ -287,6 +314,17 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
               <p>Добавьте товары в закупку или используйте рекомендуемые</p>
             </div>
 
+            {/* Информация о закупке */}
+            <div className="form-section">
+              <h4>Информация о закупке</h4>
+              <div className="procurement-summary">
+                <p><strong>Название:</strong> {formData.title}</p>
+                <p><strong>Заказчик:</strong> {formData.customer_name}</p>
+                <p><strong>Тип закупки:</strong> {formData.law_type}</p>
+                {formData.description && <p><strong>Описание:</strong> {formData.description}</p>}
+              </div>
+            </div>
+
             {/* Секция с выбранными товарами */}
             {selectedProducts.length > 0 ? (
               <div className="form-section">
@@ -295,7 +333,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
                   <button 
                     type="button" 
                     className="btn-outline btn-small"
-                    onClick={() => onAddProducts()}
+                    onClick={handleAddProducts}
                   >
                     Добавить еще
                   </button>
@@ -360,7 +398,7 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
               <button 
                 type="button" 
                 className="btn-outline btn-full"
-                onClick={() => onAddProducts()}
+                onClick={handleAddProducts}
               >
                 📦 Выбрать товары из каталога
               </button>
@@ -376,18 +414,20 @@ function CreateProcurement({ onClose, onCreate, selectedProducts, onUpdateQuanti
           </div>
         )}
 
-      <div className="form-actions">
-        {step === 1 ? (
-          <>
-            <button type="button" className="btn-outline" onClick={() => {
-              onClearSavedForm && onClearSavedForm();
-              onClose();
-            }}>
-              Отмена и очистить
-            </button>
-            <button type="submit" className="btn-primary">
-              Продолжить → Выбор товаров
-            </button>
+        <div className="form-actions">
+          {step === 1 ? (
+            <>
+              <button type="button" className="btn-outline" onClick={onClose}>
+                Отмена
+              </button>
+              <button 
+                type="button" 
+                className="btn-primary"
+                onClick={handleContinueToProducts}
+                disabled={!formValid}
+              >
+                Продолжить → Выбор товаров
+              </button>
             </>
           ) : (
             <>

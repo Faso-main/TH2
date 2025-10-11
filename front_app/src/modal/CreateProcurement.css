@@ -375,3 +375,48 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Добавьте в конец файла CreateProcurement.css */
+
+.procurement-summary {
+  background: var(--accent-color);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+.procurement-summary p {
+  margin: 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.procurement-summary strong {
+  color: var(--text-secondary);
+}
+
+/* Улучшенные стили для шагов */
+.step-indicator {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.step-indicator:hover:not(.active) .step-number {
+  background: var(--primary-hover);
+  color: white;
+}
+
+.step-indicator:hover:not(.active) .step-label {
+  color: var(--primary-color);
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+  .procurement-summary {
+    padding: 0.75rem;
+  }
+  
+  .procurement-summary p {
+    font-size: 0.85rem;
+  }
+}
