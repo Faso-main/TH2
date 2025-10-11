@@ -119,8 +119,10 @@ class PGRecommendationService:
         finally:
             await conn.close()
     
+# В recommendation_service.py улучшим загрузку товаров
+
     async def load_products_from_pg(self):
-        """Загрузка товаров из PostgreSQL в DataFrame"""
+        """Загрузка реальных товаров из PostgreSQL"""
         conn = await asyncpg.connect(**self.db_config)
         try:
             query = """
@@ -128,45 +130,37 @@ class PGRecommendationService:
                 p.product_id,
                 p.name,
                 p.manufacturer,
-                p.unit_of_measure,
                 p.average_price,
-                p.specifications,
                 p.is_available,
-                p.source_system,
-                c.name as category_name,
-                c.category_id
+                c.name as category_name
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.category_id
             WHERE p.is_available = true
-            LIMIT 50000  # Ограничиваем для производительности
+            AND p.name IS NOT NULL 
+            AND p.name != ''
+            AND p.average_price > 0
+            LIMIT 10000
             """
             
             rows = await conn.fetch(query)
             
-            # Конвертируем в DataFrame
             products_data = []
             for row in rows:
                 products_data.append({
                     'product_id': row['product_id'],
-                    'name': row['name'],
-                    'description': row['description'],
-                    'manufacturer': row['manufacturer'],
-                    'unit_of_measure': row['unit_of_measure'],
-                    'average_price': float(row['average_price'] or 0),
-                    'specifications': row['specifications'],
+                    'name': row['name'] or f"Товар {row['product_id']}",
+                    'manufacturer': row['manufacturer'] or 'Не указан',
+                    'average_price': float(row['average_price'] or 1000),
                     'is_available': row['is_available'],
-                    'source_system': row['source_system'],
-                    'category_name': row['category_name'],
-                    'category_id': row['category_id']
+                    'category_name': row['category_name'] or 'Другое'
                 })
             
+            print(f"✅ Загружено {len(products_data)} реальных товаров из БД")
             return pd.DataFrame(products_data)
             
         except Exception as e:
-            print(f"❌ Error loading products: {e}")
-            return pd.DataFrame()
-        finally:
-            await conn.close()
+            print(f"❌ Ошибка загрузки товаров: {e}")
+            return await self.load_minimal_products()
     
     async def get_user_recommendations(self, user_id, limit=15):
         """Получить рекомендации для пользователя"""
