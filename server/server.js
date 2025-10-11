@@ -707,6 +707,34 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
+
+app.get("/api/ml/health", async (req, res) => {
+  try {
+    const r = await fetch("http://127.0.0.1:8000/health");
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    console.error("ML health error:", err);
+    res.status(500).json({ error: "ML service unreachable" });
+  }
+});
+
+app.post("/api/ml/recommendations", async (req, res) => {
+  try {
+    const r = await fetch("http://127.0.0.1:8000/api/recommendations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (err) {
+    console.error("ML recommend error:", err);
+    res.status(500).json({ error: "ML service unreachable" });
+  }
+});
+
 // Обработка 404 для API
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
