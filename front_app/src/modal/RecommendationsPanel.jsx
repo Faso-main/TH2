@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { unifiedAPI } from '../services/api';
 import { generateProductImage, getCategoryColor } from '../utils/productImages';
+import './RecommendationsPanel.css';
+
 
 function RecommendationsPanel({ currentUser, onAddToProcurement }) {
   const [recommendations, setRecommendations] = useState([]);

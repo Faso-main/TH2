@@ -9,9 +9,9 @@ import LoginForm from './modal/LoginForm';
 import RegisterForm from './modal/RegisterForm';
 import UserProfile from './modal/UserProfile';
 import CreateProcurement from './modal/CreateProcurement';
+import RecommendationsPanel from './model/RecommendationsPanel';
 import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
-import RecommendationsPanel from './model/RecommendationsPanel';
 
 
 function App() {
