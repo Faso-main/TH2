@@ -678,7 +678,7 @@ function Main({
     <main className="main">
       <div className="products-container">
         {/* Баннер сохраненных данных закупки */}
-        {savedProcurementFormData && (
+        {savedProcurementFormData && savedProcurementData && highlightAddToProcurement && (
           <div className="saved-data-banner">
             <div className="banner-content">
               <span>📋 Есть сохраненные данные закупки</span>
