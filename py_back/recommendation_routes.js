@@ -1,7 +1,8 @@
 // routes/recommendation_routes.js
-const express = require('express');
+import express from 'express';
+import recommendationController from './recommendation_controller.js';
+
 const router = express.Router();
-const recommendationController = require('./recommendation_controller');
 
 // Получить рекомендации для пользователя
 router.post('/recommendations', (req, res) => {
@@ -13,4 +14,4 @@ router.get('/health', (req, res) => {
     recommendationController.healthCheck(req, res);
 });
 
-module.exports = router;
+export default router;

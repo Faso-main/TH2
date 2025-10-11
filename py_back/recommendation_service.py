@@ -127,7 +127,6 @@ class PGRecommendationService:
             SELECT 
                 p.product_id,
                 p.name,
-                p.description,
                 p.manufacturer,
                 p.unit_of_measure,
                 p.average_price,

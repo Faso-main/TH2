@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import pkg from 'pg';
+import recommendationRoutes from '../py_back/recommendation_routes';
 
-const recommendationRoutes = require('../py_back/recommendation_routes');
 const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
