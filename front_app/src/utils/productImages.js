@@ -1,5 +1,5 @@
 // src/utils/productImages.js
-export const generateProductImage = (productName, color = '007bff') => {
+export const generateProductImage = (productName, color = 'd01a1a') => {
   // Очищаем название от специальных символов
   const cleanName = productName.replace(/[^\w\s]/gi, '').substring(0, 25);
   
@@ -50,18 +50,19 @@ const getDarkerColor = (hex) => {
 
 // Цвета для разных категорий товаров
 export const getCategoryColor = (categoryName) => {
-  if (!categoryName) return '007bff';
+  if (!categoryName) return 'd01a1a';
   
   const category = categoryName.toLowerCase();
   
-  if (category.includes('смартфон') || category.includes('электроника')) return '007bff'; // синий
-  if (category.includes('ноутбук') || category.includes('компьютер')) return '28a745'; // зеленый
-  if (category.includes('телевизор') || category.includes('аудио')) return 'dc3545'; // красный
-  if (category.includes('холодильник') || category.includes('стиральная')) return 'ffc107'; // желтый
-  if (category.includes('джинсы') || category.includes('одежда')) return '6f42c1'; // фиолетовый
-  if (category.includes('обувь') || category.includes('кроссовки')) return 'fd7e14'; // оранжевый
-  if (category.includes('диван') || category.includes('мебель')) return '20c997'; // бирюзовый
-  if (category.includes('кофемашина') || category.includes('кухонная')) return 'e83e8c'; // розовый
+  // Основные цвета из вашей палитры
+  if (category.includes('смартфон') || category.includes('электроника')) return 'd01a1a'; // primary red
+  if (category.includes('ноутбук') || category.includes('компьютер')) return '000000'; // secondary black
+  if (category.includes('телевизор') || category.includes('аудио')) return '1e293b'; // text primary dark
+  if (category.includes('холодильник') || category.includes('стиральная')) return '475569'; // text secondary
+  if (category.includes('джинсы') || category.includes('одежда')) return '94a3b8'; // text light
+  if (category.includes('обувь') || category.includes('кроссовки')) return 'c4c4c4'; // accent gray
+  if (category.includes('диван') || category.includes('мебель')) return '000000'; // black
+  if (category.includes('кофемашина') || category.includes('кухонная')) return 'd01a1a'; // primary red
   
-  return '007bff'; // синий по умолчанию
+  return 'd01a1a'; // primary red по умолчанию
 };

@@ -7,15 +7,15 @@
 
 
 :root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary-color: #64748b;
-  --accent-color: #f1f5f9;
+  --primary-color: #d01a1a;
+  --primary-hover: #000000;
+  --secondary-color: #000000;
+  --accent-color: #c4c4c4;
   --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-light: #94a3b8;
   --white: #ffffff;
-  --border-color: #e2e8f0;
+  --border-color: #000000;
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   --border-radius: 12px;
