@@ -3,13 +3,25 @@ import { useState, useEffect, useRef } from 'react';
 import { searchAPI } from '../services/api';
 import './SmartSearch.css';
 
-function SmartSearch({ onSearch, onSelect, placeholder = "Умный поиск товаров и закупок..." }) {
-  const [query, setQuery] = useState('');
+// components/SmartSearch.jsx - обновленная версия
+function SmartSearch({ 
+  onSearch, 
+  onSelect, 
+  placeholder = '',
+  initialQuery = '',
+  onClear 
+}) {
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState([]);
   const [popularSearches, setPopularSearches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
+
+  // Синхронизируем с внешним состоянием
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   // Загружаем популярные запросы при монтировании
   useEffect(() => {
@@ -87,16 +99,32 @@ function SmartSearch({ onSearch, onSelect, placeholder = "Умный поиск 
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);
+    if (onClear) {
+      onClear();
+    }
     if (onSearch) {
       onSearch('');
     }
   };
 
+  // Закрытие подсказок при клике вне компонента
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (inputRef.current && !inputRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="smart-search-container">
+    <div className="smart-search-container" ref={inputRef}>
       <div className="smart-search-input-wrapper">
         <input
-          ref={inputRef}
           type="text"
           className="smart-search-input"
           placeholder={placeholder}
@@ -113,6 +141,7 @@ function SmartSearch({ onSearch, onSelect, placeholder = "Умный поиск 
               className="clear-search-btn"
               onClick={handleClear}
               title="Очистить поиск"
+              type="button"
             >
               ✕
             </button>
@@ -122,8 +151,16 @@ function SmartSearch({ onSearch, onSelect, placeholder = "Умный поиск 
             onClick={() => handleSearch()}
             disabled={!query.trim() || isLoading}
             title="Найти"
+            type="button"
           >
-            {isLoading ? '⌛' : '🔍'}
+            {isLoading ? (
+              <div className="loading-spinner-small"></div>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            )}
           </button>
         </div>
 
