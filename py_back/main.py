@@ -289,7 +289,7 @@ class SmartRecommendationEngine:
             score_range = "0-0"
             avg_score = 0
             
-        logger.info(f"🎯 User {user_id}: {len(final_recommendations)} unique recommendations, scores: {score_range}, avg: {avg_score:.3f}")
+        logger.info(f"User {user_id}: {len(final_recommendations)} unique recommendations, scores: {score_range}, avg: {avg_score:.3f}")
         
         return final_recommendations
     
