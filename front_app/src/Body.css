@@ -826,6 +826,8 @@
   font-size: 0.9rem;
 }
 
+
+
 /* Адаптивность для счетчиков */
 @media (max-width: 768px) {
   .results-info {
