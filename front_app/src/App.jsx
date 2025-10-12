@@ -828,31 +828,112 @@ function Main({
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
+  const [activeFilters, setActiveFilters] = useState({});
 
+  // Функция для применения фильтров к товарам
+  const applyProductFilters = (productsList, filters) => {
+    if (!filters || Object.keys(filters).length === 0) {
+      return productsList;
+    }
+
+    return productsList.filter(product => {
+      if (!product) return false;
+
+      // Фильтр по категориям
+      if (filters.categories && filters.categories.length > 0) {
+        if (!filters.categories.includes(product.category_name)) {
+          return false;
+        }
+      }
+
+      // Фильтр по цене
+      if (filters.priceRange) {
+        const price = product.price_per_item || 0;
+        
+        if (filters.priceRange.min && filters.priceRange.min !== '') {
+          if (price < parseFloat(filters.priceRange.min)) {
+            return false;
+          }
+        }
+        
+        if (filters.priceRange.max && filters.priceRange.max !== '') {
+          if (price > parseFloat(filters.priceRange.max)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Функция для применения фильтров к закупкам
+  const applyProcurementFilters = (procurementsList, filters) => {
+    if (!filters || Object.keys(filters).length === 0) {
+      return procurementsList;
+    }
+
+    return procurementsList.filter(procurement => {
+      if (!procurement) return false;
+
+      // Фильтр по статусу
+      if (filters.procurementStatus && filters.procurementStatus.length > 0) {
+        if (!filters.procurementStatus.includes(procurement.status)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Обработчик изменения фильтров
+  const handleFiltersChange = (newFilters) => {
+    setActiveFilters(newFilters);
+  };
+
+  // Обновляем отфильтрованные данные при изменении исходных данных или фильтров
   useEffect(() => {
+    if (activeSection === 'products') {
+      const filtered = applyProductFilters(products, activeFilters);
+      setFilteredProducts(filtered);
+    } else {
+      const filtered = applyProcurementFilters(procurements, activeFilters);
+      setFilteredProcurements(filtered);
+    }
+  }, [products, procurements, activeFilters, activeSection]);
+
+  // При переключении секции сбрасываем фильтры
+  useEffect(() => {
+    setActiveFilters({});
     setFilteredProducts(products);
-  }, [products]);
-
-  useEffect(() => {
     setFilteredProcurements(procurements);
-  }, [procurements]);
+  }, [activeSection]);
 
   const getDisplayProducts = () => {
-    return searchQuery ? filteredProducts.filter(product => 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) : filteredProducts;
+    let result = searchQuery ? 
+      filteredProducts.filter(product => 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) : 
+      filteredProducts;
+
+    return result;
   };
 
   const getDisplayProcurements = () => {
-    return searchQuery ? filteredProcurements.filter(procurement =>
-      procurement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      procurement.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      procurement.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      procurement.session_number?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) : filteredProcurements;
+    let result = searchQuery ? 
+      filteredProcurements.filter(procurement =>
+        procurement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        procurement.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        procurement.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        procurement.session_number?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) : 
+      filteredProcurements;
+
+    return result;
   };
 
   if (loading) {
@@ -870,6 +951,20 @@ function Main({
 
   const displayProducts = getDisplayProducts();
   const displayProcurements = getDisplayProcurements();
+
+  // Считаем сколько товаров/закупок отфильтровано
+  const filteredProductsCount = activeSection === 'products' 
+    ? filteredProducts.length 
+    : filteredProcurements.length;
+  
+  const totalCount = activeSection === 'products' 
+    ? products.length 
+    : procurements.length;
+
+  const isFiltered = Object.keys(activeFilters).length > 0 && 
+    ((activeSection === 'products' && activeFilters.categories?.length > 0) || 
+     (activeSection === 'products' && (activeFilters.priceRange.min || activeFilters.priceRange.max)) ||
+     (activeSection === 'procurements' && activeFilters.procurementStatus?.length > 0));
 
   return (
     <main className="main">
@@ -936,12 +1031,19 @@ function Main({
                   </span>
                 )}
                 {!searchQuery && (
-                  <span className="products-count">
-                    {activeSection === 'products' 
-                      ? `Всего товаров: ${displayProducts.length}` 
-                      : `Всего закупок: ${displayProcurements.length}`
-                    }
-                  </span>
+                  <div className="results-info">
+                    <span className="products-count">
+                      {activeSection === 'products' 
+                        ? `Всего товаров: ${totalCount}` 
+                        : `Всего закупок: ${totalCount}`
+                      }
+                    </span>
+                    {isFiltered && (
+                      <span className="filtered-count">
+                        • Показано: {filteredProductsCount}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -968,9 +1070,8 @@ function Main({
 
           <FiltersSidebar 
             activeSection={activeSection}
+            onFiltersChange={handleFiltersChange}
             products={products}
-            procurements={procurements}
-            onFiltersChange={() => {}}
           />
         </div>
       </div>
@@ -1182,24 +1283,28 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
 }
 
 // Компонент FiltersSidebar
-function FiltersSidebar({ activeSection, onFiltersChange }) {
+function FiltersSidebar({ activeSection, onFiltersChange, products = [] }) {
   const [filters, setFilters] = useState({
     categories: [],
     priceRange: { min: '', max: '' },
-    procurementStatus: ['active']
+    procurementStatus: ['active', 'soon']
   });
 
-  const topLevelCategories = [
-    { id: 1, name: 'Электроника' },
-    { id: 2, name: 'Бытовая техника' },
-    { id: 3, name: 'Одежда' },
-    { id: 4, name: 'Мебель' }
-  ];
+  // Получаем реальные категории из товаров
+  const availableCategories = [...new Set(products
+    .filter(p => p && p.category_name)
+    .map(p => p.category_name)
+  )].sort();
 
-  const handleCategoryChange = (categoryId) => {
-    const newCategories = filters.categories.includes(categoryId)
-      ? filters.categories.filter(id => id !== categoryId)
-      : [...filters.categories, categoryId];
+  // Используем реальные категории или заглушки
+  const categoriesToShow = availableCategories.length > 0 
+    ? availableCategories.slice(0, 8) 
+    : ['Электроника', 'Бытовая техника', 'Одежда', 'Мебель'];
+
+  const handleCategoryChange = (category) => {
+    const newCategories = filters.categories.includes(category)
+      ? filters.categories.filter(c => c !== category)
+      : [...filters.categories, category];
     
     const newFilters = { ...filters, categories: newCategories };
     setFilters(newFilters);
@@ -1207,7 +1312,9 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
   };
 
   const handlePriceChange = (field, value) => {
-    const newPriceRange = { ...filters.priceRange, [field]: value };
+    // Очищаем значение если оно пустое или не число
+    const cleanedValue = value === '' ? '' : parseInt(value) || '';
+    const newPriceRange = { ...filters.priceRange, [field]: cleanedValue };
     const newFilters = { ...filters, priceRange: newPriceRange };
     setFilters(newFilters);
     onFiltersChange(newFilters);
@@ -1227,16 +1334,28 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
     const clearedFilters = {
       categories: [],
       priceRange: { min: '', max: '' },
-      procurementStatus: ['active']
+      procurementStatus: ['active', 'soon']
     };
     setFilters(clearedFilters);
     onFiltersChange(clearedFilters);
   };
 
+  // Считаем активные фильтры
+  const activeFiltersCount = 
+    filters.categories.length +
+    (filters.priceRange.min !== '' ? 1 : 0) +
+    (filters.priceRange.max !== '' ? 1 : 0) +
+    (filters.procurementStatus.length > 0 ? 1 : 0);
+
   return (
     <aside className="filters-sidebar">
       <div className="filters-header">
-        <h3>Фильтры</h3>
+        <h3>
+          Фильтры 
+          {activeFiltersCount > 0 && (
+            <span className="filters-badge">{activeFiltersCount}</span>
+          )}
+        </h3>
         <button className="clear-filters-btn" onClick={clearFilters}>
           Очистить
         </button>
@@ -1247,14 +1366,15 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
           <div className="filters-section">
             <h4>Категории</h4>
             <div className="filter-options">
-              {topLevelCategories.map(category => (
-                <label key={category.id} className="filter-option">
+              {categoriesToShow.map(category => (
+                <label key={category} className="filter-option">
                   <input 
                     type="checkbox" 
-                    checked={filters.categories.includes(category.id)}
-                    onChange={() => handleCategoryChange(category.id)}
+                    checked={filters.categories.includes(category)}
+                    onChange={() => handleCategoryChange(category)}
                   />
-                  <span>{category.name}</span>
+                  <span className="checkmark"></span>
+                  <span className="option-label">{category}</span>
                 </label>
               ))}
             </div>
@@ -1264,21 +1384,25 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
             <h4>Цена, ₽</h4>
             <div className="price-range">
               <div className="price-inputs">
-                <input 
-                  type="number" 
-                  placeholder="0" 
-                  className="price-input"
-                  value={filters.priceRange.min}
-                  onChange={(e) => handlePriceChange('min', e.target.value)}
-                />
-                <span>-</span>
-                <input 
-                  type="number" 
-                  placeholder="100000" 
-                  className="price-input"
-                  value={filters.priceRange.max}
-                  onChange={(e) => handlePriceChange('max', e.target.value)}
-                />
+                <div className="price-input-group">
+                  <input 
+                    type="number" 
+                    placeholder="0" 
+                    className="price-input"
+                    value={filters.priceRange.min}
+                    onChange={(e) => handlePriceChange('min', e.target.value)}
+                    min="0"
+                  />
+                  <span className="price-separator">-</span>
+                  <input 
+                    type="number" 
+                    placeholder="∞" 
+                    className="price-input"
+                    value={filters.priceRange.max}
+                    onChange={(e) => handlePriceChange('max', e.target.value)}
+                    min="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1294,7 +1418,8 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
                   checked={filters.procurementStatus.includes('active')}
                   onChange={() => handleStatusChange('active')}
                 />
-                <span>Активные</span>
+                <span className="checkmark"></span>
+                <span className="option-label">Активные</span>
               </label>
               <label className="filter-option">
                 <input 
@@ -1302,7 +1427,8 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
                   checked={filters.procurementStatus.includes('soon')}
                   onChange={() => handleStatusChange('soon')}
                 />
-                <span>Скоро начнутся</span>
+                <span className="checkmark"></span>
+                <span className="option-label">Скоро начнутся</span>
               </label>
               <label className="filter-option">
                 <input 
@@ -1310,7 +1436,8 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
                   checked={filters.procurementStatus.includes('completed')}
                   onChange={() => handleStatusChange('completed')}
                 />
-                <span>Завершенные</span>
+                <span className="checkmark"></span>
+                <span className="option-label">Завершенные</span>
               </label>
             </div>
           </div>
@@ -1319,7 +1446,6 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
     </aside>
   );
 }
-
 // Компонент Footer
 function Footer() {
   return (
