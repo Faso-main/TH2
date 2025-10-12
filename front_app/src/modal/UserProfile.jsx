@@ -242,6 +242,13 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
         >
           Мои участия
         </button>
+        {/* ДОБАВИТЬ ЭТУ КНОПКУ */}
+        <button 
+          className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+          onClick={() => setActiveTab('favorites')}
+        >
+          ❤️ Избранное
+        </button>
       </div>
 
       <div className="profile-content">

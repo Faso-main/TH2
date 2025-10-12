@@ -1001,6 +1001,176 @@ app.post('/api/ml/recommendations', (req, res) => {
   });
 });
 
+
+// Добавить в server.js после drafts endpoints
+
+// Получить избранное пользователя
+app.get('/api/user/favorites', checkSession, async (req, res) => {
+  try {
+    const { type } = req.query; // 'products', 'procurements', или все
+    
+    let query = `
+      SELECT 
+        f.favorite_id,
+        f.favorite_type,
+        f.created_at,
+        p.product_id,
+        p.name as product_name,
+        p.description as product_description,
+        p.manufacturer as product_company,
+        p.average_price as product_price,
+        p.unit_of_measure,
+        c.name as category_name,
+        pr.procurement_id,
+        pr.name as procurement_title,
+        pr.estimated_price as procurement_price,
+        pr.status as procurement_status,
+        pr.organization_name as customer_name
+      FROM user_favorites f
+      LEFT JOIN products p ON f.product_id = p.product_id AND f.favorite_type = 'product'
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN procurements pr ON f.procurement_id = pr.procurement_id AND f.favorite_type = 'procurement'
+      WHERE f.user_id = $1
+    `;
+    
+    const params = [req.user.userId];
+    
+    if (type === 'products') {
+      query += ` AND f.favorite_type = 'product'`;
+    } else if (type === 'procurements') {
+      query += ` AND f.favorite_type = 'procurement'`;
+    }
+    
+    query += ` ORDER BY f.created_at DESC`;
+    
+    const result = await pool.query(query, params);
+    
+    // Форматируем ответ
+    const favorites = result.rows.map(row => {
+      if (row.favorite_type === 'product') {
+        return {
+          id: row.favorite_id,
+          type: 'product',
+          product: {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            company: row.product_company,
+            price_per_item: row.product_price,
+            category_name: row.category_name,
+            unit_of_measure: row.unit_of_measure
+          },
+          created_at: row.created_at
+        };
+      } else {
+        return {
+          id: row.favorite_id,
+          type: 'procurement',
+          procurement: {
+            id: row.procurement_id,
+            title: row.procurement_title,
+            current_price: row.procurement_price,
+            status: row.procurement_status,
+            customer_name: row.customer_name
+          },
+          created_at: row.created_at
+        };
+      }
+    });
+    
+    res.json({ favorites });
+    
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    res.status(500).json({ error: 'Ошибка при получении избранного' });
+  }
+});
+
+// Добавить в избранное
+app.post('/api/user/favorites', checkSession, async (req, res) => {
+  try {
+    const { product_id, procurement_id } = req.body;
+    
+    if (!product_id && !procurement_id) {
+      return res.status(400).json({ error: 'Укажите product_id или procurement_id' });
+    }
+    
+    const favorite_type = product_id ? 'product' : 'procurement';
+    
+    // Проверяем, не добавлено ли уже в избранное
+    const existing = await pool.query(
+      `SELECT favorite_id FROM user_favorites 
+       WHERE user_id = $1 AND product_id = $2 AND procurement_id = $3`,
+      [req.user.userId, product_id || null, procurement_id || null]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Уже в избранном' });
+    }
+    
+    const result = await pool.query(
+      `INSERT INTO user_favorites (user_id, product_id, procurement_id, favorite_type)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [req.user.userId, product_id || null, procurement_id || null, favorite_type]
+    );
+    
+    res.json({ 
+      message: 'Добавлено в избранное',
+      favorite: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Add favorite error:', error);
+    res.status(500).json({ error: 'Ошибка при добавлении в избранное' });
+  }
+});
+
+// Удалить из избранного
+app.delete('/api/user/favorites/:id', checkSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM user_favorites WHERE favorite_id = $1 AND user_id = $2 RETURNING favorite_id',
+      [id, req.user.userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Не найдено в избранном' });
+    }
+    
+    res.json({ message: 'Удалено из избранного' });
+    
+  } catch (error) {
+    console.error('Remove favorite error:', error);
+    res.status(500).json({ error: 'Ошибка при удалении из избранного' });
+  }
+});
+
+// Проверить, в избранном ли элемент
+app.get('/api/user/favorites/check', checkSession, async (req, res) => {
+  try {
+    const { product_id, procurement_id } = req.query;
+    
+    const result = await pool.query(
+      `SELECT favorite_id FROM user_favorites 
+       WHERE user_id = $1 AND product_id = $2 AND procurement_id = $3`,
+      [req.user.userId, product_id || null, procurement_id || null]
+    );
+    
+    res.json({ 
+      is_favorite: result.rows.length > 0,
+      favorite_id: result.rows[0]?.favorite_id
+    });
+    
+  } catch (error) {
+    console.error('Check favorite error:', error);
+    res.status(500).json({ error: 'Ошибка при проверке избранного' });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   console.log(`База данных: pc_db`);

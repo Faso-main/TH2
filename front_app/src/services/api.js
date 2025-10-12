@@ -72,6 +72,37 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
+// Добавить в api.js
+export const favoritesAPI = {
+  async getFavorites(type = null) {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    
+    return apiRequest(`/user/favorites?${params.toString()}`);
+  },
+
+  async addFavorite({ product_id, procurement_id }) {
+    return apiRequest('/user/favorites', {
+      method: 'POST',
+      body: { product_id, procurement_id },
+    });
+  },
+
+  async removeFavorite(favoriteId) {
+    return apiRequest(`/user/favorites/${favoriteId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async checkFavorite({ product_id, procurement_id }) {
+    const params = new URLSearchParams();
+    if (product_id) params.append('product_id', product_id);
+    if (procurement_id) params.append('procurement_id', procurement_id);
+    
+    return apiRequest(`/user/favorites/check?${params.toString()}`);
+  }
+};
+
 // Auth API
 export const authAPI = {
   async register(userData) {
@@ -91,6 +122,7 @@ export const authAPI = {
     return response;
   },
 
+  
   async login(credentials) {
     const response = await apiRequest('/auth/login', {
       method: 'POST',

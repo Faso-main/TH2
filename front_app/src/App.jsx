@@ -1123,7 +1123,16 @@ function ProductsGrid({ products, searchQuery, isSearching, onAddToProcurement, 
               <div className="product-image-fallback" style={{display: 'none'}}>
                 {product.name}
               </div>
-              <button className="wishlist-btn">🖤</button>
+              <button 
+              className={`wishlist-btn ${isFavorite ? 'favorited' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleFavorite(product.id);
+              }}
+              title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+            >
+              {isFavorite ? '❤️' : '🤍'}
+            </button>
             </div>
             <div className="product-info">
               <h3 className="product-title">{product.name}</h3>
