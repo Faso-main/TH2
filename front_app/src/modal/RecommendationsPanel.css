@@ -41,6 +41,7 @@
 }
 
 .recommendations-error {
+  display: none;
   background: #fff3cd;
   border: 1px solid #ffeaa7;
   color: #856404;
