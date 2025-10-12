@@ -1,0 +1,276 @@
+/* components/FiltersSidebar.css */
+.filters-sidebar {
+  background: var(--white);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  height: fit-content;
+  position: sticky;
+  top: 6rem;
+  box-shadow: var(--shadow);
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.filters-header h3 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filters-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.active-filters-count {
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.clear-filters-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.clear-filters-btn:hover {
+  background: var(--accent-color);
+  color: var(--primary-hover);
+}
+
+.filters-section {
+  margin-bottom: 1.5rem;
+}
+
+.filters-section:last-child {
+  margin-bottom: 0;
+}
+
+.filters-section h4 {
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  position: relative;
+}
+
+.filter-option:hover {
+  color: var(--text-primary);
+}
+
+.filter-option.single-option {
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.filter-option input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  flex-shrink: 0;
+  background: var(--white);
+}
+
+.filter-option:hover .checkmark {
+  border-color: var(--primary-color);
+}
+
+.filter-option input[type="checkbox"]:checked + .checkmark {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.filter-option input[type="checkbox"]:checked + .checkmark::after {
+  content: "✓";
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.option-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.no-options {
+  color: var(--text-light);
+  font-style: italic;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* Стили для диапазона цен */
+.price-range {
+  margin-top: 0.5rem;
+}
+
+.price-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.price-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.price-input-group label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.price-input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  outline: none;
+  font-size: 0.9rem;
+  transition: var(--transition);
+  background: var(--white);
+}
+
+.price-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.price-input::placeholder {
+  color: var(--text-light);
+}
+
+/* Полоса прокрутки */
+.filter-options::-webkit-scrollbar {
+  width: 4px;
+}
+
+.filter-options::-webkit-scrollbar-track {
+  background: var(--accent-color);
+  border-radius: 2px;
+}
+
+.filter-options::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.filter-options::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
+}
+
+/* Анимации */
+.filters-section {
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .filters-sidebar {
+    position: static;
+    margin-bottom: 2rem;
+  }
+  
+  .filter-options {
+    max-height: 150px;
+  }
+  
+  .filters-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .filters-header-actions {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .filters-sidebar {
+    padding: 1rem;
+  }
+  
+  .filters-section {
+    margin-bottom: 1rem;
+  }
+  
+  .filter-option {
+    font-size: 0.85rem;
+  }
+  
+  .price-inputs {
+    gap: 0.5rem;
+  }
+}
