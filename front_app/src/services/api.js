@@ -72,7 +72,7 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
-// Добавить в api.js
+// services/api.js - проверьте что есть этот блок
 export const favoritesAPI = {
   async getFavorites(type = null) {
     const params = new URLSearchParams();

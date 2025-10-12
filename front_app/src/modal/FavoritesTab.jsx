@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
 // components/FavoritesTab.jsx
 import { useState, useEffect } from 'react';
@@ -8,7 +7,7 @@ import './FavoritesTab.css';
 function FavoritesTab({ user }) {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'products', 'procurements'
+  const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
     loadFavorites();

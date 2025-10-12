@@ -1,10 +1,11 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 // modal/UserProfile.jsx
 import { useState, useEffect } from 'react';
 import { userAPI, draftsAPI } from '../services/api';
 import './UserProfile.css';
 
-function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) {
+function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated, onContinueDraft}) {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
     name: '',
@@ -206,13 +207,12 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       <div className="profile-header">
         <div className="user-welcome">
           <div className="user-avatar">
-            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
           <div className="user-info">
-            <h3>{user?.name || 'Пользователь'}</h3>
-            <p>{user?.email || 'Email не указан'}</p>
-            {user?.company_name && <p>Компания: {user.company_name}</p>}
-            {user?.INN && <p className="inn-display">ИНН: {formatINN(user.INN)}</p>}
+            <h3>{user.name || 'Пользователь'}</h3>
+            <p>{user.email}</p>
+            {user.INN && <p className="inn-display">ИНН: {user.INN}</p>}
           </div>
         </div>
       </div>
@@ -225,16 +225,10 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           Профиль
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'my-procurements' ? 'active' : ''}`}
-          onClick={() => setActiveTab('my-procurements')}
+          className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('procurements')}
         >
           Мои закупки
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('drafts')}
-        >
-          Мои черновики
         </button>
         <button 
           className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`}
@@ -242,246 +236,37 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
         >
           Мои участия
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drafts')}
+        >
+          Черновики
+        </button>
+        {/* НОВАЯ ВКЛАДКА */}
+        <button 
+          className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+          onClick={() => setActiveTab('favorites')}
+        >
+          Избранное
+        </button>
       </div>
 
       <div className="profile-content">
         {activeTab === 'profile' && (
-          <form className="profile-form" onSubmit={handleProfileUpdate}>
-            {/* Существующая форма профиля */}
-            <div className="form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="name">Имя *</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={profileData.name || ''}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Введите ваше имя"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="email">Email *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={profileData.email || ''}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Введите ваш email"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="INN">ИНН</label>
-                  <input
-                    type="text"
-                    id="INN"
-                    name="INN"
-                    value={formatINN(profileData.inn)}
-                    onChange={handleInputChange}
-                    disabled
-                    placeholder="ИНН загружается..."
-                    title="ИНН нельзя изменить после регистрации"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="phone_number">Телефон</label>
-                  <input
-                    type="tel"
-                    id="phone_number"
-                    name="phone_number"
-                    value={profileData.phone_number || ''}
-                    onChange={handleInputChange}
-                    placeholder="+7 (999) 999-99-99"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="company_name">Название компании</label>
-                <input
-                  type="text"
-                  id="company_name"
-                  name="company_name"
-                  value={profileData.company_name || ''}
-                  onChange={handleInputChange}
-                  placeholder="Введите название вашей компании"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="location">Адрес</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={profileData.location || ''}
-                  onChange={handleInputChange}
-                  placeholder="Город, улица, дом"
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn-primary btn-full"
-              disabled={saveLoading}
-            >
-              {saveLoading ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
-          </form>
+          <ProfileForm user={user} onClose={onClose} />
         )}
-
-        {activeTab === 'my-procurements' && (
-          <div className="procurements-list">
-            <div className="section-header">
-              <h3>Мои созданные закупки</h3>
-            </div>
-            
-            {loading ? (
-              <div className="loading">Загрузка...</div>
-            ) : myProcurements.length > 0 ? (
-              <div className="items-grid">
-                {myProcurements.map(procurement => (
-                  <div key={procurement.id} className="procurement-item card">
-                    <div className="procurement-header">
-                      <h4>{procurement.title}</h4>
-                      <span className={`status-badge status-${procurement.status}`}>
-                        {getStatusText(procurement.status)}
-                      </span>
-                    </div>
-                    <div className="procurement-details">
-                      <p><strong>Котировочная сессия:</strong> {procurement.session_number}</p>
-                      <p><strong>Начальная цена:</strong> {formatPrice(procurement.current_price)} ₽</p>
-                      <p><strong>Участников:</strong> {procurement.participants_count || 0}</p>
-                      <p><strong>Заказчик:</strong> {procurement.customer_name}</p>
-                      <p><strong>Создана:</strong> {formatDate(procurement.created_at)}</p>
-                    </div>
-                    <div className="procurement-actions">
-                      <button className="btn-outline">Просмотреть</button>
-                      {procurement.status === 'draft' && (
-                        <button className="btn-primary">Редактировать</button>
-                      )}
-                      {procurement.status === 'active' && (
-                        <button className="btn-primary">Управление</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <h4>Закупок пока нет</h4>
-                <p>Создайте свою первую закупку и начните привлекать поставщиков</p>
-              </div>
-            )}
-          </div>
+        {activeTab === 'procurements' && (
+          <UserProcurements user={user} />
         )}
-
-        {/* НОВАЯ ВКЛАДКА - МОИ ЧЕРНОВИКИ */}
-        {activeTab === 'drafts' && (
-          <div className="drafts-list">
-            <div className="section-header">
-              <h3>Мои черновики закупок</h3>
-            </div>
-            
-            {loading ? (
-              <div className="loading">Загрузка...</div>
-            ) : myDrafts.length > 0 ? (
-              <div className="items-grid">
-                {myDrafts.map(draft => (
-                  <div key={draft.id} className="draft-item card">
-                    <div className="procurement-header">
-                      <h4>{draft.title}</h4>
-                      <span className="status-badge status-draft">
-                        Черновик
-                      </span>
-                    </div>
-                    <div className="procurement-details">
-                      <p><strong>Заказчик:</strong> {draft.customer_name}</p>
-                      <p><strong>Примерная стоимость:</strong> {formatPrice(draft.current_price)} ₽</p>
-                      <p><strong>Товаров:</strong> {draft.products_count || 0}</p>
-                      <p><strong>Прогресс:</strong> Шаг {draft.step} из 3</p>
-                      <p><strong>Создан:</strong> {formatDate(draft.created_at)}</p>
-                      <p><strong>Обновлен:</strong> {formatDate(draft.updated_at)}</p>
-                    </div>
-                    <div className="procurement-actions">
-                      <button 
-                        className="btn-primary"
-                        onClick={() => handleContinueDraft(draft)}
-                      >
-                        Продолжить
-                      </button>
-                      <button 
-                        className="btn-outline"
-                        onClick={() => handleDeleteDraft(draft.id)}
-                      >
-                        Удалить
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">📝</div>
-                <h4>Черновиков пока нет</h4>
-                <p>Начните создавать закупку и сохраняйте прогресс в черновиках</p>
-              </div>
-            )}
-          </div>
-        )}
-
         {activeTab === 'participations' && (
-          <div className="participations-list">
-            <h3>Мои участия в закупках</h3>
-            {loading ? (
-              <div className="loading">Загрузка...</div>
-            ) : myParticipations.length > 0 ? (
-              <div className="items-grid">
-                {myParticipations.map(participation => (
-                  <div key={participation.id} className="participation-item card">
-                    <div className="participation-header">
-                      <h4>{participation.procurement_title}</h4>
-                      <span className={`status-badge status-${participation.status}`}>
-                        {getStatusText(participation.status)}
-                      </span>
-                    </div>
-                    <div className="participation-details">
-                      <p><strong>Мое предложение:</strong> {formatPrice(participation.proposed_price)} ₽</p>
-                      <p><strong>Заказчик:</strong> {participation.customer_name}</p>
-                      <p><strong>Дата подачи:</strong> {formatDate(participation.created_at)}</p>
-                      {participation.status === 'rejected' && participation.rejection_reason && (
-                        <p><strong>Причина отказа:</strong> {participation.rejection_reason}</p>
-                      )}
-                    </div>
-                    <div className="participation-actions">
-                      <button className="btn-outline">Подробнее</button>
-                      {participation.status === 'pending' && (
-                        <button className="btn-outline">Отозвать</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">🏆</div>
-                <h4>Участий пока нет</h4>
-                <p>Найдите интересные закупки и подайте заявку на участие!</p>
-                <button className="btn-primary">Найти закупки</button>
-              </div>
-            )}
-          </div>
+          <UserParticipations user={user} />
+        )}
+        {activeTab === 'drafts' && (
+          <UserDrafts user={user} onContinueDraft={onContinueDraft} />
+        )}
+        {/* НОВЫЙ КОМПОНЕНТ */}
+        {activeTab === 'favorites' && (
+          <FavoritesTab user={user} />
         )}
       </div>
     </div>

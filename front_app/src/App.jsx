@@ -1187,7 +1187,7 @@ function ProductsGrid({
       {products.map(product => {
         const categoryColor = getCategoryColor(product.category_name);
         const imageUrl = generateProductImage(product.name, categoryColor);
-        const isFavorite = !!favorites[product.id]; // ← ВОТ ОНА ОПРЕДЕЛЕНА
+        const isFavorite = !!favorites[product.id]; // ← ТЕПЕРЬ ОПРЕДЕЛЕНА
         
         return (
           <div key={product.id} className={`product-card ${highlightAddToProcurement ? 'highlight-add' : ''}`}>
