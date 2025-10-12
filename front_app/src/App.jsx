@@ -46,6 +46,42 @@ function App() {
     });
   };
 
+const handleContinueDraft = (draft) => {
+  // Закрываем модалку профиля
+  setActiveModal(null);
+  
+  // Загружаем данные черновика
+  setSavedProcurementFormData({
+    hasUnsavedData: true,
+    formData: {
+      title: draft.title,
+      description: draft.description,
+      customer_name: draft.customer_name,
+      customer_inn: draft.customer_inn,
+      current_price: draft.current_price,
+      law_type: draft.law_type,
+      contract_terms: draft.contract_terms,
+      location: draft.location,
+      start_date: draft.start_date,
+      end_date: draft.end_date
+    },
+    timestamp: draft.updated_at
+  });
+  
+  // Если в черновике есть товары, загружаем их
+  if (draft.products_data && draft.products_data.length > 0) {
+    setSelectedProducts(draft.products_data);
+  }
+  
+  // Устанавливаем шаг из черновика
+  setProcurementCreationStep(draft.step || 2);
+  
+  // Открываем модалку создания закупки
+  setActiveModal('create-procurement');
+  
+  showNotification(`Продолжение черновика: "${draft.title}"`, 'info');
+};
+
 useEffect(() => {
   const user = authAPI.getCurrentUser();
   if (user && authAPI.isAuthenticated()) {
@@ -567,6 +603,7 @@ const handleClearSavedProcurementData = () => {
         <UserProfile 
           user={currentUser} 
           onClose={closeModal}
+          onContinueDraft={handleContinueDraft}
         />
       </Modal>
     </div>
@@ -866,7 +903,6 @@ function Main({
           </div>
         )}
 
-        {/* 🔥 ПАНЕЛЬ ПЕРСОНАЛЬНЫХ РЕКОМЕНДАЦИЙ */}
         <RecommendationsPanel 
           currentUser={currentUser}
           onAddToProcurement={onAddToProcurement}

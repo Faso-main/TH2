@@ -6,15 +6,18 @@ import './CreateProcurement.css';
 import { draftsAPI } from '../services/api';
 
 
+// В компонент CreateProcurement добавить кнопку сохранения черновика
+
 function CreateProcurement({ 
+  onAddProduct, 
   onClose, 
   onCreate, 
   selectedProducts, 
   onUpdateQuantity, 
   onRemoveProduct, 
-  currentUser, 
   onAddProducts,
-  step: externalStep,
+  currentUser,
+  step,
   onStepChange,
   initialFormData,
   onFormDataChange,
@@ -30,518 +33,318 @@ function CreateProcurement({
     contract_terms: '',
     location: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    ...initialFormData
   });
-  
-  const [step, setStep] = useState(externalStep || 1);
-  const [loading, setLoading] = useState(false);
-  const [formValid, setFormValid] = useState(false);
 
-  // Инициализация формы из сохраненных данных или профиля пользователя
-  useEffect(() => {
-    if (initialFormData) {
-      // Восстанавливаем сохраненные данные
-      setFormData(initialFormData);
-    } else if (currentUser) {
-      // Заполняем из профиля пользователя
-      setFormData(prev => ({
-        ...prev,
-        customer_name: currentUser.company_name || '',
-        customer_inn: currentUser.INN || '',
-        location: currentUser.location || ''
-      }));
-    }
-  }, [currentUser, initialFormData]);
+  const [saveDraftLoading, setSaveDraftLoading] = useState(false);
 
-  // Синхронизация с внешним step
-  useEffect(() => {
-    if (externalStep !== undefined) {
-      setStep(externalStep);
-    }
-  }, [externalStep]);
-
-  // Валидация формы
-  useEffect(() => {
-    const isValid = formData.title.trim() !== '' && 
-                   formData.customer_name.trim() !== '' && 
-                   formData.customer_inn.trim() !== '';
-    setFormValid(isValid);
-  }, [formData]);
-
-  // Сохранение данных формы при изменении
-  useEffect(() => {
-    if (onFormDataChange && formData.title) {
-      onFormDataChange(formData);
-    }
-  }, [formData, onFormDataChange]);
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ru-RU').format(price);
-  };
-
-  const calculateTotalPrice = () => {
-    return selectedProducts.reduce((total, product) => {
-      return total + (product.price_per_item * product.quantity);
-    }, 0);
-  };
-
-  const handleContinueToProducts = (e) => {
-    e.preventDefault();
-    
-    if (!formValid) {
-      alert('Заполните обязательные поля: название закупки, название организации и ИНН');
-      return;
-    }
-
-    // Сохраняем данные перед переходом
-    if (onFormDataChange) {
-      onFormDataChange(formData);
-    }
-    
-    // Переходим к выбору товаров
-    const newStep = 2;
-    setStep(newStep);
-    if (onStepChange) {
-      onStepChange(newStep);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (step === 1) {
-      handleContinueToProducts(e);
-      return;
-    }
-
-    // Создаем закупку (шаг 2)
-    if (selectedProducts.length === 0) {
-      alert('Добавьте хотя бы один товар в закупку');
-      return;
-    }
-
-    setLoading(true);
-
+  // Функция для сохранения черновика
+  const handleSaveDraft = async () => {
     try {
-      const totalPrice = calculateTotalPrice();
-      const procurementData = {
-        title: formData.title,
+      setSaveDraftLoading(true);
+      
+      const draftData = {
+        title: formData.title || 'Новый черновик закупки',
         description: formData.description,
         customer_name: formData.customer_name,
         customer_inn: formData.customer_inn,
-        current_price: totalPrice > 0 ? totalPrice : formData.current_price,
+        current_price: parseFloat(formData.current_price) || 0,
         law_type: formData.law_type,
         contract_terms: formData.contract_terms,
         location: formData.location,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        products: selectedProducts.map(product => ({
-          product_id: product.id,
-          required_quantity: product.quantity,
-          max_price: product.price_per_item
-        }))
+        products: selectedProducts,
+        step: step
       };
 
-      await onCreate(procurementData);
+      await draftsAPI.saveDraft(draftData);
       
-      // Очищаем сохраненные данные после успешного создания
+      // Очищаем сохраненные данные формы
       if (onClearSavedForm) {
         onClearSavedForm();
       }
+      
+      alert('Черновик успешно сохранен!');
+      onClose();
+      
     } catch (error) {
-      alert('Ошибка при создании закупки: ' + error.message);
+      console.error('Error saving draft:', error);
+      alert('Ошибка при сохранении черновика: ' + error.message);
     } finally {
-      setLoading(false);
+      setSaveDraftLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAddRecommended = () => {
-    alert('Функция "Добавить рекомендуемые товары" будет доступна в ближайшем обновлении');
-  };
-
-  const handleAddProducts = () => {
-    // Сохраняем данные перед открытием каталога
+  // Функция для автоматического сохранения при изменении формы
+  const handleFormChange = (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    
+    // Автосохранение данных формы
     if (onFormDataChange) {
-      onFormDataChange(formData);
-    }
-    onAddProducts();
-  };
-
-  const handleStepChange = (newStep) => {
-    if (newStep === 2 && !formValid) {
-      alert('Заполните обязательные поля на первом шаге');
-      return;
-    }
-    
-    // Сохраняем данные при смене шага
-    if (onFormDataChange && newStep === 2) {
-      onFormDataChange(formData);
-    }
-    
-    setStep(newStep);
-    if (onStepChange) {
-      onStepChange(newStep);
+      onFormDataChange(newFormData);
     }
   };
 
-  const handleCancel = () => {
-    if (formData.title || formData.description || selectedProducts.length > 0) {
-      const shouldSave = window.confirm('Сохранить введенные данные для продолжения позже?');
-      if (!shouldSave && onClearSavedForm) {
-        onClearSavedForm();
-      }
-    }
-    onClose();
-  };
-
-  const handleClearForm = () => {
-    const confirmClear = window.confirm('Очистить все введенные данные?');
-    if (confirmClear) {
-      setFormData({
-        title: '',
-        description: '',
-        customer_name: currentUser?.company_name || '',
-        customer_inn: currentUser?.INN || '',
-        current_price: '',
-        law_type: '44-ФЗ',
-        contract_terms: '',
-        location: currentUser?.location || '',
-        start_date: '',
-        end_date: ''
-      });
-      if (onClearSavedForm) {
-        onClearSavedForm();
-      }
-    }
-  };
-
+  // В JSX добавить кнопку сохранения черновика
   return (
     <div className="create-procurement">
-      <div className="creation-steps">
-        <div 
-          className={`step-indicator ${step === 1 ? 'active' : ''}`}
-          onClick={() => handleStepChange(1)}
-          style={{cursor: 'pointer'}}
-        >
-          <span className="step-number">1</span>
-          <span className="step-label">Основные параметры</span>
+      {/* Шаги создания закупки */}
+      <div className="procurement-steps">
+        <div className={`step ${step === 1 ? 'active' : ''}`}>
+          <span>1</span>
+          <span>Основная информация</span>
         </div>
-        <div className="step-connector"></div>
-        <div 
-          className={`step-indicator ${step === 2 ? 'active' : ''}`}
-          onClick={() => handleStepChange(2)}
-          style={{cursor: 'pointer'}}
-        >
-          <span className="step-number">2</span>
-          <span className="step-label">Выбор товаров</span>
+        <div className={`step ${step === 2 ? 'active' : ''}`}>
+          <span>2</span>
+          <span>Выбор товаров</span>
+        </div>
+        <div className={`step ${step === 3 ? 'active' : ''}`}>
+          <span>3</span>
+          <span>Подтверждение</span>
         </div>
       </div>
-      
-      <form onSubmit={handleSubmit}>
-        {step === 1 ? (
-          // Шаг 1: Основные параметры
-          <div className="step-content">
-            <div className="form-section">              
-              <div className="form-group">
-                <label htmlFor="title">Название закупки *</label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                  placeholder="Например: Поставка офисной техники"
-                />
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="description">Дополнительная информация</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder="Дополнительные условия, требования к поставщикам, особые условия..."
-                />
-              </div>
+      {step === 1 && (
+        <div className="procurement-form">
+          <h3>Основная информация о закупке</h3>
+          
+          <div className="form-group">
+            <label>Название закупки *</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleFormChange('title', e.target.value)}
+              placeholder="Введите название закупки"
+              required
+            />
+          </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="law_type">Тип закупки</label>
-                  <select
-                    id="law_type"
-                    name="law_type"
-                    value={formData.law_type}
-                    onChange={handleChange}
-                  >
-                    <option value="44-ФЗ">44-ФЗ</option>
-                    <option value="223-ФЗ">223-ФЗ</option>
-                    <option value="Коммерческая">Коммерческая</option>
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="current_price">Ориентировочная цена, ₽</label>
-                  <input
-                    type="number"
-                    id="current_price"
-                    name="current_price"
-                    value={formData.current_price}
-                    onChange={handleChange}
-                    placeholder="100000"
-                    min="0"
-                  />
-                </div>
-              </div>
+          <div className="form-group">
+            <label>Описание</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleFormChange('description', e.target.value)}
+              placeholder="Опишите детали закупки"
+              rows="3"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Заказчик *</label>
+              <input
+                type="text"
+                value={formData.customer_name}
+                onChange={(e) => handleFormChange('customer_name', e.target.value)}
+                placeholder="Название организации"
+                required
+              />
             </div>
-
-            <div className="form-section">              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="customer_name">Название организации *</label>
-                  <input
-                    type="text"
-                    id="customer_name"
-                    name="customer_name"
-                    value={formData.customer_name}
-                    onChange={handleChange}
-                    required
-                    placeholder="Название вашей компании"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="customer_inn">ИНН *</label>
-                  <input
-                    type="text"
-                    id="customer_inn"
-                    name="customer_inn"
-                    value={formData.customer_inn}
-                    onChange={handleChange}
-                    required
-                    placeholder="1234567890"
-                    maxLength="12"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="location">Регион поставки</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="Москва, Московская область"
-                />
-              </div>
-            </div>
-
-            <div className="form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="start_date">Дата начала</label>
-                  <input
-                    type="date"
-                    id="start_date"
-                    name="start_date"
-                    value={formData.start_date}
-                    onChange={handleChange}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="end_date">Дата окончания</label>
-                  <input
-                    type="date"
-                    id="end_date"
-                    name="end_date"
-                    value={formData.end_date}
-                    onChange={handleChange}
-                    min={formData.start_date || new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <div className="form-group">
-                <label htmlFor="contract_terms">Условия поставки и оплаты</label>
-                <textarea
-                  id="contract_terms"
-                  name="contract_terms"
-                  value={formData.contract_terms}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder="Сроки поставки, условия оплаты, гарантийные обязательства..."
-                />
-              </div>
+            <div className="form-group">
+              <label>ИНН заказчика *</label>
+              <input
+                type="text"
+                value={formData.customer_inn}
+                onChange={(e) => handleFormChange('customer_inn', e.target.value)}
+                placeholder="10 или 12 цифр"
+                required
+              />
             </div>
           </div>
-        ) : (
-          // Шаг 2: Выбор товаров
-          <div className="step-content">
 
-            {/* Информация о закупке */}
-            <div className="form-section">
-              <h4>Информация о закупке</h4>
-              <div className="procurement-summary">
-                <p><strong>Название:</strong> {formData.title}</p>
-                <p><strong>Заказчик:</strong> {formData.customer_name}</p>
-                <p><strong>Тип закупки:</strong> {formData.law_type}</p>
-                {formData.description && <p><strong>Описание:</strong> {formData.description}</p>}
-                {formData.start_date && <p><strong>Дата начала:</strong> {formData.start_date}</p>}
-                {formData.end_date && <p><strong>Дата окончания:</strong> {formData.end_date}</p>}
-              </div>
-            </div>
+          <div className="form-group">
+            <label>Ориентировочная стоимость *</label>
+            <input
+              type="number"
+              value={formData.current_price}
+              onChange={(e) => handleFormChange('current_price', e.target.value)}
+              placeholder="Введите сумму в рублях"
+              required
+            />
+          </div>
 
-            {/* Секция с выбранными товарами */}
-            {selectedProducts.length > 0 ? (
-              <div className="form-section">
-                <div className="section-header">
-                  <h4>Выбранные товары ({selectedProducts.length})</h4>
-                  <button 
-                    type="button" 
-                    className="btn-outline btn-small"
-                    onClick={handleAddProducts}
-                  >
-                    Добавить еще
-                  </button>
-                </div>
-                
-                <div className="selected-products-list">
-                  {selectedProducts.map(product => (
-                    <div key={product.id} className="selected-product-item">
-                      <div className="product-info">
-                        <span className="product-name">{product.name}</span>
-                        <span className="product-category">{product.category_name}</span>
-                        <span className="product-price">{formatPrice(product.price_per_item)} ₽/шт</span>
-                      </div>
-                      <div className="product-controls">
-                        <div className="quantity-controls">
-                          <button 
-                            type="button"
-                            className="quantity-btn"
-                            onClick={() => onUpdateQuantity(product.id, product.quantity - 1)}
-                          >
-                            -
-                          </button>
-                          <span className="quantity-display">{product.quantity} шт</span>
-                          <button 
-                            type="button"
-                            className="quantity-btn"
-                            onClick={() => onUpdateQuantity(product.id, product.quantity + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="product-total">
-                          {formatPrice(product.price_per_item * product.quantity)} ₽
-                        </div>
-                        <button 
-                          type="button"
-                          className="btn-remove"
-                          onClick={() => onRemoveProduct(product.id)}
-                          title="Удалить товар"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="selected-products-total">
-                    <strong>Общая стоимость закупки: {formatPrice(calculateTotalPrice())} ₽</strong>
-                  </div>
-                </div>
+          <div className="form-actions">
+            <button 
+              type="button" 
+              className="btn-outline"
+              onClick={onClose}
+            >
+              Отмена
+            </button>
+            
+            {/* Кнопка сохранения черновика */}
+            <button 
+              type="button" 
+              className="btn-secondary"
+              onClick={handleSaveDraft}
+              disabled={saveDraftLoading}
+            >
+              {saveDraftLoading ? 'Сохранение...' : 'Сохранить черновик'}
+            </button>
+            
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => onStepChange(2)}
+              disabled={!formData.title || !formData.customer_name || !formData.current_price}
+            >
+              Продолжить
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="products-selection">
+          <h3>Выбор товаров для закупки</h3>
+          
+          <div className="selection-actions">
+            <button 
+              className="btn-outline"
+              onClick={() => onStepChange(1)}
+            >
+              ← Назад
+            </button>
+            <button 
+              className="btn-primary"
+              onClick={onAddProducts}
+            >
+              Добавить товары
+            </button>
+          </div>
+
+          {/* Список выбранных товаров */}
+          <div className="selected-products">
+            <h4>Выбранные товары ({selectedProducts.length})</h4>
+            {selectedProducts.length === 0 ? (
+              <div className="empty-selection">
+                <p>Товары не выбраны</p>
+                <button 
+                  className="btn-outline"
+                  onClick={onAddProducts}
+                >
+                  Выбрать товары
+                </button>
               </div>
             ) : (
-              <div className="empty-products-state">
-                <div className="empty-icon">🛒</div>
-                <h4>Товары не добавлены</h4>
-                <p>Добавьте товары в закупку для продолжения</p>
+              <div className="products-list">
+                {selectedProducts.map(product => (
+                  <div key={product.id} className="selected-product">
+                    <div className="product-info">
+                      <span className="product-name">{product.name}</span>
+                      <span className="product-category">{product.category_name}</span>
+                    </div>
+                    <div className="product-controls">
+                      <div className="quantity-controls">
+                        <button 
+                          onClick={() => onUpdateQuantity(product.id, product.quantity - 1)}
+                          disabled={product.quantity <= 1}
+                        >
+                          -
+                        </button>
+                        <span>{product.quantity} шт.</span>
+                        <button 
+                          onClick={() => onUpdateQuantity(product.id, product.quantity + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="product-price">
+                        {formatPrice(product.price_per_item * product.quantity)} ₽
+                      </span>
+                      <button 
+                        className="remove-btn"
+                        onClick={() => onRemoveProduct(product.id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
+          </div>
 
-            {/* Кнопки действий для товаров */}
-            <div className="products-actions">
-              <button 
-                type="button" 
-                className="btn-outline btn-full"
-                onClick={handleAddProducts}
-              >
-                📦 Выбрать товары из каталога
-              </button>
-              
-              <button 
-                type="button" 
-                className="btn-outline btn-full"
-                onClick={handleAddRecommended}
-              >
-                💡 Добавить рекомендуемые товары
-              </button>
+          <div className="form-actions">
+            <button 
+              type="button" 
+              className="btn-outline"
+              onClick={onClose}
+            >
+              Отмена
+            </button>
+            
+            {/* Кнопка сохранения черновика на шаге 2 */}
+            <button 
+              type="button" 
+              className="btn-secondary"
+              onClick={handleSaveDraft}
+              disabled={saveDraftLoading}
+            >
+              {saveDraftLoading ? 'Сохранение...' : 'Сохранить черновик'}
+            </button>
+            
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => onStepChange(3)}
+              disabled={selectedProducts.length === 0}
+            >
+              Продолжить
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="confirmation">
+          <h3>Подтверждение закупки</h3>
+          
+          <div className="procurement-summary">
+            <h4>Информация о закупке</h4>
+            <div className="summary-details">
+              <p><strong>Название:</strong> {formData.title}</p>
+              <p><strong>Заказчик:</strong> {formData.customer_name}</p>
+              <p><strong>ИНН:</strong> {formData.customer_inn}</p>
+              <p><strong>Стоимость:</strong> {formatPrice(formData.current_price)} ₽</p>
+              <p><strong>Товаров:</strong> {selectedProducts.length} позиций</p>
+              <p><strong>Общая сумма:</strong> {formatPrice(selectedProducts.reduce((sum, product) => 
+                sum + (product.price_per_item * product.quantity), 0))} ₽</p>
             </div>
           </div>
-        )}
 
-        <div className="form-actions">
-          {step === 1 ? (
-            <>
-              <button 
-                type="button" 
-                className="btn-outline"
-                onClick={handleClearForm}
-              >
-                Очистить форму
-              </button>
-              <button 
-                type="button" 
-                className="btn-outline"
-                onClick={handleCancel}
-              >
-                Отмена
-              </button>
-              <button 
-                type="button" 
-                className="btn-primary"
-                onClick={handleContinueToProducts}
-                disabled={!formValid}
-              >
-                Продолжить → Выбор товаров
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                type="button" 
-                className="btn-outline"
-                onClick={() => handleStepChange(1)}
-              >
-                ← Назад к параметрам
-              </button>
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={loading || selectedProducts.length === 0}
-              >
-                {loading ? 'Создание...' : `Создать закупку (${selectedProducts.length} товаров)`}
-              </button>
-            </>
-          )}
+          <div className="form-actions">
+            <button 
+              type="button" 
+              className="btn-outline"
+              onClick={() => onStepChange(2)}
+            >
+              ← Назад
+            </button>
+            
+            {/* Кнопка сохранения черновика на шаге 3 */}
+            <button 
+              type="button" 
+              className="btn-secondary"
+              onClick={handleSaveDraft}
+              disabled={saveDraftLoading}
+            >
+              {saveDraftLoading ? 'Сохранение...' : 'Сохранить черновик'}
+            </button>
+            
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => onCreate(formData)}
+            >
+              Создать закупку
+            </button>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }
