@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 // modal/UserProfile.jsx
 import { useState, useEffect } from 'react';
-import { userAPI, draftsAPI } from '../services/api';
+import { userAPI, draftsAPI, favoritesAPI } from '../services/api';
 import './UserProfile.css';
 
 function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) {
@@ -18,7 +18,8 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
   
   const [myProcurements, setMyProcurements] = useState([]);
   const [myParticipations, setMyParticipations] = useState([]);
-  const [myDrafts, setMyDrafts] = useState([]); // Новое состояние для черновиков
+  const [myDrafts, setMyDrafts] = useState([]);
+  const [myFavorites, setMyFavorites] = useState([]); // Новое состояние для избранного
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
@@ -36,8 +37,10 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       loadMyProcurements();
     } else if (activeTab === 'participations') {
       loadMyParticipations();
-    } else if (activeTab === 'drafts') { // Новый обработчик для черновиков
+    } else if (activeTab === 'drafts') {
       loadMyDrafts();
+    } else if (activeTab === 'favorites') { // Новый обработчик для избранного
+      loadMyFavorites();
     }
   }, [activeTab]);
 
@@ -77,7 +80,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
-  // Новая функция для загрузки черновиков
   const loadMyDrafts = async () => {
     try {
       setLoading(true);
@@ -86,7 +88,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
         setMyDrafts(data.drafts || []);
       } catch (error) {
         console.warn('API черновиков недоступно, используем тестовые данные');
-        // Тестовые данные для демонстрации
         setMyDrafts([
           {
             id: 'draft-1',
@@ -111,6 +112,50 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     } catch (error) {
       console.error('Error loading drafts:', error);
       setMyDrafts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Новая функция для загрузки избранного
+  const loadMyFavorites = async () => {
+    try {
+      setLoading(true);
+      try {
+        const data = await favoritesAPI.getFavorites();
+        setMyFavorites(data.favorites || []);
+      } catch (error) {
+        console.warn('API избранного недоступно, используем тестовые данные');
+        setMyFavorites([
+          {
+            id: 'fav-1',
+            type: 'product',
+            product: {
+              id: 'prod-1',
+              name: 'Смартфон Apple iPhone 15 Pro',
+              category_name: 'Электроника',
+              price_per_item: 89999,
+              company: 'Apple'
+            },
+            created_at: '2024-01-15T10:30:00Z'
+          },
+          {
+            id: 'fav-2',
+            type: 'procurement', 
+            procurement: {
+              id: 'PROC-12345',
+              title: 'Оказание услуг по проведению специальной оценки условий труда',
+              current_price: 92500,
+              status: 'active',
+              customer_name: '«Школа № 1811 «Восточное Измайлово»'
+            },
+            created_at: '2024-01-10T14:20:00Z'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      setMyFavorites([]);
     } finally {
       setLoading(false);
     }
@@ -174,29 +219,32 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
-  // Функция для продолжения работы с черновиком
   const handleContinueDraft = (draft) => {
-    // Закрываем модалку профиля
     onClose();
-    
-    // Здесь можно передать данные черновика в компонент создания закупки
-    // Например, через глобальное состояние или callback
     console.log('Продолжение черновика:', draft);
-    
-    // Пока просто показываем сообщение
     alert(`Продолжение работы с черновиком: "${draft.title}"`);
   };
 
-  // Функция для удаления черновика
   const handleDeleteDraft = async (draftId) => {
     if (window.confirm('Вы уверены, что хотите удалить этот черновик?')) {
       try {
         await draftsAPI.deleteDraft(draftId);
-        // Обновляем список черновиков
         setMyDrafts(prev => prev.filter(draft => draft.id !== draftId));
         alert('Черновик успешно удален');
       } catch (error) {
         alert('Ошибка при удалении черновика: ' + error.message);
+      }
+    }
+  };
+
+  // Новая функция для удаления из избранного
+  const handleRemoveFavorite = async (favoriteId) => {
+    if (window.confirm('Удалить из избранного?')) {
+      try {
+        await favoritesAPI.removeFavorite(favoriteId);
+        setMyFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
+      } catch (error) {
+        alert('Ошибка при удалении из избранного: ' + error.message);
       }
     }
   };
@@ -242,12 +290,18 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
         >
           Мои участия
         </button>
+        {/* НОВАЯ ВКЛАДКА - ИЗБРАННОЕ */}
+        <button 
+          className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+          onClick={() => setActiveTab('favorites')}
+        >
+          Избранное
+        </button>
       </div>
 
       <div className="profile-content">
         {activeTab === 'profile' && (
           <form className="profile-form" onSubmit={handleProfileUpdate}>
-            {/* Существующая форма профиля */}
             <div className="form-section">
               <div className="form-row">
                 <div className="form-group">
@@ -387,7 +441,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           </div>
         )}
 
-        {/* НОВАЯ ВКЛАДКА - МОИ ЧЕРНОВИКИ */}
         {activeTab === 'drafts' && (
           <div className="drafts-list">
             <div className="section-header">
@@ -479,6 +532,87 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
                 <h4>Участий пока нет</h4>
                 <p>Найдите интересные закупки и подайте заявку на участие!</p>
                 <button className="btn-primary">Найти закупки</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* НОВАЯ СЕКЦИЯ - ИЗБРАННОЕ */}
+        {activeTab === 'favorites' && (
+          <div className="favorites-list">
+            <div className="section-header">
+              <h3>Моё избранное</h3>
+              <div className="favorite-filters">
+                <button 
+                  className={`filter-btn active`}
+                  onClick={() => loadMyFavorites()}
+                >
+                  Все ({myFavorites.length})
+                </button>
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="loading">Загрузка избранного...</div>
+            ) : myFavorites.length > 0 ? (
+              <div className="items-grid">
+                {myFavorites.map(favorite => (
+                  <div key={favorite.id} className="favorite-item card">
+                    {favorite.type === 'product' ? (
+                      <div className="favorite-product">
+                        <div className="procurement-header">
+                          <h4>{favorite.product.name}</h4>
+                          <button 
+                            className="remove-favorite-btn"
+                            onClick={() => handleRemoveFavorite(favorite.id)}
+                            title="Удалить из избранного"
+                          >
+                            ❌
+                          </button>
+                        </div>
+                        <div className="procurement-details">
+                          <p><strong>Категория:</strong> {favorite.product.category_name}</p>
+                          <p><strong>Производитель:</strong> {favorite.product.company}</p>
+                          <p><strong>Цена:</strong> {formatPrice(favorite.product.price_per_item)} ₽</p>
+                          <p><strong>Добавлено:</strong> {formatDate(favorite.created_at)}</p>
+                        </div>
+                        <div className="procurement-actions">
+                          <button className="btn-primary">В закупку</button>
+                          <button className="btn-outline">Подробнее</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="favorite-procurement">
+                        <div className="procurement-header">
+                          <h4>{favorite.procurement.title}</h4>
+                          <button 
+                            className="remove-favorite-btn"
+                            onClick={() => handleRemoveFavorite(favorite.id)}
+                            title="Удалить из избранного"
+                          >
+                            ❌
+                          </button>
+                        </div>
+                        <div className="procurement-details">
+                          <p><strong>Заказчик:</strong> {favorite.procurement.customer_name}</p>
+                          <p><strong>Цена:</strong> {formatPrice(favorite.procurement.current_price)} ₽</p>
+                          <p><strong>Статус:</strong> {getStatusText(favorite.procurement.status)}</p>
+                          <p><strong>Добавлено:</strong> {formatDate(favorite.created_at)}</p>
+                        </div>
+                        <div className="procurement-actions">
+                          <button className="btn-primary">Участвовать</button>
+                          <button className="btn-outline">Подробнее</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">❤️</div>
+                <h4>В избранном пока ничего нет</h4>
+                <p>Добавляйте товары и закупки в избранное, чтобы не потерять</p>
               </div>
             )}
           </div>
