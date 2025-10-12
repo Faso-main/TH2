@@ -1,10 +1,10 @@
+/* eslint-disable no-unused-vars */
 // modal/UserProfile.jsx
 import { useState, useEffect } from 'react';
-import { userAPI } from '../services/api';
+import { userAPI, draftsAPI } from '../services/api';
 import './UserProfile.css';
 
-// eslint-disable-next-line no-unused-vars
-function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) { // Добавьте onProcurementCreated
+function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
     name: '',
@@ -18,9 +18,9 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
   
   const [myProcurements, setMyProcurements] = useState([]);
   const [myParticipations, setMyParticipations] = useState([]);
+  const [myDrafts, setMyDrafts] = useState([]); // Новое состояние для черновиков
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  
 
   useEffect(() => {
     if (user) {
@@ -36,16 +36,10 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       loadMyProcurements();
     } else if (activeTab === 'participations') {
       loadMyParticipations();
+    } else if (activeTab === 'drafts') { // Новый обработчик для черновиков
+      loadMyDrafts();
     }
   }, [activeTab]);
-
-  // Добавьте этот useEffect для обновления при создании новой закупки
-  useEffect(() => {
-    if (activeTab === 'my-procurements') {
-      loadMyProcurements();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onProcurementCreated]); // Срабатывает при изменении onProcurementCreated
 
   const loadMyProcurements = async () => {
     try {
@@ -53,10 +47,8 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       try {
         const data = await userAPI.getMyProcurements();
         setMyProcurements(data.procurements || []);
-      // eslint-disable-next-line no-unused-vars
       } catch (error) {
         console.warn('API недоступно, используем тестовые данные');
-        // Можно добавить тестовые данные для демонстрации
         setMyProcurements([]);
       }
     } catch (error) {
@@ -70,13 +62,11 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
   const loadMyParticipations = async () => {
     try {
       setLoading(true);
-      
       try {
         const data = await userAPI.getMyParticipations();
         setMyParticipations(data.participations || []);
-      // eslint-disable-next-line no-unused-vars
       } catch (error) {
-        console.warn('API недоступно, используем тестовые данные');
+        console.warn('API недоступно, используем тестовые данных');
         setMyParticipations([]);
       }
     } catch (error) {
@@ -87,7 +77,45 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
-  // Остальной код остается без изменений...
+  // Новая функция для загрузки черновиков
+  const loadMyDrafts = async () => {
+    try {
+      setLoading(true);
+      try {
+        const data = await draftsAPI.getMyDrafts();
+        setMyDrafts(data.drafts || []);
+      } catch (error) {
+        console.warn('API черновиков недоступно, используем тестовые данные');
+        // Тестовые данные для демонстрации
+        setMyDrafts([
+          {
+            id: 'draft-1',
+            title: 'Закупка офисной техники',
+            customer_name: 'ООО "ТехноПарк"',
+            current_price: 150000,
+            created_at: '2024-01-15T10:30:00Z',
+            step: 2,
+            products_count: 5
+          },
+          {
+            id: 'draft-2', 
+            title: 'Канцелярские товары для офиса',
+            customer_name: 'ИП Иванов',
+            current_price: 45000,
+            created_at: '2024-01-10T14:20:00Z',
+            step: 1,
+            products_count: 0
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+      setMyDrafts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {
@@ -146,6 +174,33 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
+  // Функция для продолжения работы с черновиком
+  const handleContinueDraft = (draft) => {
+    // Закрываем модалку профиля
+    onClose();
+    
+    // Здесь можно передать данные черновика в компонент создания закупки
+    // Например, через глобальное состояние или callback
+    console.log('Продолжение черновика:', draft);
+    
+    // Пока просто показываем сообщение
+    alert(`Продолжение работы с черновиком: "${draft.title}"`);
+  };
+
+  // Функция для удаления черновика
+  const handleDeleteDraft = async (draftId) => {
+    if (window.confirm('Вы уверены, что хотите удалить этот черновик?')) {
+      try {
+        await draftsAPI.deleteDraft(draftId);
+        // Обновляем список черновиков
+        setMyDrafts(prev => prev.filter(draft => draft.id !== draftId));
+        alert('Черновик успешно удален');
+      } catch (error) {
+        alert('Ошибка при удалении черновика: ' + error.message);
+      }
+    }
+  };
+
   return (
     <div className="user-profile">
       <div className="profile-header">
@@ -176,6 +231,12 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           Мои закупки
         </button>
         <button 
+          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drafts')}
+        >
+          Мои черновики
+        </button>
+        <button 
           className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`}
           onClick={() => setActiveTab('participations')}
         >
@@ -186,6 +247,7 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       <div className="profile-content">
         {activeTab === 'profile' && (
           <form className="profile-form" onSubmit={handleProfileUpdate}>
+            {/* Существующая форма профиля */}
             <div className="form-section">
               <div className="form-row">
                 <div className="form-group">
@@ -282,7 +344,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           <div className="procurements-list">
             <div className="section-header">
               <h3>Мои созданные закупки</h3>
-
             </div>
             
             {loading ? (
@@ -321,6 +382,60 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
                 <div className="empty-icon">📋</div>
                 <h4>Закупок пока нет</h4>
                 <p>Создайте свою первую закупку и начните привлекать поставщиков</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* НОВАЯ ВКЛАДКА - МОИ ЧЕРНОВИКИ */}
+        {activeTab === 'drafts' && (
+          <div className="drafts-list">
+            <div className="section-header">
+              <h3>Мои черновики закупок</h3>
+            </div>
+            
+            {loading ? (
+              <div className="loading">Загрузка...</div>
+            ) : myDrafts.length > 0 ? (
+              <div className="items-grid">
+                {myDrafts.map(draft => (
+                  <div key={draft.id} className="draft-item card">
+                    <div className="procurement-header">
+                      <h4>{draft.title}</h4>
+                      <span className="status-badge status-draft">
+                        Черновик
+                      </span>
+                    </div>
+                    <div className="procurement-details">
+                      <p><strong>Заказчик:</strong> {draft.customer_name}</p>
+                      <p><strong>Примерная стоимость:</strong> {formatPrice(draft.current_price)} ₽</p>
+                      <p><strong>Товаров:</strong> {draft.products_count || 0}</p>
+                      <p><strong>Прогресс:</strong> Шаг {draft.step} из 3</p>
+                      <p><strong>Создан:</strong> {formatDate(draft.created_at)}</p>
+                      <p><strong>Обновлен:</strong> {formatDate(draft.updated_at)}</p>
+                    </div>
+                    <div className="procurement-actions">
+                      <button 
+                        className="btn-primary"
+                        onClick={() => handleContinueDraft(draft)}
+                      >
+                        Продолжить
+                      </button>
+                      <button 
+                        className="btn-outline"
+                        onClick={() => handleDeleteDraft(draft.id)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">📝</div>
+                <h4>Черновиков пока нет</h4>
+                <p>Начните создавать закупку и сохраняйте прогресс в черновиках</p>
               </div>
             )}
           </div>

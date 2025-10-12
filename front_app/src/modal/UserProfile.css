@@ -355,3 +355,31 @@
   }
 }
 
+/* Добавить в конец UserProfile.css */
+
+/* Стили для черновиков */
+.drafts-list {
+  padding: 0.5rem;
+}
+
+.draft-item {
+  border-left: 4px solid var(--primary-color);
+}
+
+.draft-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* Адаптивность для новой вкладки */
+@media (max-width: 768px) {
+  .profile-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  
+  .tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
