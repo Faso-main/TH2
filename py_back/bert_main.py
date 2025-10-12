@@ -35,7 +35,7 @@ app.add_middleware(
 class RecommendationRequest(BaseModel):
     user_id: str
     limit: int = 15
-    strategy: str = "balanced"  # balanced, budget, premium
+    strategy: str = "balanced"  
 
 class BundleRequest(BaseModel):
     user_id: str
@@ -74,7 +74,7 @@ class BERTRecommendationConfig:
     # Параметры BERT модели
     MODEL_NAME = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
     BATCH_SIZE = 64
-    EMBEDDING_DIM = 384  # Размерность для выбранной модели
+    EMBEDDING_DIM = 384
     
     # Параметры диверсификации
     DIVERSITY = {

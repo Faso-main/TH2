@@ -55,10 +55,10 @@ class DatabaseService:
                 min_size=3,
                 max_size=10
             )
-            logger.info("✅ Connected to PostgreSQL database pc_db")
+            logger.info("Connected to PostgreSQL database pc_db")
             
         except Exception as e:
-            logger.error(f"❌ Database connection failed: {e}")
+            logger.error(f"Database connection failed: {e}")
             raise
     
     async def get_user_procurements(self, user_id: str) -> List[Dict]:
@@ -100,7 +100,7 @@ class DatabaseService:
                     'average_price': float(row['average_price']) if row['average_price'] else 0,
                 })
             
-            logger.info(f"📊 Loaded {len(procurements)} procurement items for user {user_id}")
+            logger.info(f"Loaded {len(procurements)} procurement items for user {user_id}")
             return procurements
             
         except Exception as e:

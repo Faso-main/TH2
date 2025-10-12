@@ -30,7 +30,7 @@ async def startup_event():
 @app.post("/api/recommendations")
 async def get_recommendations(request: RecommendationRequest):
     try:
-        print(f"🎯 Getting recommendations for user: {request.user_id}")
+        print(f"Getting recommendations for user: {request.user_id}")
         recommendations = await service.get_user_recommendations(
             request.user_id, 
             request.limit
@@ -41,7 +41,7 @@ async def get_recommendations(request: RecommendationRequest):
             "count": len(recommendations)
         }
     except Exception as e:
-        print(f"❌ Recommendation error: {e}")
+        print(f" Recommendation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

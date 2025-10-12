@@ -33,6 +33,51 @@ function App() {
   const [highlightAddToProcurement, setHighlightAddToProcurement] = useState(false);
   const [savedProcurementData, setSavedProcurementData] = useState(null);
 
+  const handleCreateSimilarProcurement = (templateProcurement) => {
+    if (!currentUser) {
+      openModal('auth');
+      return;
+    }
+
+    console.log('Creating similar procurement from:', templateProcurement);
+
+    // Подготавливаем данные для новой закупки
+    const similarProcurementData = {
+      title: `${templateProcurement.title} (копия)`,
+      description: templateProcurement.description,
+      customer_name: currentUser.company_name || 'Моя компания',
+      customer_inn: currentUser.INN || '0000000000',
+      current_price: templateProcurement.current_price,
+      products: templateProcurement.products || []
+    };
+
+    // Автоматически добавляем товары из шаблонной закупки
+    if (templateProcurement.products && templateProcurement.products.length > 0) {
+      const productsToAdd = templateProcurement.products.map(product => ({
+        id: product.product_id,
+        name: product.product_name,
+        category_name: product.category_name,
+        price_per_item: product.unit_price || product.market_price,
+        quantity: product.required_quantity || 1
+      }));
+      
+      setSelectedProducts(productsToAdd);
+    }
+
+    // Сохраняем данные формы
+    setSavedProcurementFormData({
+      hasUnsavedData: true,
+      formData: similarProcurementData,
+      timestamp: new Date().toISOString()
+    });
+
+    // Открываем модалку создания закупки на втором шаге
+    setProcurementCreationStep(2);
+    setActiveModal('create-procurement');
+
+    showNotification(`Создана похожая закупка на основе "${templateProcurement.title}"`, 'success');
+  };
+
   const handleAddProductToProcurement = (product) => {
     setSelectedProducts(prev => {
       const existingProduct = prev.find(p => p.id === product.id);
@@ -546,6 +591,7 @@ const handleClearSavedProcurementData = () => {
         // Добавьте эти пропсы:
         setProcurementCreationStep={setProcurementCreationStep}
         setActiveModal={setActiveModal}
+        onCreateSimilarProcurement={handleCreateSimilarProcurement}
       />
       
       <Footer />
@@ -1251,7 +1297,8 @@ function ProcurementsGrid({
   onParticipate, 
   searchQuery, 
   isSearching,
-  currentUser 
+  currentUser,
+  onCreateSimilarProcurement // Добавляем новый пропс
 }) {
   const [favorites, setFavorites] = useState({});
   const [loadingFavorites, setLoadingFavorites] = useState(false);
@@ -1356,14 +1403,108 @@ function ProcurementsGrid({
   }
 
   if (searchQuery && procurements.length === 0) {
-    return (
-      <div className="no-results">
-        <div className="no-results-icon">🔍</div>
-        <h3>Закупки не найдены</h3>
-        <p>Попробуйте изменить поисковый запрос</p>
-      </div>
-    );
-  }
+return (
+    <div className="procurements-grid">
+      {procurements.map(procurement => {
+        const statusInfo = getStatusInfo(procurement.status);
+        const isFavorite = !!favorites[procurement.id];
+        
+        return (
+          <div key={procurement.id} className="procurement-card">
+            <div className="procurement-header">
+              <h3 className="procurement-title">{procurement.title}</h3>
+              <div className="procurement-header-actions">
+                <span className={`procurement-status ${statusInfo.class}`}>
+                  {statusInfo.text}
+                </span>
+                <button 
+                  className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
+                  onClick={() => handleToggleFavorite(procurement)}
+                  title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+                  disabled={loadingFavorites}
+                >
+                  {loadingFavorites ? '⏳' : (isFavorite ? '❤️' : '🤍')}
+                </button>
+              </div>
+            </div>
+            
+            <div className="procurement-info">
+              {procurement.description && (
+                <p className="procurement-description">
+                  {procurement.description}
+                </p>
+              )}
+              
+              <div className="procurement-details">
+                <div className="detail-item">
+                  <span className="detail-label">Текущая цена:</span>
+                  <span className="detail-value">{formatPrice(procurement.current_price)} ₽</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Заказчик:</span>
+                  <span className="detail-value">{procurement.customer_name}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Дата закупки:</span>
+                  <span className="detail-value">
+                    {formatDate(procurement.procurement_date)}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Участников:</span>
+                  <span className="detail-value">{procurement.participants_count}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Товаров в закупке:</span>
+                  <span className="detail-value">{procurement.products?.length || 0}</span>
+                </div>
+              </div>
+
+              {/* КНОВЫЕ КНОПКИ ДЕЙСТВИЙ */}
+              <div className="procurement-actions">
+                {currentUser && (
+                  <button 
+                    className="create-similar-btn"
+                    onClick={() => onCreateSimilarProcurement(procurement)}
+                    title="Создать похожую закупку"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="12" y1="8" x2="12" y2="16"></line>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Создать похожую
+                  </button>
+                )}
+                
+                {procurement.status === 'active' && currentUser && (
+                  <button 
+                    className="participate-btn"
+                    onClick={() => onParticipate(procurement.id, procurement.current_price * 0.9)}
+                  >
+                    Участвовать
+                  </button>
+                )}
+                
+                {procurement.status === 'soon' && (
+                  <button className="notify-btn">
+                    Уведомить о старте
+                  </button>
+                )}
+                
+                {procurement.status === 'completed' && (
+                  <button className="view-results-btn">
+                    Посмотреть результаты
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
   return (
     <div className="procurements-grid">

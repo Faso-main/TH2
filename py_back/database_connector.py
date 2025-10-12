@@ -21,9 +21,9 @@ class DatabaseConnector:
                 min_size=1,
                 max_size=10
             )
-            logger.info("✅ Successfully connected to PostgreSQL database")
+            logger.info("Successfully connected to PostgreSQL database")
         except Exception as e:
-            logger.error(f"❌ Database connection error: {e}")
+            logger.error(f"Database connection error: {e}")
             raise
     
     async def get_user_procurements(self, user_id: str) -> List[Dict]:
@@ -66,7 +66,7 @@ class DatabaseConnector:
                     'procurement_date': row['procurement_date']
                 })
             
-            logger.info(f"📊 Loaded {len(procurements)} procurement items for user {user_id}")
+            logger.info(f"Loaded {len(procurements)} procurement items for user {user_id}")
             return procurements
             
         except Exception as e:
