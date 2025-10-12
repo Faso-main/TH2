@@ -10,6 +10,7 @@ import RegisterForm from './modal/RegisterForm';
 import UserProfile from './modal/UserProfile';
 import CreateProcurement from './modal/CreateProcurement';
 import RecommendationsPanel from './modal/RecommendationsPanel';
+import FiltersSidebar from './modal/FiltersSidebar';
 import { authAPI, productsAPI, procurementsAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
 
@@ -828,27 +829,39 @@ function Main({
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
-  const [activeFilters, setActiveFilters] = useState({});
+const [activeFilters, setActiveFilters] = useState({});
 
-  // Функция применения фильтров к товарам
-  const applyProductFilters = (products, filters) => {
-    return products.filter(product => {
+// Функция для применения фильтров
+const applyFilters = (items, filters, section) => {
+  if (!items || !Array.isArray(items)) return [];
+  
+  if (section === 'products') {
+    return items.filter(product => {
+      if (!product) return false;
+
       // Фильтр по категориям
-      if (filters.categories.length > 0 && !filters.categories.includes(product.category_name)) {
-        return false;
+      if (filters.categories && filters.categories.length > 0) {
+        if (!filters.categories.includes(product.category_name)) {
+          return false;
+        }
       }
 
       // Фильтр по производителям
-      if (filters.manufacturers.length > 0 && !filters.manufacturers.includes(product.company)) {
-        return false;
+      if (filters.manufacturers && filters.manufacturers.length > 0) {
+        if (!filters.manufacturers.includes(product.company)) {
+          return false;
+        }
       }
 
       // Фильтр по цене
-      if (filters.priceRange.min && product.price_per_item < parseFloat(filters.priceRange.min)) {
-        return false;
-      }
-      if (filters.priceRange.max && product.price_per_item > parseFloat(filters.priceRange.max)) {
-        return false;
+      if (filters.priceRange) {
+        const price = product.price_per_item || 0;
+        if (filters.priceRange.min && price < parseFloat(filters.priceRange.min)) {
+          return false;
+        }
+        if (filters.priceRange.max && price > parseFloat(filters.priceRange.max)) {
+          return false;
+        }
       }
 
       // Фильтр по наличию
@@ -858,32 +871,23 @@ function Main({
 
       return true;
     });
-  };
+  } else {
+    return items.filter(procurement => {
+      if (!procurement) return false;
 
-  // Функция применения фильтров к закупкам
-  const applyProcurementFilters = (procurements, filters) => {
-    return procurements.filter(procurement => {
       // Фильтр по статусу
-      if (filters.procurementStatus.length > 0 && !filters.procurementStatus.includes(procurement.status)) {
-        return false;
+      if (filters.procurementStatus && filters.procurementStatus.length > 0) {
+        if (!filters.procurementStatus.includes(procurement.status)) {
+          return false;
+        }
       }
-
       return true;
     });
-  };
+  }
+};
 
   // Обработчик изменения фильтров
-  const handleFiltersChange = (newFilters) => {
-    setActiveFilters(newFilters);
-    
-    if (activeSection === 'products') {
-      const filtered = applyProductFilters(products, newFilters);
-      setFilteredProducts(filtered);
-    } else {
-      const filtered = applyProcurementFilters(procurements, newFilters);
-      setFilteredProcurements(filtered);
-    }
-  };
+
 
   // Обновляем отфильтрованные данные при изменении исходных данных
   useEffect(() => {
@@ -1050,9 +1054,9 @@ function Main({
 
           <FiltersSidebar 
             activeSection={activeSection}
+            onFiltersChange={handleFiltersChange}
             products={products}
             procurements={procurements}
-            onFiltersChange={handleFiltersChange}
           />
         </div>
       </div>
@@ -1262,26 +1266,36 @@ function ProcurementsGrid({ procurements, onParticipate, searchQuery, isSearchin
     </div>
   );
 }
-
+{/*
 // Компонент FiltersSidebar
-function FiltersSidebar({ activeSection, onFiltersChange }) {
+function FiltersSidebar({ 
+  activeSection, 
+  onFiltersChange,
+  products = [],
+  procurements = [] 
+}) {
   const [filters, setFilters] = useState({
     categories: [],
     priceRange: { min: '', max: '' },
-    procurementStatus: ['active']
+    procurementStatus: ['active', 'soon']
   });
 
-  const topLevelCategories = [
-    { id: 1, name: 'Электроника' },
-    { id: 2, name: 'Бытовая техника' },
-    { id: 3, name: 'Одежда' },
-    { id: 4, name: 'Мебель' }
-  ];
+  // Получаем реальные категории из товаров
+  const availableCategories = [...new Set(products
+    .filter(p => p.category_name)
+    .map(p => p.category_name)
+  )].sort();
 
-  const handleCategoryChange = (categoryId) => {
-    const newCategories = filters.categories.includes(categoryId)
-      ? filters.categories.filter(id => id !== categoryId)
-      : [...filters.categories, categoryId];
+  // Получаем реальные статусы из закупок
+  const availableStatuses = [...new Set(procurements
+    .filter(p => p.status)
+    .map(p => p.status)
+  )];
+
+  const handleCategoryChange = (category) => {
+    const newCategories = filters.categories.includes(category)
+      ? filters.categories.filter(c => c !== category)
+      : [...filters.categories, category];
     
     const newFilters = { ...filters, categories: newCategories };
     setFilters(newFilters);
@@ -1289,7 +1303,8 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
   };
 
   const handlePriceChange = (field, value) => {
-    const newPriceRange = { ...filters.priceRange, [field]: value };
+    const newValue = value === '' ? '' : Math.max(0, parseInt(value) || 0);
+    const newPriceRange = { ...filters.priceRange, [field]: newValue };
     const newFilters = { ...filters, priceRange: newPriceRange };
     setFilters(newFilters);
     onFiltersChange(newFilters);
@@ -1309,16 +1324,23 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
     const clearedFilters = {
       categories: [],
       priceRange: { min: '', max: '' },
-      procurementStatus: ['active']
+      procurementStatus: ['active', 'soon']
     };
     setFilters(clearedFilters);
     onFiltersChange(clearedFilters);
   };
 
+  // Считаем активные фильтры для отображения бейджа
+  const activeFiltersCount = 
+    filters.categories.length +
+    (filters.priceRange.min ? 1 : 0) +
+    (filters.priceRange.max ? 1 : 0) +
+    (filters.procurementStatus.length > 0 ? 1 : 0);
+
   return (
     <aside className="filters-sidebar">
       <div className="filters-header">
-        <h3>Фильтры</h3>
+        <h3>Фильтры {activeFiltersCount > 0 && <span className="filters-count">({activeFiltersCount})</span>}</h3>
         <button className="clear-filters-btn" onClick={clearFilters}>
           Очистить
         </button>
@@ -1329,16 +1351,20 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
           <div className="filters-section">
             <h4>Категории</h4>
             <div className="filter-options">
-              {topLevelCategories.map(category => (
-                <label key={category.id} className="filter-option">
+              {availableCategories.map(category => (
+                <label key={category} className="filter-option">
                   <input 
                     type="checkbox" 
-                    checked={filters.categories.includes(category.id)}
-                    onChange={() => handleCategoryChange(category.id)}
+                    checked={filters.categories.includes(category)}
+                    onChange={() => handleCategoryChange(category)}
                   />
-                  <span>{category.name}</span>
+                  <span className="checkmark"></span>
+                  <span className="option-text">{category}</span>
                 </label>
               ))}
+              {availableCategories.length === 0 && (
+                <div className="no-options">Нет доступных категорий</div>
+              )}
             </div>
           </div>
 
@@ -1346,21 +1372,28 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
             <h4>Цена, ₽</h4>
             <div className="price-range">
               <div className="price-inputs">
-                <input 
-                  type="number" 
-                  placeholder="0" 
-                  className="price-input"
-                  value={filters.priceRange.min}
-                  onChange={(e) => handlePriceChange('min', e.target.value)}
-                />
-                <span>-</span>
-                <input 
-                  type="number" 
-                  placeholder="100000" 
-                  className="price-input"
-                  value={filters.priceRange.max}
-                  onChange={(e) => handlePriceChange('max', e.target.value)}
-                />
+                <div className="price-input-group">
+                  <label>От</label>
+                  <input 
+                    type="number" 
+                    placeholder="0" 
+                    className="price-input"
+                    value={filters.priceRange.min}
+                    onChange={(e) => handlePriceChange('min', e.target.value)}
+                    min="0"
+                  />
+                </div>
+                <div className="price-input-group">
+                  <label>До</label>
+                  <input 
+                    type="number" 
+                    placeholder="100000" 
+                    className="price-input"
+                    value={filters.priceRange.max}
+                    onChange={(e) => handlePriceChange('max', e.target.value)}
+                    min="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1370,30 +1403,28 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
           <div className="filters-section">
             <h4>Статус закупки</h4>
             <div className="filter-options">
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('active')}
-                  onChange={() => handleStatusChange('active')}
-                />
-                <span>Активные</span>
-              </label>
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('soon')}
-                  onChange={() => handleStatusChange('soon')}
-                />
-                <span>Скоро начнутся</span>
-              </label>
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('completed')}
-                  onChange={() => handleStatusChange('completed')}
-                />
-                <span>Завершенные</span>
-              </label>
+              {availableStatuses.map(status => {
+                const statusText = {
+                  'active': 'Активные',
+                  'soon': 'Скоро начнутся', 
+                  'completed': 'Завершенные'
+                }[status] || status;
+                
+                return (
+                  <label key={status} className="filter-option">
+                    <input 
+                      type="checkbox" 
+                      checked={filters.procurementStatus.includes(status)}
+                      onChange={() => handleStatusChange(status)}
+                    />
+                    <span className="checkmark"></span>
+                    <span className="option-text">{statusText}</span>
+                  </label>
+                );
+              })}
+              {availableStatuses.length === 0 && (
+                <div className="no-options">Нет доступных статусов</div>
+              )}
             </div>
           </div>
         </>
@@ -1401,7 +1432,7 @@ function FiltersSidebar({ activeSection, onFiltersChange }) {
     </aside>
   );
 }
-
+*/}
 // Компонент Footer
 function Footer() {
   return (

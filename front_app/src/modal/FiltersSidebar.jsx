@@ -19,15 +19,21 @@ function FiltersSidebar({
 
   // Получаем уникальные категории из товаров
   const availableCategories = [...new Set(products
-    .filter(p => p.category_name)
+    .filter(p => p && p.category_name)
     .map(p => p.category_name)
   )].sort();
 
   // Получаем уникальных производителей
   const availableManufacturers = [...new Set(products
-    .filter(p => p.company)
+    .filter(p => p && p.company)
     .map(p => p.company)
   )].sort();
+
+  // Получаем реальные статусы из закупок
+  const availableStatuses = [...new Set(procurements
+    .filter(p => p && p.status)
+    .map(p => p.status)
+  )];
 
   // Применяем фильтры при изменении
   useEffect(() => {
@@ -91,7 +97,7 @@ function FiltersSidebar({
     (filters.priceRange.max ? 1 : 0) +
     filters.manufacturers.length +
     (filters.inStock ? 1 : 0) +
-    filters.procurementStatus.length;
+    (filters.procurementStatus.length > 0 ? 1 : 0);
 
   return (
     <aside className="filters-sidebar">
@@ -110,25 +116,24 @@ function FiltersSidebar({
       {activeSection === 'products' ? (
         <>
           {/* Фильтр по категориям */}
-          <div className="filters-section">
-            <h4>Категории</h4>
-            <div className="filter-options">
-              {availableCategories.map(category => (
-                <label key={category} className="filter-option">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.categories.includes(category)}
-                    onChange={() => handleCategoryChange(category)}
-                  />
-                  <span className="checkmark"></span>
-                  <span className="option-text">{category}</span>
-                </label>
-              ))}
-              {availableCategories.length === 0 && (
-                <div className="no-options">Нет доступных категорий</div>
-              )}
+          {availableCategories.length > 0 && (
+            <div className="filters-section">
+              <h4>Категории</h4>
+              <div className="filter-options">
+                {availableCategories.slice(0, 10).map(category => (
+                  <label key={category} className="filter-option">
+                    <input 
+                      type="checkbox" 
+                      checked={filters.categories.includes(category)}
+                      onChange={() => handleCategoryChange(category)}
+                    />
+                    <span className="checkmark"></span>
+                    <span className="option-text">{category}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Фильтр по производителям */}
           {availableManufacturers.length > 0 && (
@@ -200,33 +205,25 @@ function FiltersSidebar({
           <div className="filters-section">
             <h4>Статус закупки</h4>
             <div className="filter-options">
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('active')}
-                  onChange={() => handleStatusChange('active')}
-                />
-                <span className="checkmark"></span>
-                <span className="option-text">Активные</span>
-              </label>
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('soon')}
-                  onChange={() => handleStatusChange('soon')}
-                />
-                <span className="checkmark"></span>
-                <span className="option-text">Скоро начнутся</span>
-              </label>
-              <label className="filter-option">
-                <input 
-                  type="checkbox" 
-                  checked={filters.procurementStatus.includes('completed')}
-                  onChange={() => handleStatusChange('completed')}
-                />
-                <span className="checkmark"></span>
-                <span className="option-text">Завершенные</span>
-              </label>
+              {['active', 'soon', 'completed'].map(status => {
+                const statusText = {
+                  'active': 'Активные',
+                  'soon': 'Скоро начнутся', 
+                  'completed': 'Завершенные'
+                }[status] || status;
+                
+                return (
+                  <label key={status} className="filter-option">
+                    <input 
+                      type="checkbox" 
+                      checked={filters.procurementStatus.includes(status)}
+                      onChange={() => handleStatusChange(status)}
+                    />
+                    <span className="checkmark"></span>
+                    <span className="option-text">{statusText}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </>
