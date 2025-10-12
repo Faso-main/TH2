@@ -72,6 +72,33 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
+// Добавить в services/api.js
+export const searchAPI = {
+  // Умный поиск по всей базе
+  async smartSearch(query, options = {}) {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    if (options.limit) params.append('limit', options.limit);
+    if (options.type) params.append('type', options.type);
+    
+    return apiRequest(`/search/smart?${params.toString()}`);
+  },
+
+  // Автодополнение
+  async autocomplete(query, limit = 10) {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    params.append('limit', limit);
+    
+    return apiRequest(`/search/autocomplete?${params.toString()}`);
+  },
+
+  // Популярные поисковые запросы
+  async popularSearches(limit = 5) {
+    return apiRequest(`/search/popular?limit=${limit}`);
+  }
+};
+
 // services/api.js - проверьте что есть этот блок
 export const favoritesAPI = {
   async getFavorites(type = null) {
