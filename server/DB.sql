@@ -218,3 +218,29 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- Тестовый пользователь: 
 -- user_id: 11111111-1111-1111-1111-111111111111
 -- email: admin@company.com
+
+-- Добавить в конец DB.sql
+
+-- 📝 ЧЕРНОВИКИ ЗАКУПОК
+CREATE TABLE procurement_drafts (
+    draft_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    title VARCHAR(1000) NOT NULL,
+    description TEXT,
+    customer_name VARCHAR(500),
+    customer_inn VARCHAR(20),
+    estimated_price DECIMAL(15,2),
+    law_type VARCHAR(50) DEFAULT '44-ФЗ',
+    contract_terms TEXT,
+    location VARCHAR(500),
+    start_date DATE,
+    end_date DATE,
+    products_data JSONB, -- Сохраняем товары в JSON
+    step INTEGER DEFAULT 1, -- Текущий шаг создания
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для черновиков
+CREATE INDEX idx_procurement_drafts_user ON procurement_drafts(user_id);
+CREATE INDEX idx_procurement_drafts_updated ON procurement_drafts(updated_at DESC);
