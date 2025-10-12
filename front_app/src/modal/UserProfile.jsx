@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { userAPI, draftsAPI } from '../services/api';
 import './UserProfile.css';
 
-function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated, onContinueDraft}) {
+function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated}) {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
     name: '',
@@ -240,9 +240,8 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated,
         {activeTab === 'procurements' && <UserProcurements user={user} />}
         {activeTab === 'participations' && <UserParticipations user={user} />}
         {activeTab === 'drafts' && <UserDrafts user={user} onContinueDraft={onContinueDraft} />}
-  {/* ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ
-  {activeTab === 'favorites' && <FavoritesTab user={user} />}
-  */}      </div>
+        {activeTab === 'favorites' && <FavoritesTab user={user} />}
+      </div>
           </div>
   );
 }
