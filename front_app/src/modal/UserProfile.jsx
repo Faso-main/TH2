@@ -18,7 +18,7 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
   
   const [myProcurements, setMyProcurements] = useState([]);
   const [myParticipations, setMyParticipations] = useState([]);
-  const [myDrafts, setMyDrafts] = useState([]); // Новое состояние для черновиков
+  const [myDrafts, setMyDrafts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
@@ -36,10 +36,16 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       loadMyProcurements();
     } else if (activeTab === 'participations') {
       loadMyParticipations();
-    } else if (activeTab === 'drafts') { // Новый обработчик для черновиков
+    } else if (activeTab === 'drafts') {
       loadMyDrafts();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'my-procurements') {
+      loadMyProcurements();
+    }
+  }, [onProcurementCreated]);
 
   const loadMyProcurements = async () => {
     try {
@@ -62,11 +68,12 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
   const loadMyParticipations = async () => {
     try {
       setLoading(true);
+      
       try {
         const data = await userAPI.getMyParticipations();
         setMyParticipations(data.participations || []);
       } catch (error) {
-        console.warn('API недоступно, используем тестовые данных');
+        console.warn('API недоступно, используем тестовые данные');
         setMyParticipations([]);
       }
     } catch (error) {
@@ -77,7 +84,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
-  // Новая функция для загрузки черновиков
   const loadMyDrafts = async () => {
     try {
       setLoading(true);
@@ -86,25 +92,24 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
         setMyDrafts(data.drafts || []);
       } catch (error) {
         console.warn('API черновиков недоступно, используем тестовые данные');
-        // Тестовые данные для демонстрации
         setMyDrafts([
           {
             id: 'draft-1',
             title: 'Закупка офисной техники',
             customer_name: 'ООО "ТехноПарк"',
-            current_price: 150000,
+            estimated_price: 150000,
             created_at: '2024-01-15T10:30:00Z',
-            step: 2,
-            products_count: 5
+            updated_at: '2024-01-15T10:30:00Z',
+            step: 2
           },
           {
             id: 'draft-2', 
             title: 'Канцелярские товары для офиса',
             customer_name: 'ИП Иванов',
-            current_price: 45000,
+            estimated_price: 45000,
             created_at: '2024-01-10T14:20:00Z',
-            step: 1,
-            products_count: 0
+            updated_at: '2024-01-10T14:20:00Z',
+            step: 1
           }
         ]);
       }
@@ -174,25 +179,15 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     }
   };
 
-  // Функция для продолжения работы с черновиком
   const handleContinueDraft = (draft) => {
-    // Закрываем модалку профиля
     onClose();
-    
-    // Здесь можно передать данные черновика в компонент создания закупки
-    // Например, через глобальное состояние или callback
-    console.log('Продолжение черновика:', draft);
-    
-    // Пока просто показываем сообщение
     alert(`Продолжение работы с черновиком: "${draft.title}"`);
   };
 
-  // Функция для удаления черновика
   const handleDeleteDraft = async (draftId) => {
     if (window.confirm('Вы уверены, что хотите удалить этот черновик?')) {
       try {
         await draftsAPI.deleteDraft(draftId);
-        // Обновляем список черновиков
         setMyDrafts(prev => prev.filter(draft => draft.id !== draftId));
         alert('Черновик успешно удален');
       } catch (error) {
@@ -247,7 +242,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
       <div className="profile-content">
         {activeTab === 'profile' && (
           <form className="profile-form" onSubmit={handleProfileUpdate}>
-            {/* Существующая форма профиля */}
             <div className="form-section">
               <div className="form-row">
                 <div className="form-group">
@@ -387,7 +381,6 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           </div>
         )}
 
-        {/* НОВАЯ ВКЛАДКА - МОИ ЧЕРНОВИКИ */}
         {activeTab === 'drafts' && (
           <div className="drafts-list">
             <div className="section-header">
@@ -408,8 +401,7 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
                     </div>
                     <div className="procurement-details">
                       <p><strong>Заказчик:</strong> {draft.customer_name}</p>
-                      <p><strong>Примерная стоимость:</strong> {formatPrice(draft.current_price)} ₽</p>
-                      <p><strong>Товаров:</strong> {draft.products_count || 0}</p>
+                      <p><strong>Примерная стоимость:</strong> {formatPrice(draft.estimated_price || draft.current_price)} ₽</p>
                       <p><strong>Прогресс:</strong> Шаг {draft.step} из 3</p>
                       <p><strong>Создан:</strong> {formatDate(draft.created_at)}</p>
                       <p><strong>Обновлен:</strong> {formatDate(draft.updated_at)}</p>

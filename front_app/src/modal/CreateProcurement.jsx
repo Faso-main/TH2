@@ -1,12 +1,8 @@
-/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 // modal/CreateProcurement.jsx
 import { useState, useEffect } from 'react';
-import './CreateProcurement.css';
 import { draftsAPI } from '../services/api';
-
-
-// В компонент CreateProcurement добавить кнопку сохранения черновика
+import './CreateProcurement.css';
 
 function CreateProcurement({ 
   onAddProduct, 
@@ -88,7 +84,16 @@ function CreateProcurement({
     }
   };
 
-  // В JSX добавить кнопку сохранения черновика
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU').format(price);
+  };
+
+  const calculateTotal = () => {
+    return selectedProducts.reduce((sum, product) => 
+      sum + (product.price_per_item * product.quantity), 0
+    );
+  };
+
   return (
     <div className="create-procurement">
       {/* Шаги создания закупки */}
@@ -166,6 +171,48 @@ function CreateProcurement({
             />
           </div>
 
+          <div className="form-group">
+            <label>Тип закупки</label>
+            <select
+              value={formData.law_type}
+              onChange={(e) => handleFormChange('law_type', e.target.value)}
+            >
+              <option value="44-ФЗ">44-ФЗ</option>
+              <option value="223-ФЗ">223-ФЗ</option>
+              <option value="Коммерческая">Коммерческая</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Условия контракта</label>
+            <textarea
+              value={formData.contract_terms}
+              onChange={(e) => handleFormChange('contract_terms', e.target.value)}
+              placeholder="Условия поставки, оплаты и другие требования"
+              rows="3"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Место поставки</label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleFormChange('location', e.target.value)}
+                placeholder="Город, адрес"
+              />
+            </div>
+            <div className="form-group">
+              <label>Срок действия закупки</label>
+              <input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => handleFormChange('end_date', e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="form-actions">
             <button 
               type="button" 
@@ -178,7 +225,7 @@ function CreateProcurement({
             {/* Кнопка сохранения черновика */}
             <button 
               type="button" 
-              className="btn-secondary"
+              className="btn-outline"
               onClick={handleSaveDraft}
               disabled={saveDraftLoading}
             >
@@ -264,6 +311,9 @@ function CreateProcurement({
                     </div>
                   </div>
                 ))}
+                <div className="products-total">
+                  <strong>Общая сумма: {formatPrice(calculateTotal())} ₽</strong>
+                </div>
               </div>
             )}
           </div>
@@ -280,7 +330,7 @@ function CreateProcurement({
             {/* Кнопка сохранения черновика на шаге 2 */}
             <button 
               type="button" 
-              className="btn-secondary"
+              className="btn-outline"
               onClick={handleSaveDraft}
               disabled={saveDraftLoading}
             >
@@ -309,12 +359,36 @@ function CreateProcurement({
               <p><strong>Название:</strong> {formData.title}</p>
               <p><strong>Заказчик:</strong> {formData.customer_name}</p>
               <p><strong>ИНН:</strong> {formData.customer_inn}</p>
-              <p><strong>Стоимость:</strong> {formatPrice(formData.current_price)} ₽</p>
-              <p><strong>Товаров:</strong> {selectedProducts.length} позиций</p>
-              <p><strong>Общая сумма:</strong> {formatPrice(selectedProducts.reduce((sum, product) => 
-                sum + (product.price_per_item * product.quantity), 0))} ₽</p>
+              <p><strong>Тип закупки:</strong> {formData.law_type}</p>
+              <p><strong>Ориентировочная стоимость:</strong> {formatPrice(formData.current_price)} ₽</p>
+              <p><strong>Место поставки:</strong> {formData.location || 'Не указано'}</p>
+              <p><strong>Срок действия:</strong> {formData.end_date || 'Не указан'}</p>
             </div>
           </div>
+
+          <div className="products-summary">
+            <h4>Товары в закупке ({selectedProducts.length})</h4>
+            <div className="products-list">
+              {selectedProducts.map(product => (
+                <div key={product.id} className="product-item">
+                  <span className="product-name">{product.name}</span>
+                  <span className="product-quantity">{product.quantity} шт.</span>
+                  <span className="product-price">{formatPrice(product.price_per_item)} ₽/шт</span>
+                  <span className="product-total">{formatPrice(product.price_per_item * product.quantity)} ₽</span>
+                </div>
+              ))}
+            </div>
+            <div className="summary-total">
+              <strong>Общая сумма: {formatPrice(calculateTotal())} ₽</strong>
+            </div>
+          </div>
+
+          {formData.contract_terms && (
+            <div className="contract-terms">
+              <h4>Условия контракта</h4>
+              <p>{formData.contract_terms}</p>
+            </div>
+          )}
 
           <div className="form-actions">
             <button 
@@ -328,7 +402,7 @@ function CreateProcurement({
             {/* Кнопка сохранения черновика на шаге 3 */}
             <button 
               type="button" 
-              className="btn-secondary"
+              className="btn-outline"
               onClick={handleSaveDraft}
               disabled={saveDraftLoading}
             >
