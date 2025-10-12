@@ -1011,8 +1011,8 @@ app.get('/api/user/favorites', checkSession, async (req, res) => {
     
     let query = `
       SELECT 
-        f.favorite_id,
-        f.favorite_type,
+        f.favorite_id as id,
+        f.favorite_type as type,
         f.created_at,
         p.product_id,
         p.name as product_name,
@@ -1049,7 +1049,7 @@ app.get('/api/user/favorites', checkSession, async (req, res) => {
     const favorites = result.rows.map(row => {
       if (row.favorite_type === 'product') {
         return {
-          id: row.favorite_id,
+          id: row.id,
           type: 'product',
           product: {
             id: row.product_id,
@@ -1064,7 +1064,7 @@ app.get('/api/user/favorites', checkSession, async (req, res) => {
         };
       } else {
         return {
-          id: row.favorite_id,
+          id: row.id,
           type: 'procurement',
           procurement: {
             id: row.procurement_id,
@@ -1148,6 +1148,27 @@ app.delete('/api/user/favorites/:id', checkSession, async (req, res) => {
   }
 });
 
+// Проверить, в избранном ли элемент
+app.get('/api/user/favorites/check', checkSession, async (req, res) => {
+  try {
+    const { product_id, procurement_id } = req.query;
+    
+    const result = await pool.query(
+      `SELECT favorite_id FROM user_favorites 
+       WHERE user_id = $1 AND product_id = $2 AND procurement_id = $3`,
+      [req.user.userId, product_id || null, procurement_id || null]
+    );
+    
+    res.json({ 
+      is_favorite: result.rows.length > 0,
+      favorite_id: result.rows[0]?.favorite_id
+    });
+    
+  } catch (error) {
+    console.error('Check favorite error:', error);
+    res.status(500).json({ error: 'Ошибка при проверке избранного' });
+  }
+});
 // Проверить, в избранном ли элемент
 app.get('/api/user/favorites/check', checkSession, async (req, res) => {
   try {

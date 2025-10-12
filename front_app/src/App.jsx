@@ -1094,39 +1094,44 @@ function ProductsGrid({
   const [loadingFavorites, setLoadingFavorites] = useState(false);
 
   // Функция для переключения избранного
-  const handleToggleFavorite = async (product) => {
-    if (!currentUser) {
-      alert('Войдите в систему, чтобы добавлять в избранное');
-      return;
-    }
+// В ProductsGrid - добавьте console.log для отладки
+const handleToggleFavorite = async (product) => {
+  console.log('Toggle favorite clicked for product:', product.id);
+  
+  if (!currentUser) {
+    alert('Войдите в систему, чтобы добавлять в избранное');
+    return;
+  }
 
-    try {
-      setLoadingFavorites(true);
-      const isCurrentlyFavorite = favorites[product.id];
-      
-      if (isCurrentlyFavorite) {
-        // Удаляем из избранного
-        await favoritesAPI.removeFavorite(favorites[product.id]);
-        setFavorites(prev => {
-          const newFavorites = { ...prev };
-          delete newFavorites[product.id];
-          return newFavorites;
-        });
-      } else {
-        // Добавляем в избранное
-        const response = await favoritesAPI.addFavorite({ product_id: product.id });
-        setFavorites(prev => ({
-          ...prev,
-          [product.id]: response.favorite.favorite_id
-        }));
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      alert('Ошибка при обновлении избранного');
-    } finally {
-      setLoadingFavorites(false);
+  try {
+    setLoadingFavorites(true);
+    const isCurrentlyFavorite = favorites[product.id];
+    console.log('Current favorite status:', isCurrentlyFavorite);
+    
+    if (isCurrentlyFavorite) {
+      console.log('Removing favorite:', favorites[product.id]);
+      await favoritesAPI.removeFavorite(favorites[product.id]);
+      setFavorites(prev => {
+        const newFavorites = { ...prev };
+        delete newFavorites[product.id];
+        return newFavorites;
+      });
+    } else {
+      console.log('Adding favorite for product:', product.id);
+      const response = await favoritesAPI.addFavorite({ product_id: product.id });
+      console.log('Add favorite response:', response);
+      setFavorites(prev => ({
+        ...prev,
+        [product.id]: response.favorite.favorite_id
+      }));
     }
-  };
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    alert('Ошибка при обновлении избранного: ' + error.message);
+  } finally {
+    setLoadingFavorites(false);
+  }
+};
 
   // Загружаем статус избранного при монтировании
   useEffect(() => {
