@@ -11,7 +11,7 @@ import UserProfile from './modal/UserProfile';
 import CreateProcurement from './modal/CreateProcurement';
 import RecommendationsPanel from './modal/RecommendationsPanel';
 import FavoritesTab from './modal/FavoritesTab';
-import { authAPI, productsAPI, procurementsAPI } from './services/api';
+import { authAPI, productsAPI, procurementsAPI, favoritesAPI } from './services/api';
 import { generateProductImage, getCategoryColor } from './utils/productImages';
 
 
