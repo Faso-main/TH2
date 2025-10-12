@@ -73,6 +73,8 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 // Добавить в services/api.js
+// services/api.js - добавить в экспорт
+
 export const searchAPI = {
   // Умный поиск по всей базе
   async smartSearch(query, options = {}) {
@@ -96,6 +98,14 @@ export const searchAPI = {
   // Популярные поисковые запросы
   async popularSearches(limit = 5) {
     return apiRequest(`/search/popular?limit=${limit}`);
+  },
+
+  // Поисковые подсказки
+  async getSuggestions(query) {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    
+    return apiRequest(`/search/suggestions?${params.toString()}`);
   }
 };
 
