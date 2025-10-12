@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { userAPI, draftsAPI } from '../services/api';
 import './UserProfile.css';
 
-function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated}) {
+function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated, onContinueDraft}) {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
     name: '',
@@ -218,31 +218,58 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated}
       </div>
 
       <div className="profile-tabs">
-        <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+        <button 
+          className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => setActiveTab('profile')}
+        >
           Профиль
         </button>
-        <button className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`} onClick={() => setActiveTab('procurements')}>
+        <button 
+          className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('procurements')}
+        >
           Мои закупки
         </button>
-        <button className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`} onClick={() => setActiveTab('participations')}>
+        <button 
+          className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('participations')}
+        >
           Мои участия
         </button>
-        <button className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`} onClick={() => setActiveTab('drafts')}>
+        <button 
+          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drafts')}
+        >
           Черновики
         </button>
-        <button className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>
+        {/* НОВАЯ ВКЛАДКА */}
+        <button 
+          className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+          onClick={() => setActiveTab('favorites')}
+        >
           Избранное
         </button>
       </div>
 
       <div className="profile-content">
-        {activeTab === 'profile' && <ProfileForm user={user} onClose={onClose} />}
-        {activeTab === 'procurements' && <UserProcurements user={user} />}
-        {activeTab === 'participations' && <UserParticipations user={user} />}
-        {activeTab === 'drafts' && <UserDrafts user={user} onContinueDraft={onContinueDraft} />}
-        {activeTab === 'favorites' && <FavoritesTab user={user} />}
+        {activeTab === 'profile' && (
+          <ProfileForm user={user} onClose={onClose} />
+        )}
+        {activeTab === 'procurements' && (
+          <UserProcurements user={user} />
+        )}
+        {activeTab === 'participations' && (
+          <UserParticipations user={user} />
+        )}
+        {activeTab === 'drafts' && (
+          <UserDrafts user={user} onContinueDraft={onContinueDraft} />
+        )}
+        {/* НОВЫЙ КОМПОНЕНТ */}
+        {activeTab === 'favorites' && (
+          <FavoritesTab user={user} />
+        )}
       </div>
-          </div>
+    </div>
   );
 }
 
