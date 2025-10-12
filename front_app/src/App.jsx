@@ -828,6 +828,80 @@ function Main({
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [filteredProcurements, setFilteredProcurements] = useState(procurements);
+  const [activeFilters, setActiveFilters] = useState({});
+
+  // Функция применения фильтров к товарам
+  const applyProductFilters = (products, filters) => {
+    return products.filter(product => {
+      // Фильтр по категориям
+      if (filters.categories.length > 0 && !filters.categories.includes(product.category_name)) {
+        return false;
+      }
+
+      // Фильтр по производителям
+      if (filters.manufacturers.length > 0 && !filters.manufacturers.includes(product.company)) {
+        return false;
+      }
+
+      // Фильтр по цене
+      if (filters.priceRange.min && product.price_per_item < parseFloat(filters.priceRange.min)) {
+        return false;
+      }
+      if (filters.priceRange.max && product.price_per_item > parseFloat(filters.priceRange.max)) {
+        return false;
+      }
+
+      // Фильтр по наличию
+      if (filters.inStock && (!product.amount || product.amount <= 0)) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Функция применения фильтров к закупкам
+  const applyProcurementFilters = (procurements, filters) => {
+    return procurements.filter(procurement => {
+      // Фильтр по статусу
+      if (filters.procurementStatus.length > 0 && !filters.procurementStatus.includes(procurement.status)) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Обработчик изменения фильтров
+  const handleFiltersChange = (newFilters) => {
+    setActiveFilters(newFilters);
+    
+    if (activeSection === 'products') {
+      const filtered = applyProductFilters(products, newFilters);
+      setFilteredProducts(filtered);
+    } else {
+      const filtered = applyProcurementFilters(procurements, newFilters);
+      setFilteredProcurements(filtered);
+    }
+  };
+
+  // Обновляем отфильтрованные данные при изменении исходных данных
+  useEffect(() => {
+    if (activeSection === 'products') {
+      const filtered = applyProductFilters(products, activeFilters);
+      setFilteredProducts(filtered);
+    } else {
+      const filtered = applyProcurementFilters(procurements, activeFilters);
+      setFilteredProcurements(filtered);
+    }
+  }, [products, procurements, activeSection]);
+
+  // При переключении секции сбрасываем фильтры
+  useEffect(() => {
+    setActiveFilters({});
+    setFilteredProducts(products);
+    setFilteredProcurements(procurements);
+  }, [activeSection]);
 
   useEffect(() => {
     setFilteredProducts(products);
@@ -929,19 +1003,27 @@ function Main({
                 {searchQuery && (
                   <span className="search-results-count">
                     {activeSection === 'products' 
-                      ? `Найдено товаров: ${displayProducts.length}` 
-                      : `Найдено закупок: ${displayProcurements.length}`
+                      ? `Найдено товаров: ${getDisplayProducts().length}` 
+                      : `Найдено закупок: ${getDisplayProcurements().length}`
                     }
                     {isSearching && ' (поиск...)'}
                   </span>
                 )}
                 {!searchQuery && (
-                  <span className="products-count">
-                    {activeSection === 'products' 
-                      ? `Всего товаров: ${displayProducts.length}` 
-                      : `Всего закупок: ${displayProcurements.length}`
-                    }
-                  </span>
+                  <div className="results-info">
+                    <span className="products-count">
+                      {activeSection === 'products' 
+                        ? `Всего товаров: ${products.length}` 
+                        : `Всего закупок: ${procurements.length}`
+                      }
+                    </span>
+                    {((activeSection === 'products' && filteredProducts.length !== products.length) ||
+                      (activeSection === 'procurements' && filteredProcurements.length !== procurements.length)) && (
+                      <span className="filtered-count">
+                        • Показано: {activeSection === 'products' ? filteredProducts.length : filteredProcurements.length}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -970,7 +1052,7 @@ function Main({
             activeSection={activeSection}
             products={products}
             procurements={procurements}
-            onFiltersChange={() => {}}
+            onFiltersChange={handleFiltersChange}
           />
         </div>
       </div>
