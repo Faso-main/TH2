@@ -624,25 +624,8 @@ function Header({
   isSearching,
   selectedProductsCount
 }) {
-  
-  const handleSmartSearch = (query) => {
-    console.log('Smart search triggered:', query);
-    onSearchChange(query);
-  };
-
-  const handleSuggestionSelect = (suggestion) => {
-    console.log('Suggestion selected:', suggestion);
-    // Дополнительная логика при выборе подсказки
-    if (suggestion.type === 'product') {
-      // Можно добавить переход к товару
-      console.log('Selected product:', suggestion.id);
-    } else if (suggestion.type === 'procurement') {
-      // Можно добавить переход к закупке
-      console.log('Selected procurement:', suggestion.id);
-    } else if (suggestion.type === 'category') {
-      // Можно добавить фильтрацию по категории
-      console.log('Selected category:', suggestion.id);
-    }
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
   };
 
   const handleInputChange = (e) => {
@@ -678,13 +661,45 @@ function Header({
         </div>
         
         <div className="header-search">
-          <SmartSearch 
-            onSearch={handleSmartSearch}
-            onSelect={handleSuggestionSelect}
-            placeholder="Умный поиск товаров, закупок, категорий..."
-            initialQuery={searchQuery}
-            onClear={handleClearSearch}
-          />
+          <form className={`search-bar ${isSearching ? 'searching' : ''}`} onSubmit={handleSearchSubmit}>
+            <input 
+              type="text" 
+              placeholder="Поиск товаров и закупок..." 
+              className="search-input"
+              value={searchQuery}
+              onChange={handleInputChange}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchSubmit(e);
+                }
+              }}
+            />
+            
+            {searchQuery && (
+              <button 
+                type="button"
+                className="clear-search-btn"
+                onClick={handleClearClick}
+                title="Очистить поиск"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+            
+            <button type="submit" className="search-btn" disabled={isSearching}>
+              {isSearching ? (
+                <div className="loading-spinner-small"></div>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              )}
+            </button>
+          </form>
         </div>
 
         <div className="header-actions">
