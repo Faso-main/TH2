@@ -1,127 +1,105 @@
-// modal/UserProfile.jsx
-import { useState, useEffect } from 'react';
-import { userAPI } from '../services/api';
-import './UserProfile.css';
-
-// eslint-disable-next-line no-unused-vars
-function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated }) { // Добавьте onProcurementCreated
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
+function UserProfile({ user, onClose }) {
   const [activeTab, setActiveTab] = useState('profile');
-  const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    inn: '',
-    company_name: '',
-    phone_number: '',
-    location: '',
-    ...user
+  const [userProcurements, setUserProcurements] = useState([]);
+  const [userParticipations, setUserParticipations] = useState([]);
+  const [drafts, setDrafts] = useState([]);
+  const [procurementsLoading, setProcurementsLoading] = useState(false);
+  const [participationsLoading, setParticipationsLoading] = useState(false);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    company_name: user?.company_name || '',
+    phone_number: user?.phone_number || ''
   });
-  const [myProcurements, setMyProcurements] = useState([]);
-  const [myParticipations, setMyParticipations] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
 
+  // Загрузка данных при смене вкладки
   useEffect(() => {
-    if (user) {
-      setProfileData(prev => ({
-        ...prev,
-        ...user
-      }));
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (activeTab === 'my-procurements') {
-      loadMyProcurements();
+    if (activeTab === 'procurements') {
+      loadUserProcurements();
     } else if (activeTab === 'participations') {
-      loadMyParticipations();
+      loadUserParticipations();
+    } else if (activeTab === 'drafts') {
+      loadDrafts();
     }
   }, [activeTab]);
 
-  // Добавьте этот useEffect для обновления при создании новой закупки
-  useEffect(() => {
-    if (activeTab === 'my-procurements') {
-      loadMyProcurements();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onProcurementCreated]); // Срабатывает при изменении onProcurementCreated
-
-  const loadMyProcurements = async () => {
+  const loadUserProcurements = async () => {
+    setProcurementsLoading(true);
     try {
-      setLoading(true);
-      try {
-        const data = await userAPI.getMyProcurements();
-        setMyProcurements(data.procurements || []);
-      // eslint-disable-next-line no-unused-vars
-      } catch (error) {
-        console.warn('API недоступно, используем тестовые данные');
-        // Можно добавить тестовые данные для демонстрации
-        setMyProcurements([]);
-      }
+      const response = await userAPI.getMyProcurements();
+      setUserProcurements(response.procurements || []);
     } catch (error) {
       console.error('Error loading procurements:', error);
-      setMyProcurements([]);
+      setUserProcurements([]);
     } finally {
-      setLoading(false);
+      setProcurementsLoading(false);
     }
   };
 
-  const loadMyParticipations = async () => {
+  const loadUserParticipations = async () => {
+    setParticipationsLoading(true);
     try {
-      setLoading(true);
-      
-      try {
-        const data = await userAPI.getMyParticipations();
-        setMyParticipations(data.participations || []);
-      // eslint-disable-next-line no-unused-vars
-      } catch (error) {
-        console.warn('API недоступно, используем тестовые данные');
-        setMyParticipations([]);
-      }
+      const response = await userAPI.getMyParticipations();
+      setUserParticipations(response.participations || []);
     } catch (error) {
       console.error('Error loading participations:', error);
-      setMyParticipations([]);
+      setUserParticipations([]);
     } finally {
-      setLoading(false);
+      setParticipationsLoading(false);
     }
   };
 
-  // Остальной код остается без изменений...
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
+  const loadDrafts = async () => {
+    setDraftsLoading(true);
     try {
-      setSaveLoading(true);
-      
-      const updateData = {
-        name: profileData.name,
-        email: profileData.email,
-        company_name: profileData.company_name,
-        phone_number: profileData.phone_number,
-        location: profileData.location
-      };
-      
-      await userAPI.updateProfile(updateData);
-      alert('Профиль успешно обновлен!');
+      const response = await draftsAPI.getMyDrafts();
+      setDrafts(response.drafts || []);
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+      setDrafts([]);
+    } finally {
+      setDraftsLoading(false);
+    }
+  };
+
+  const handleEditToggle = () => {
+    setEditing(!editing);
+    if (editing) {
+      // Сбрасываем форму при отмене редактирования
+      setFormData({
+        name: user?.name || '',
+        email: user?.email || '',
+        company_name: user?.company_name || '',
+        phone_number: user?.phone_number || ''
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const response = await userAPI.updateProfile(formData);
+      setEditing(false);
+      alert('Профиль успешно обновлен');
+      // Обновляем данные пользователя в localStorage
+      if (response.user) {
+        localStorage.setItem('currentUser', JSON.stringify(response.user));
+      }
     } catch (error) {
       alert('Ошибка при обновлении профиля: ' + error.message);
-    } finally {
-      setSaveLoading(false);
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'INN') return;
-    
-    setProfileData(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  const formatINN = (inn) => {
-    if (!inn) return '';
-    return inn.toString().replace(/(\d{2})(\d{2})(\d{3})(\d{3})(\d{2})?/, '$1 $2 $3 $4 $5').trim();
   };
 
   const formatPrice = (price) => {
@@ -132,32 +110,69 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
     return new Date(dateString).toLocaleDateString('ru-RU');
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active': return 'Активна';
-      case 'draft': return 'Черновик';
-      case 'completed': return 'Завершена';
-      case 'pending': return 'На рассмотрении';
-      case 'approved': return 'Одобрено';
-      case 'rejected': return 'Отклонено';
-      default: return status;
+  const handleContinueDraft = (draft) => {
+    console.log('Continue draft:', draft);
+    alert(`Функция продолжения редактирования черновика "${draft.title}" будет доступна в следующем обновлении`);
+    // Здесь будет логика открытия модального окна создания закупки с данными черновика
+  };
+
+  const handleDeleteDraft = async (draftId, draftTitle) => {
+    if (window.confirm(`Удалить черновик "${draftTitle}"?`)) {
+      try {
+        await draftsAPI.deleteDraft(draftId);
+        loadDrafts(); // Перезагружаем список
+        alert('Черновик удален');
+      } catch (error) {
+        alert('Ошибка при удалении черновика: ' + error.message);
+      }
+    }
+  };
+
+  const handleCreateFromDraft = async (draft) => {
+    try {
+      // Преобразуем данные черновика в формат закупки
+      const products = draft.products_data ? JSON.parse(draft.products_data) : [];
+      
+      const procurementData = {
+        title: draft.title,
+        description: draft.description,
+        customer_name: draft.customer_name,
+        customer_inn: draft.customer_inn,
+        current_price: draft.estimated_price,
+        law_type: draft.law_type,
+        contract_terms: draft.contract_terms,
+        location: draft.location,
+        start_date: draft.start_date,
+        end_date: draft.end_date,
+        products: products.map(product => ({
+          product_id: product.product_id,
+          required_quantity: product.quantity,
+          max_price: product.price_per_item
+        }))
+      };
+
+      // Создаем закупку из черновика
+      const response = await procurementsAPI.create(procurementData);
+      
+      // Удаляем черновик после успешного создания
+      await draftsAPI.deleteDraft(draft.id);
+      
+      alert('Закупка успешно создана из черновика!');
+      loadDrafts(); // Обновляем список черновиков
+      
+      // Закрываем профиль
+      onClose();
+      
+    } catch (error) {
+      alert('Ошибка при создании закупки из черновика: ' + error.message);
     }
   };
 
   return (
     <div className="user-profile">
       <div className="profile-header">
-        <div className="user-welcome">
-          <div className="user-avatar">
-            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
-          <div className="user-info">
-            <h3>{user?.name || 'Пользователь'}</h3>
-            <p>{user?.email || 'Email не указан'}</p>
-            {user?.company_name && <p>Компания: {user.company_name}</p>}
-            {user?.INN && <p className="inn-display">ИНН: {formatINN(user.INN)}</p>}
-          </div>
-        </div>
+        <h2>Личный кабинет</h2>
+        <p>Управление вашим профилем и активностями</p>
       </div>
 
       <div className="profile-tabs">
@@ -165,210 +180,258 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated 
           className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
           onClick={() => setActiveTab('profile')}
         >
-          Профиль
+          👤 Профиль
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'my-procurements' ? 'active' : ''}`}
-          onClick={() => setActiveTab('my-procurements')}
+          className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('procurements')}
         >
-          Мои закупки
+          📋 Мои закупки
         </button>
         <button 
           className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`}
           onClick={() => setActiveTab('participations')}
         >
-          Мои участия
+          🤝 Мои участия
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drafts')}
+        >
+          📝 Мои черновики
         </button>
       </div>
 
-      <div className="profile-content">
-        {activeTab === 'profile' && (
-          <form className="profile-form" onSubmit={handleProfileUpdate}>
-            <div className="form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="name">Имя *</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={profileData.name || ''}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Введите ваше имя"
-                  />
+      {/* Вкладка Профиль */}
+      {activeTab === 'profile' && (
+        <div className="tab-content">
+          <div className="profile-info">
+            <div className="info-section">
+              <h3>Основная информация</h3>
+              {editing ? (
+                <div className="edit-form">
+                  <div className="form-group">
+                    <label>ФИО</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Введите ваше ФИО"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Введите ваш email"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Название компании</label>
+                    <input
+                      type="text"
+                      name="company_name"
+                      value={formData.company_name}
+                      onChange={handleInputChange}
+                      placeholder="Введите название компании"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Телефон</label>
+                    <input
+                      type="tel"
+                      name="phone_number"
+                      value={formData.phone_number}
+                      onChange={handleInputChange}
+                      placeholder="Введите номер телефона"
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button className="btn-primary" onClick={handleSaveProfile}>
+                      Сохранить
+                    </button>
+                    <button className="btn-outline" onClick={handleEditToggle}>
+                      Отмена
+                    </button>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="email">Email *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={profileData.email || ''}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Введите ваш email"
-                  />
+              ) : (
+                <div className="info-display">
+                  <div className="info-item">
+                    <span className="label">ФИО:</span>
+                    <span className="value">{user?.name || 'Не указано'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Email:</span>
+                    <span className="value">{user?.email}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Компания:</span>
+                    <span className="value">{user?.company_name || 'Не указано'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">ИНН:</span>
+                    <span className="value">{user?.INN || 'Не указан'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Телефон:</span>
+                    <span className="value">{user?.phone_number || 'Не указан'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Дата регистрации:</span>
+                    <span className="value">
+                      {user?.created_at ? formatDate(user.created_at) : 'Неизвестно'}
+                    </span>
+                  </div>
+                  <button className="btn-primary" onClick={handleEditToggle}>
+                    Редактировать профиль
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="INN">ИНН</label>
-                  <input
-                    type="text"
-                    id="INN"
-                    name="INN"
-                    value={formatINN(profileData.inn)}
-                    onChange={handleInputChange}
-                    disabled
-                    placeholder="ИНН загружается..."
-                    title="ИНН нельзя изменить после регистрации"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="phone_number">Телефон</label>
-                  <input
-                    type="tel"
-                    id="phone_number"
-                    name="phone_number"
-                    value={profileData.phone_number || ''}
-                    onChange={handleInputChange}
-                    placeholder="+7 (999) 999-99-99"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="company_name">Название компании</label>
-                <input
-                  type="text"
-                  id="company_name"
-                  name="company_name"
-                  value={profileData.company_name || ''}
-                  onChange={handleInputChange}
-                  placeholder="Введите название вашей компании"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="location">Адрес</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={profileData.location || ''}
-                  onChange={handleInputChange}
-                  placeholder="Город, улица, дом"
-                />
-              </div>
+      {/* Вкладка Мои закупки */}
+      {activeTab === 'procurements' && (
+        <div className="tab-content">
+          <h3>Мои закупки</h3>
+          
+          {procurementsLoading ? (
+            <div className="loading">Загрузка закупок...</div>
+          ) : userProcurements.length === 0 ? (
+            <div className="empty-state">
+              <p>У вас еще нет созданных закупок</p>
             </div>
-
-            <button 
-              type="submit" 
-              className="btn-primary btn-full"
-              disabled={saveLoading}
-            >
-              {saveLoading ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
-          </form>
-        )}
-
-        {activeTab === 'my-procurements' && (
-          <div className="procurements-list">
-            <div className="section-header">
-              <h3>Мои созданные закупки</h3>
-
-            </div>
-            
-            {loading ? (
-              <div className="loading">Загрузка...</div>
-            ) : myProcurements.length > 0 ? (
-              <div className="items-grid">
-                {myProcurements.map(procurement => (
-                  <div key={procurement.id} className="procurement-item card">
-                    <div className="procurement-header">
-                      <h4>{procurement.title}</h4>
-                      <span className={`status-badge status-${procurement.status}`}>
-                        {getStatusText(procurement.status)}
-                      </span>
-                    </div>
+          ) : (
+            <div className="procurements-list">
+              {userProcurements.map(procurement => (
+                <div key={procurement.id} className="procurement-item">
+                  <div className="procurement-info">
+                    <h4>{procurement.title}</h4>
                     <div className="procurement-details">
-                      <p><strong>Котировочная сессия:</strong> {procurement.session_number}</p>
-                      <p><strong>Начальная цена:</strong> {formatPrice(procurement.current_price)} ₽</p>
-                      <p><strong>Участников:</strong> {procurement.participants_count || 0}</p>
-                      <p><strong>Заказчик:</strong> {procurement.customer_name}</p>
-                      <p><strong>Создана:</strong> {formatDate(procurement.created_at)}</p>
+                      <span className="status-badge">{procurement.status}</span>
+                      <span>{formatPrice(procurement.current_price)} ₽</span>
+                      <span>{procurement.products_count || 0} товаров</span>
+                      <span>Создана: {formatDate(procurement.created_at)}</span>
                     </div>
-                    <div className="procurement-actions">
-                      <button className="btn-outline">Просмотреть</button>
-                      {procurement.status === 'draft' && (
-                        <button className="btn-primary">Редактировать</button>
-                      )}
-                      {procurement.status === 'active' && (
-                        <button className="btn-primary">Управление</button>
-                      )}
-                    </div>
+                    {procurement.customer_name && (
+                      <p className="customer">Заказчик: {procurement.customer_name}</p>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <h4>Закупок пока нет</h4>
-                <p>Создайте свою первую закупку и начните привлекать поставщиков</p>
-              </div>
-            )}
-          </div>
-        )}
+                  <div className="procurement-actions">
+                    <button className="btn-outline btn-small">
+                      Просмотреть
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-        {activeTab === 'participations' && (
-          <div className="participations-list">
-            <h3>Мои участия в закупках</h3>
-            {loading ? (
-              <div className="loading">Загрузка...</div>
-            ) : myParticipations.length > 0 ? (
-              <div className="items-grid">
-                {myParticipations.map(participation => (
-                  <div key={participation.id} className="participation-item card">
-                    <div className="participation-header">
-                      <h4>{participation.procurement_title}</h4>
-                      <span className={`status-badge status-${participation.status}`}>
-                        {getStatusText(participation.status)}
-                      </span>
-                    </div>
+      {/* Вкладка Мои участия */}
+      {activeTab === 'participations' && (
+        <div className="tab-content">
+          <h3>Мои участия в закупках</h3>
+          
+          {participationsLoading ? (
+            <div className="loading">Загрузка участий...</div>
+          ) : userParticipations.length === 0 ? (
+            <div className="empty-state">
+              <p>Вы еще не участвовали в закупках</p>
+            </div>
+          ) : (
+            <div className="participations-list">
+              {userParticipations.map(participation => (
+                <div key={participation.procurement_id} className="participation-item">
+                  <div className="participation-info">
+                    <h4>{participation.procurement_title}</h4>
                     <div className="participation-details">
-                      <p><strong>Мое предложение:</strong> {formatPrice(participation.proposed_price)} ₽</p>
-                      <p><strong>Заказчик:</strong> {participation.customer_name}</p>
-                      <p><strong>Дата подачи:</strong> {formatDate(participation.created_at)}</p>
-                      {participation.status === 'rejected' && participation.rejection_reason && (
-                        <p><strong>Причина отказа:</strong> {participation.rejection_reason}</p>
-                      )}
+                      <span className="status-badge">{participation.status}</span>
+                      <span>Предложенная цена: {formatPrice(participation.proposed_price)} ₽</span>
+                      <span>Дата: {formatDate(participation.created_at)}</span>
                     </div>
-                    <div className="participation-actions">
-                      <button className="btn-outline">Подробнее</button>
-                      {participation.status === 'pending' && (
-                        <button className="btn-outline">Отозвать</button>
-                      )}
-                    </div>
+                    <p className="customer">Заказчик: {participation.customer_name}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">🏆</div>
-                <h4>Участий пока нет</h4>
-                <p>Найдите интересные закупки и подайте заявку на участие!</p>
-                <button className="btn-primary">Найти закупки</button>
-              </div>
-            )}
-          </div>
-        )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Вкладка Мои черновики */}
+      {activeTab === 'drafts' && (
+        <div className="tab-content">
+          <h3>Мои черновики закупок</h3>
+          
+          {draftsLoading ? (
+            <div className="loading">Загрузка черновиков...</div>
+          ) : drafts.length === 0 ? (
+            <div className="empty-state">
+              <p>У вас нет сохраненных черновиков</p>
+              <p>Создайте закупку и нажмите "Сохранить черновик" чтобы сохранить прогресс</p>
+            </div>
+          ) : (
+            <div className="drafts-list">
+              {drafts.map(draft => (
+                <div key={draft.id} className="draft-item">
+                  <div className="draft-info">
+                    <h4>{draft.title}</h4>
+                    <div className="draft-details">
+                      <span>Товаров: {draft.products_data ? JSON.parse(draft.products_data).length : 0}</span>
+                      <span>Шаг: {draft.step || 1}</span>
+                      <span>Обновлен: {formatDate(draft.updated_at)}</span>
+                      {draft.estimated_price > 0 && (
+                        <span>Цена: {formatPrice(draft.estimated_price)} ₽</span>
+                      )}
+                    </div>
+                    {draft.customer_name && (
+                      <p className="customer">Заказчик: {draft.customer_name}</p>
+                    )}
+                    {draft.description && (
+                      <p className="description">{draft.description}</p>
+                    )}
+                  </div>
+                  <div className="draft-actions">
+                    <button 
+                      className="btn-primary btn-small"
+                      onClick={() => handleContinueDraft(draft)}
+                    >
+                      Продолжить
+                    </button>
+                    <button 
+                      className="btn-outline btn-small"
+                      onClick={() => handleCreateFromDraft(draft)}
+                    >
+                      Создать закупку
+                    </button>
+                    <button 
+                      className="btn-outline btn-small"
+                      onClick={() => handleDeleteDraft(draft.id, draft.title)}
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="profile-footer">
+        <button className="btn-outline" onClick={onClose}>
+          Закрыть
+        </button>
       </div>
     </div>
   );
 }
-
-export default UserProfile;

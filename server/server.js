@@ -741,6 +741,232 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API маршрут не найден' });
 });
 
+// Добавить в server.js после существующих endpoints
+
+// Получить черновики пользователя
+app.get('/api/user/my-drafts', checkSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        draft_id as id,
+        title,
+        description,
+        customer_name,
+        customer_inn,
+        estimated_price as current_price,
+        law_type,
+        location,
+        start_date,
+        end_date,
+        products_data,
+        step,
+        created_at,
+        updated_at
+       FROM procurement_drafts 
+       WHERE user_id = $1
+       ORDER BY updated_at DESC`,
+      [req.user.userId]
+    );
+    
+    console.log('My drafts for user:', req.user.userId, 'count:', result.rows.length);
+    
+    res.json({ drafts: result.rows });
+  } catch (error) {
+    console.error('Get my drafts error:', error);
+    res.status(500).json({ error: 'Ошибка при получении черновиков' });
+  }
+});
+
+// Сохранить черновик
+app.post('/api/procurement-drafts', checkSession, async (req, res) => {
+  try {
+    console.log('Save draft request body:', req.body);
+    
+    const {
+      title,
+      description,
+      customer_name,
+      customer_inn,
+      current_price,
+      law_type = '44-ФЗ',
+      contract_terms,
+      location,
+      start_date,
+      end_date,
+      products = [],
+      step = 1
+    } = req.body;
+
+    // Преобразуем товары в JSON
+    const productsData = products.map(product => ({
+      product_id: product.id || product.product_id,
+      name: product.name,
+      category_name: product.category_name,
+      price_per_item: product.price_per_item,
+      quantity: product.quantity,
+      total_price: product.price_per_item * product.quantity
+    }));
+
+    const result = await pool.query(
+      `INSERT INTO procurement_drafts 
+       (user_id, title, description, customer_name, customer_inn, 
+        estimated_price, law_type, contract_terms, location, 
+        start_date, end_date, products_data, step)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [
+        req.user.userId,
+        title || 'Новый черновик',
+        description,
+        customer_name,
+        customer_inn,
+        parseFloat(current_price) || 0,
+        law_type,
+        contract_terms,
+        location,
+        start_date,
+        end_date,
+        JSON.stringify(productsData),
+        step
+      ]
+    );
+
+    const draft = result.rows[0];
+    
+    console.log('Draft saved:', draft.draft_id);
+    
+    res.json({ 
+      message: 'Черновик успешно сохранен',
+      draft: draft
+    });
+
+  } catch (error) {
+    console.error('Save draft error:', error);
+    res.status(500).json({ error: 'Ошибка при сохранении черновика' });
+  }
+});
+
+// Обновить черновик
+app.put('/api/procurement-drafts/:id', checkSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const {
+      title,
+      description,
+      customer_name,
+      customer_inn,
+      current_price,
+      law_type,
+      contract_terms,
+      location,
+      start_date,
+      end_date,
+      products = [],
+      step
+    } = req.body;
+
+    // Проверяем принадлежность черновика пользователю
+    const ownershipCheck = await pool.query(
+      'SELECT draft_id FROM procurement_drafts WHERE draft_id = $1 AND user_id = $2',
+      [id, req.user.userId]
+    );
+
+    if (ownershipCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Черновик не найден' });
+    }
+
+    // Преобразуем товары в JSON
+    const productsData = products.map(product => ({
+      product_id: product.id || product.product_id,
+      name: product.name,
+      category_name: product.category_name,
+      price_per_item: product.price_per_item,
+      quantity: product.quantity,
+      total_price: product.price_per_item * product.quantity
+    }));
+
+    const result = await pool.query(
+      `UPDATE procurement_drafts 
+       SET title = $1, description = $2, customer_name = $3, customer_inn = $4,
+           estimated_price = $5, law_type = $6, contract_terms = $7, location = $8,
+           start_date = $9, end_date = $10, products_data = $11, step = $12,
+           updated_at = NOW()
+       WHERE draft_id = $13
+       RETURNING *`,
+      [
+        title,
+        description,
+        customer_name,
+        customer_inn,
+        parseFloat(current_price) || 0,
+        law_type,
+        contract_terms,
+        location,
+        start_date,
+        end_date,
+        JSON.stringify(productsData),
+        step,
+        id
+      ]
+    );
+
+    res.json({ 
+      message: 'Черновик успешно обновлен',
+      draft: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Update draft error:', error);
+    res.status(500).json({ error: 'Ошибка при обновлении черновика' });
+  }
+});
+
+// Удалить черновик
+app.delete('/api/procurement-drafts/:id', checkSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'DELETE FROM procurement_drafts WHERE draft_id = $1 AND user_id = $2 RETURNING draft_id',
+      [id, req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Черновик не найден' });
+    }
+
+    res.json({ message: 'Черновик успешно удален' });
+
+  } catch (error) {
+    console.error('Delete draft error:', error);
+    res.status(500).json({ error: 'Ошибка при удалении черновика' });
+  }
+});
+
+// Загрузить черновик для редактирования
+app.get('/api/procurement-drafts/:id', checkSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM procurement_drafts 
+       WHERE draft_id = $1 AND user_id = $2`,
+      [id, req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Черновик не найден' });
+    }
+
+    res.json({ draft: result.rows[0] });
+
+  } catch (error) {
+    console.error('Get draft error:', error);
+    res.status(500).json({ error: 'Ошибка при загрузке черновика' });
+  }
+});
+
 app.use('/api/ml', recommendationRoutes);
 
 console.log('✅ ML Recommendation routes registered:');

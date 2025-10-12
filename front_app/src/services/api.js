@@ -243,6 +243,37 @@ export const userAPI = {
   }
 };
 
+// Procurement Drafts API
+export const draftsAPI = {
+  async getMyDrafts() {
+    return apiRequest('/user/my-drafts');
+  },
+
+  async saveDraft(draftData) {
+    return apiRequest('/procurement-drafts', {
+      method: 'POST',
+      body: draftData,
+    });
+  },
+
+  async updateDraft(id, draftData) {
+    return apiRequest(`/procurement-drafts/${id}`, {
+      method: 'PUT',
+      body: draftData,
+    });
+  },
+
+  async deleteDraft(id) {
+    return apiRequest(`/procurement-drafts/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getDraft(id) {
+    return apiRequest(`/procurement-drafts/${id}`);
+  }
+};
+
 // Test connection
 export const testAPI = {
   async health() {
