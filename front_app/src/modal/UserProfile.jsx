@@ -4,6 +4,10 @@
 import { useState, useEffect } from 'react';
 import { userAPI, draftsAPI } from '../services/api';
 import './UserProfile.css';
+import UserProcurements from './UserProcurements';
+import UserParticipations from './UserParticipations'; 
+import UserDrafts from './UserDrafts';
+import FavoritesTab from './FavoritesTab'
 
 function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated, onContinueDraft}) {
   const [activeTab, setActiveTab] = useState('profile');
