@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 // modal/UserProfile.jsx
 import { useState, useEffect } from 'react';
 import { userAPI, draftsAPI, procurementsAPI } from '../services/api';
@@ -117,14 +116,13 @@ function UserProfile({ user, onClose }) {
   const handleContinueDraft = (draft) => {
     console.log('Continue draft:', draft);
     alert(`Функция продолжения редактирования черновика "${draft.title}" будет доступна в следующем обновлении`);
-    // Здесь будет логика открытия модального окна создания закупки с данными черновика
   };
 
   const handleDeleteDraft = async (draftId, draftTitle) => {
     if (window.confirm(`Удалить черновик "${draftTitle}"?`)) {
       try {
         await draftsAPI.deleteDraft(draftId);
-        loadDrafts(); // Перезагружаем список
+        loadDrafts();
         alert('Черновик удален');
       } catch (error) {
         alert('Ошибка при удалении черновика: ' + error.message);
@@ -134,7 +132,6 @@ function UserProfile({ user, onClose }) {
 
   const handleCreateFromDraft = async (draft) => {
     try {
-      // Преобразуем данные черновика в формат закупки
       const products = draft.products_data ? JSON.parse(draft.products_data) : [];
       
       const procurementData = {
@@ -155,16 +152,11 @@ function UserProfile({ user, onClose }) {
         }))
       };
 
-      // Создаем закупку из черновика
-      const response = await procurementsAPI.create(procurementData);
-      
-      // Удаляем черновик после успешного создания
+      await procurementsAPI.create(procurementData);
       await draftsAPI.deleteDraft(draft.id);
       
       alert('Закупка успешно создана из черновика!');
-      loadDrafts(); // Обновляем список черновиков
-      
-      // Закрываем профиль
+      loadDrafts();
       onClose();
       
     } catch (error) {
@@ -206,7 +198,6 @@ function UserProfile({ user, onClose }) {
         </button>
       </div>
 
-      {/* Вкладка Профиль */}
       {activeTab === 'profile' && (
         <div className="tab-content">
           <div className="profile-info">
@@ -301,7 +292,6 @@ function UserProfile({ user, onClose }) {
         </div>
       )}
 
-      {/* Вкладка Мои закупки */}
       {activeTab === 'procurements' && (
         <div className="tab-content">
           <h3>Мои закупки</h3>
@@ -340,7 +330,6 @@ function UserProfile({ user, onClose }) {
         </div>
       )}
 
-      {/* Вкладка Мои участия */}
       {activeTab === 'participations' && (
         <div className="tab-content">
           <h3>Мои участия в закупках</h3>
@@ -371,7 +360,6 @@ function UserProfile({ user, onClose }) {
         </div>
       )}
 
-      {/* Вкладка Мои черновики */}
       {activeTab === 'drafts' && (
         <div className="tab-content">
           <h3>Мои черновики закупок</h3>
