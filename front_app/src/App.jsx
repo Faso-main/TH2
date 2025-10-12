@@ -1501,7 +1501,7 @@ function FiltersSidebar({ activeSection, onFiltersChange, products = [] }) {
     <aside className="filters-sidebar">
       <div className="filters-header">
         <h3>
-          Фильтры 
+          Фильтр:  
           {activeFiltersCount > 0 && (
             <span className="filters-badge">{activeFiltersCount}</span>
           )}
