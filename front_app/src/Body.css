@@ -804,15 +804,3 @@
   }
 }
 
-/* Добавить в Body.css */
-.results-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.filtered-count {
-  color: var(--primary-color);
-  font-weight: 500;
-  font-size: 0.85rem;
-}
