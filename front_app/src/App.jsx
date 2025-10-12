@@ -225,8 +225,8 @@ window.addRecommendedProducts = (products) => {
 
       try {
         const [productsResponse, procurementsResponse] = await Promise.all([
-          productsAPI.getProducts({ limit: 100 }),
-          procurementsAPI.getProcurements({ limit: 50 })
+          productsAPI.getProducts({ limit: 1000 }),
+          procurementsAPI.getProcurements({ limit: 500 })
         ]);
         
         setProducts(productsResponse.products || testProducts);
