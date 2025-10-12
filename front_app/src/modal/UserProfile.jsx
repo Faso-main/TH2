@@ -1,6 +1,10 @@
-/* eslint-disable react-refresh/only-export-components */
 /* eslint-disable no-unused-vars */
-/* eslint-disable no-undef */
+// modal/UserProfile.jsx
+import { useState, useEffect } from 'react';
+import { userAPI, draftsAPI, procurementsAPI } from '../services/api';
+import './UserProfile.css';
+
+// eslint-disable-next-line no-unused-vars
 function UserProfile({ user, onClose }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [userProcurements, setUserProcurements] = useState([]);
@@ -435,3 +439,5 @@ function UserProfile({ user, onClose }) {
     </div>
   );
 }
+
+export default UserProfile;
