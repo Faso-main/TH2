@@ -218,58 +218,32 @@ function UserProfile({ user, onClose, onCreateProcurement, onProcurementCreated,
       </div>
 
       <div className="profile-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
-        >
+        <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
           Профиль
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`}
-          onClick={() => setActiveTab('procurements')}
-        >
+        <button className={`tab-btn ${activeTab === 'procurements' ? 'active' : ''}`} onClick={() => setActiveTab('procurements')}>
           Мои закупки
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('participations')}
-        >
+        <button className={`tab-btn ${activeTab === 'participations' ? 'active' : ''}`} onClick={() => setActiveTab('participations')}>
           Мои участия
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('drafts')}
-        >
+        <button className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`} onClick={() => setActiveTab('drafts')}>
           Черновики
         </button>
-        {/* НОВАЯ ВКЛАДКА */}
-        <button 
-          className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
-          onClick={() => setActiveTab('favorites')}
-        >
+        <button className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>
           Избранное
         </button>
       </div>
 
       <div className="profile-content">
-        {activeTab === 'profile' && (
-          <ProfileForm user={user} onClose={onClose} />
-        )}
-        {activeTab === 'procurements' && (
-          <UserProcurements user={user} />
-        )}
-        {activeTab === 'participations' && (
-          <UserParticipations user={user} />
-        )}
-        {activeTab === 'drafts' && (
-          <UserDrafts user={user} onContinueDraft={onContinueDraft} />
-        )}
-        {/* НОВЫЙ КОМПОНЕНТ */}
-        {activeTab === 'favorites' && (
-          <FavoritesTab user={user} />
-        )}
-      </div>
-    </div>
+        {activeTab === 'profile' && <ProfileForm user={user} onClose={onClose} />}
+        {activeTab === 'procurements' && <UserProcurements user={user} />}
+        {activeTab === 'participations' && <UserParticipations user={user} />}
+        {activeTab === 'drafts' && <UserDrafts user={user} onContinueDraft={onContinueDraft} />}
+  {/* ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ
+  {activeTab === 'favorites' && <FavoritesTab user={user} />}
+  */}      </div>
+          </div>
   );
 }
 

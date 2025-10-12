@@ -1187,7 +1187,7 @@ function ProductsGrid({
       {products.map(product => {
         const categoryColor = getCategoryColor(product.category_name);
         const imageUrl = generateProductImage(product.name, categoryColor);
-        const isFavorite = !!favorites[product.id]; // ← ТЕПЕРЬ ОПРЕДЕЛЕНА
+        const isFavorite = !!favorites[product.id];
         
         return (
           <div key={product.id} className={`product-card ${highlightAddToProcurement ? 'highlight-add' : ''}`}>
@@ -1364,7 +1364,7 @@ function ProcurementsGrid({
     <div className="procurements-grid">
       {procurements.map(procurement => {
         const statusInfo = getStatusInfo(procurement.status);
-        const isFavorite = !!favorites[procurement.id]; // ← ВОТ ОНА ОПРЕДЕЛЕНА
+        const isFavorite = !!favorites[procurement.id];
         
         return (
           <div key={procurement.id} className="procurement-card">
