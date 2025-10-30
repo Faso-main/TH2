@@ -35,7 +35,7 @@ const corsOptions = {
 
 // PostgreSQL connection
 const pool = new Pool({
-  user: 'store_app1',
+  user: 'faso_user',
   host: 'localhost',
   database: 'pc_db',
   password: '1234',
