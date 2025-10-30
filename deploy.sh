@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
+cd front_app
 npm run build
 
 set -e
 
-SRC_DIR="/root/React_practice/react_app/dist"
+SRC_DIR="/root/TH2/front_app/dist"
 DST_DIR="/var/www/react_practice"
 
 echo "[1/4] Проверка, есть ли билд..."
