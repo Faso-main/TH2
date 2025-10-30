@@ -9,7 +9,7 @@ const crypto = require('crypto');
 class ProcurementDataImporter {
     constructor() {
         this.client = new Client({
-            user: 'store_app1',
+            user: 'faso_user',
             host: 'localhost',
             database: 'pc_db',
             password: '1234',
