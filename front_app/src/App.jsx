@@ -1265,7 +1265,7 @@ const handleToggleFavorite = async (product) => {
                 title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
                 disabled={loadingFavorites}
               >
-                {loadingFavorites ? '⏳' : (isFavorite ? '❤️' : '🤍')}
+                {loadingFavorites ? '↺' : (isFavorite ? '❤️' : '🤍')}
               </button>
             </div>
             
@@ -1423,7 +1423,7 @@ return (
                   title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
                   disabled={loadingFavorites}
                 >
-                  {loadingFavorites ? '⏳' : (isFavorite ? '❤️' : '🤍')}
+                  {loadingFavorites ? '↺' : (isFavorite ? '❤️' : '🤍')}
                 </button>
               </div>
             </div>
@@ -1526,7 +1526,7 @@ return (
                   title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
                   disabled={loadingFavorites}
                 >
-                  {loadingFavorites ? '⏳' : (isFavorite ? '❤️' : '🤍')}
+                  {loadingFavorites ? '↺' : (isFavorite ? '❤️' : '🤍')}
                 </button>
               </div>
             </div>
