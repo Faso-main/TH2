@@ -40,9 +40,9 @@ class ProcurementDataImporter {
         try {
             const client = await this.pool.connect();
             client.release();
-            console.log('✅ Подключение к БД установлено');
+            console.log('Подключение к БД установлено');
         } catch (error) {
-            console.error('❌ Ошибка подключения к БД:', error.message);
+            console.error('Ошибка подключения к БД:', error.message);
             throw error;
         }
     }
@@ -50,9 +50,9 @@ class ProcurementDataImporter {
     async disconnect() {
         try {
             await this.pool.end();
-            console.log('✅ Подключение к БД закрыто');
+            console.log('Подключение к БД закрыто');
         } catch (error) {
-            console.error('❌ Ошибка при закрытии подключения:', error.message);
+            console.error('Ошибка при закрытии подключения:', error.message);
         }
     }
 
@@ -60,9 +60,9 @@ class ProcurementDataImporter {
         const client = await this.pool.connect();
         try {
             await client.query("SET session_replication_role = 'replica';");
-            console.log('✅ Ограничения БД отключены');
+            console.log('Ограничения БД отключены');
         } catch (error) {
-            console.error('❌ Ошибка при отключении ограничений:', error.message);
+            console.error('Ошибка при отключении ограничений:', error.message);
             throw error;
         } finally {
             client.release();
@@ -73,9 +73,9 @@ class ProcurementDataImporter {
         const client = await this.pool.connect();
         try {
             await client.query("SET session_replication_role = 'origin';");
-            console.log('✅ Ограничения БД включены');
+            console.log('Ограничения БД включены');
         } catch (error) {
-            console.error('❌ Ошибка при включении ограничений:', error.message);
+            console.error('Ошибка при включении ограничений:', error.message);
             throw error;
         } finally {
             client.release();
@@ -91,7 +91,7 @@ class ProcurementDataImporter {
         };
         
         this.errors.push(errorInfo);
-        console.error(`❌ Ошибка в ${operation}:`, error.message);
+        console.error(`Ошибка в ${operation}:`, error.message);
     }
 
     parsePrice(price) {
@@ -112,7 +112,7 @@ class ProcurementDataImporter {
     }
 
     async importCategories() {
-        console.log('📁 Импорт категорий...');
+        console.log('Импорт категорий...');
         
         const client = await this.pool.connect();
         try {
@@ -132,7 +132,6 @@ class ProcurementDataImporter {
                 ]);
             }
 
-            // Сначала очистим таблицу категорий
             await client.query('DELETE FROM categories');
 
             const query = `
@@ -150,7 +149,7 @@ class ProcurementDataImporter {
                 }
             }
 
-            console.log(`✅ Импортировано ${this.stats.categories.success} категорий`);
+            console.log(`Импортировано ${this.stats.categories.success} категорий`);
         } catch (error) {
             this.logError('importCategories', error);
             throw error;
@@ -165,7 +164,7 @@ class ProcurementDataImporter {
     }
 
     async importProcurements() {
-        console.log('📁 Импорт закупок...');
+        console.log('Импорт закупок...');
         
         return new Promise((resolve, reject) => {
             const procurementsMap = new Map();
@@ -180,7 +179,7 @@ class ProcurementDataImporter {
                     this.stats.procurements.success += procurementsMap.size;
                     this.stats.procurement_items.success += procurementItems.length;
                     processedCount += procurementsMap.size;
-                    console.log(`✅ Обработано ${processedCount} закупок, ${procurementItems.length} позиций...`);
+                    console.log(`Обработано ${processedCount} закупок, ${procurementItems.length} позиций...`);
                 } catch (error) {
                     this.stats.procurements.error += procurementsMap.size;
                     this.stats.procurement_items.error += procurementItems.length;
@@ -197,7 +196,6 @@ class ProcurementDataImporter {
                     try {
                         const procurementId = row.procurement_id;
                         
-                        // Пропускаем уже обработанные закупки
                         if (!this.processedProcurements.has(procurementId)) {
                             if (!procurementsMap.has(procurementId)) {
                                 procurementsMap.set(procurementId, {
@@ -256,8 +254,8 @@ class ProcurementDataImporter {
                 }))
                 .pipe(batchProcessor)
                 .on('finish', () => {
-                    console.log(`✅ Импорт закупок завершен. Успешно: ${this.stats.procurements.success}, Ошибок: ${this.stats.procurements.error}`);
-                    console.log(`✅ Позиций закупок: ${this.stats.procurement_items.success}, Ошибок: ${this.stats.procurement_items.error}`);
+                    console.log(`Импорт закупок завершен. Успешно: ${this.stats.procurements.success}, Ошибок: ${this.stats.procurements.error}`);
+                    console.log(`Позиций закупок: ${this.stats.procurement_items.success}, Ошибок: ${this.stats.procurement_items.error}`);
                     resolve();
                 })
                 .on('error', reject);
@@ -270,7 +268,6 @@ class ProcurementDataImporter {
         try {
             await client.query('BEGIN');
 
-            // Вставляем закупки
             if (procurementsArray.length > 0) {
                 const procurementValues = procurementsArray.map((procurement, index) => {
                     const offset = index * 10;
@@ -290,11 +287,9 @@ class ProcurementDataImporter {
 
                 await client.query(procurementQuery, flatProcurements);
 
-                // Добавляем в обработанные
                 procurementsArray.forEach(p => this.processedProcurements.add(p.procurementId));
             }
 
-            // Вставляем позиции закупок
             if (procurementItems.length > 0) {
                 const itemValues = procurementItems.map((_, index) => {
                     const offset = index * 4;
@@ -319,7 +314,7 @@ class ProcurementDataImporter {
     }
 
     async importTemplates() {
-        console.log('📁 Импорт шаблонов...');
+        console.log('Импорт шаблонов...');
         
         const client = await this.pool.connect();
         try {
@@ -327,7 +322,6 @@ class ProcurementDataImporter {
             const templatesData = [];
             const templateProductsData = [];
 
-            // Очистим таблицы шаблонов
             await client.query('DELETE FROM template_products');
             await client.query('DELETE FROM procurement_templates');
 
@@ -403,8 +397,8 @@ class ProcurementDataImporter {
                 }
             }
 
-            console.log(`✅ Импортировано ${this.stats.templates.success} шаблонов`);
-            console.log(`✅ Товаров в шаблонах: ${this.stats.template_products.success}`);
+            console.log(`Импортировано ${this.stats.templates.success} шаблонов`);
+            console.log(`Товаров в шаблонах: ${this.stats.template_products.success}`);
         } catch (error) {
             this.logError('importTemplates', error);
             throw error;
@@ -428,9 +422,9 @@ class ProcurementDataImporter {
                     '+7-999-123-45-67'
                 ) ON CONFLICT (user_id) DO NOTHING
             `);
-            console.log('✅ Тестовый пользователь создан/обновлен');
+            console.log('Тестовый пользователь создан/обновлен');
         } catch (error) {
-            console.error('❌ Ошибка создания тестового пользователя:', error.message);
+            console.error('Ошибка создания тестового пользователя:', error.message);
             throw error;
         } finally {
             client.release();
@@ -438,15 +432,13 @@ class ProcurementDataImporter {
     }
 
     printStats() {
-        console.log('\n📊 СТАТИСТИКА ИМПОРТА:');
-        console.log('='.repeat(50));
+        console.log('\nСТАТИСТИКА ИМПОРТА:');
         console.log(`Категории:           ${this.stats.categories.success}`);
         console.log(`Товары:              ${this.stats.products.success}`);
         console.log(`Закупки:             ${this.stats.procurements.success}`);
         console.log(`Позиции закупок:     ${this.stats.procurement_items.success}`);
         console.log(`Шаблоны:             ${this.stats.templates.success}`);
         console.log(`Товары в шаблонах:   ${this.stats.template_products.success}`);
-        console.log('='.repeat(50));
     }
 
     async importAll() {
@@ -457,7 +449,7 @@ class ProcurementDataImporter {
             await this.disableConstraints();
             await this.createTestUser();
 
-            console.log('🚀 НАЧАЛО ИМПОРТА ДАННЫХ...\n');
+            console.log('НАЧАЛО ИМПОРТА ДАННЫХ...\n');
 
             await this.importCategories();
             await this.importProcurements();
@@ -467,10 +459,10 @@ class ProcurementDataImporter {
             this.printStats();
 
             const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`\n🎉 ВСЕ ДАННЫЕ УСПЕШНО ИМПОРТИРОВАНЫ за ${duration} секунд!`);
+            console.log(`\nВСЕ ДАННЫЕ УСПЕШНО ИМПОРТИРОВАНЫ за ${duration} секунд!`);
 
         } catch (error) {
-            console.error('❌ Критическая ошибка при импорте:', error);
+            console.error('Критическая ошибка при импорте:', error);
             throw error;
         } finally {
             await this.disconnect();
@@ -487,7 +479,7 @@ function validateRequiredFiles() {
     const missingFiles = requiredFiles.filter(file => !fs.existsSync(file));
     
     if (missingFiles.length > 0) {
-        console.error('❌ Отсутствуют необходимые файлы:');
+        console.error('Отсутствуют необходимые файлы:');
         missingFiles.forEach(file => console.log(`   - ${file}`));
         return false;
     }
@@ -496,7 +488,7 @@ function validateRequiredFiles() {
 }
 
 async function main() {
-    console.log('🔄 Запуск импорта данных в PostgreSQL...\n');
+    console.log('Запуск импорта данных в PostgreSQL...\n');
 
     if (!validateRequiredFiles()) {
         process.exit(1);
@@ -506,7 +498,7 @@ async function main() {
         const importer = new ProcurementDataImporter();
         await importer.importAll();
     } catch (error) {
-        console.error('💥 Импорт завершен с ошибками');
+        console.error('Импорт завершен с ошибками');
         process.exit(1);
     }
 }

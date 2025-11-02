@@ -15,10 +15,9 @@ const pool = new Pool({
 async function main() {
   const client = await pool.connect();
   try {
-    console.log('🚀 Start: import users from procurements & link user_id to procurements');
+    console.log('Start: import users from procurements & link user_id to procurements');
     await client.query('BEGIN');
 
-    // 0) Тех.индекс по ИНН (ускоряет UPDATE JOIN)
     await client.query(`
       DO $$
       BEGIN
@@ -33,11 +32,8 @@ async function main() {
       END $$;
     `);
 
-    // 1) Сгенерируем пароль once
     const passwordHash = await bcrypt.hash('default123', 10);
 
-    // 2) Добавляем пользователей на основе уникальных ИНН из закупок
-    //    email = "<ИНН>@auto.company"
     const insertUsersSql = `
       INSERT INTO users (email, password_hash, inn, company_name, full_name)
       SELECT 
@@ -52,9 +48,8 @@ async function main() {
       ON CONFLICT (email) DO NOTHING
     `;
     const r1 = await client.query(insertUsersSql, [passwordHash]);
-    console.log(`👥 Users inserted (or skipped on conflict): ${r1.rowCount}`);
+    console.log(`Users inserted (or skipped on conflict): ${r1.rowCount}`);
 
-    // 3) Привязываем закупки к пользователям по ИНН
     const linkSql = `
       UPDATE procurements p
       SET user_id = u.user_id
@@ -63,13 +58,13 @@ async function main() {
         AND (p.user_id IS NULL OR p.user_id <> u.user_id)
     `;
     const r2 = await client.query(linkSql);
-    console.log(`🔗 Procurements linked to users: ${r2.rowCount}`);
+    console.log(`Procurements linked to users: ${r2.rowCount}`);
 
     await client.query('COMMIT');
-    console.log('✅ Done');
+    console.log('Done');
   } catch (e) {
     await client.query('ROLLBACK');
-    console.error('❌ Error:', e.message);
+    console.error('Error:', e.message);
   } finally {
     client.release();
     await pool.end();
