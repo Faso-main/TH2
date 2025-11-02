@@ -10,7 +10,7 @@ async getRecommendations(req, res) {
   try {
     const { user_id, limit = 15 } = req.body;
     
-    console.log(`🎯 Getting ML recommendations for user: ${user_id}`);
+    console.log(`Getting ML recommendations for user: ${user_id}`);
     
     const response = await axios.post(
       `${this.pythonServiceUrl}/api/recommendations`,
@@ -26,9 +26,9 @@ async getRecommendations(req, res) {
       }
     );
 
-    console.log(`✅ ML recommendations: ${response.data.recommendations?.length || 0}`);
+    console.log(`ML recommendations: ${response.data.recommendations?.length || 0}`);
     
-    // ✅ УСПЕХ от Python сервиса
+
     res.json({
       success: true,
       ...response.data,
@@ -36,14 +36,12 @@ async getRecommendations(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ ML Recommendation error:', error.message);
+    console.error('ML Recommendation error:', error.message);
     
-    // Fallback - но возвращаем УСПЕХ!
     const fallbackRecommendations = this.getFallbackRecommendations(limit);
     
-    // ✅ FALLBACK но success: true
     res.json({
-      success: true,  // ← ГЛАВНОЕ ИЗМЕНЕНИЕ!
+      success: true,  
       user_id: req.body.user_id,
       recommendations: fallbackRecommendations,
       count: fallbackRecommendations.length,
