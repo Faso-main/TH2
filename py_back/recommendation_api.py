@@ -25,7 +25,7 @@ class RecommendationRequest(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     await service.init_recommender()
-    print("✅ Recommendation service initialized")
+    print("Recommendation service initialized")
 
 @app.post("/api/recommendations")
 async def get_recommendations(request: RecommendationRequest):

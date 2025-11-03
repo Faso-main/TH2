@@ -233,7 +233,7 @@ class PGRecommendationService:
                     'estimated_price': float(row['estimated_price'] or 0)
                 })
             
-            print(f"📈 Loaded {len(history)} procurement records for user {user_id}")
+            print(f"Loaded {len(history)} procurement records for user {user_id}")
             return history
             
         except Exception as e:

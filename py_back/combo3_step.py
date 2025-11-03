@@ -16,7 +16,6 @@ class AdvancedProcurementConfig:
     TFIDF_NGRAM_RANGE = (1, 2)
     TFIDF_MAX_FEATURES = 2000
     
-    # Новые веса для критериев (по приоритету)
     WEIGHTS = {
         'purchase_history': 0.35,    # 1 место: история покупок
         'availability': 0.30,        # 2 место: наличие в системе  
@@ -89,7 +88,6 @@ class HybridProcurementRecommender:
             return None
 
     def _integrate_data(self):
-        """Интеграция данных из всех источников"""
         print("Integrating data sources...")
         
         template_ids = set()
@@ -104,7 +102,6 @@ class HybridProcurementRecommender:
         print(f"Final mapping: {len(self.product_catalog_info)} products")
 
     def _match_catalog_products_enhanced(self, template_ids):
-        """Улучшенное сопоставление товаров из каталога"""
         print("Enhanced matching with product catalog...")
         
         matched_count = 0
@@ -125,7 +122,7 @@ class HybridProcurementRecommender:
             print(f"Trying strategy: {strategy.__name__}")
             current_matches = 0
             
-            for product_id in not_found_ids[:]:  # Копируем для безопасного удаления
+            for product_id in not_found_ids[:]:  
                 result = strategy(product_id)
                 if result:
                     self.product_catalog_info[product_id] = result
@@ -144,7 +141,6 @@ class HybridProcurementRecommender:
             print(f"Sample not found IDs: {not_found_ids[:10]}")
 
     def _search_exact_match(self, product_id):
-        """Точное совпадение в любой колонке"""
         if self.products_df is None:
             return None
             
@@ -161,7 +157,6 @@ class HybridProcurementRecommender:
         return None
 
     def _search_partial_match(self, product_id):
-        """Частичное совпадение (ID содержится в строке)"""
         if self.products_df is None:
             return None
             
@@ -178,7 +173,6 @@ class HybridProcurementRecommender:
         return None
 
     def _search_numeric_columns(self, product_id):
-        """Поиск в числовых колонках"""
         if self.products_df is None:
             return None
             
@@ -196,7 +190,6 @@ class HybridProcurementRecommender:
         return None
 
     def _search_any_column_with_numbers(self, product_id):
-        """Поиск по всем колонкам с извлечением чисел"""
         if self.products_df is None:
             return None
             
@@ -212,7 +205,6 @@ class HybridProcurementRecommender:
         return None
 
     def _create_product_info(self, row, source):
-        """Создает информацию о товаре из строки каталога"""
         return {
             'name': self._find_product_name(row),
             'category': self._find_product_category(row),
@@ -222,7 +214,6 @@ class HybridProcurementRecommender:
         }
 
     def _find_product_name(self, row):
-        """Извлекает название товара из строки каталога"""
         name_priority = ['наименование', 'название', 'name', 'product', 'товар', 'описание', 'предмет']
         
         for col in row.index:
@@ -248,7 +239,6 @@ class HybridProcurementRecommender:
         return f"Product_{hash(str(row)) % 10000}"
 
     def _find_product_category(self, row):
-        """Извлекает категорию товара из строки каталога"""
         category_priority = ['категория', 'category', 'тип', 'group', 'class', 'вид', 'раздел']
         
         for col in row.index:
@@ -285,7 +275,6 @@ class HybridProcurementRecommender:
         return "Другое"
 
     def _extract_price_standard_columns(self, row):
-        """Извлечение цены из стандартных колонок"""
         price_columns = ['price', 'cost', 'стоимость', 'цена', 'sum', 'amount']
         
         for col in row.index:
@@ -331,7 +320,6 @@ class HybridProcurementRecommender:
         return None
 
     def _extract_price_from_catalog(self, row):
-        """Извлечение реальной цены из каталога"""
         # Сначала пробуем стандартные ценовые колонки
         standard_price = self._extract_price_standard_columns(row)
         if standard_price:
@@ -345,7 +333,6 @@ class HybridProcurementRecommender:
         return None
 
     def _estimate_price_range(self, row):
-        """Улучшенная оценка ценового диапазона"""
         # Пробуем извлечь реальную цену из каталога
         real_price = self._extract_price_from_catalog(row)
         
@@ -375,7 +362,6 @@ class HybridProcurementRecommender:
         }
 
     def _extract_available_products(self):
-        """Извлечение доступных товаров"""
         print("Extracting available products...")
         
         # Все товары из каталога считаем доступными
@@ -393,7 +379,6 @@ class HybridProcurementRecommender:
         print(f"Available products: {len(self.available_products)}")
 
     def _create_template_product_info(self, product_id):
-        """Создает информацию о товаре из шаблона"""
         category = "Другое"
         name = f"Товар {product_id}"
         
@@ -423,7 +408,6 @@ class HybridProcurementRecommender:
         }
 
     def _estimate_price_range_from_category(self, category):
-        """Оценка цены на основе категории"""
         if category in self.config.PRICE_ESTIMATES:
             price_config = self.config.PRICE_ESTIMATES[category]
             return {
@@ -438,7 +422,6 @@ class HybridProcurementRecommender:
         }
 
     def _build_price_ranges(self):
-        """Построение ценовых диапазонов по категориям"""
         print("Building price ranges by category...")
         
         category_prices = defaultdict(list)
@@ -478,7 +461,6 @@ class HybridProcurementRecommender:
         print(f"Built price ranges for {len(self.price_ranges)} categories")
 
     def _infer_category_from_row(self, row):
-        """Определение категории из строки данных"""
         # Анализируем текстовые поля для определения категории
         text_columns = [col for col in row.index if isinstance(row[col], str)]
         
@@ -501,7 +483,6 @@ class HybridProcurementRecommender:
         return None
 
     def _extract_price_from_row(self, row):
-        """Извлечение цены из строки данных"""
         price_columns = ['price', 'sum', 'amount', 'стоимость', 'цена', 'total']
         
         for col in row.index:
@@ -517,7 +498,6 @@ class HybridProcurementRecommender:
         return 0
 
     def _build_similarity_matrix(self):
-        """Построение матрицы схожести с учетом категорий и цен"""
         print("Building enhanced similarity matrix...")
         
         # Если нет товаров в каталоге, создаем пустую матрицу
@@ -579,7 +559,6 @@ class HybridProcurementRecommender:
             print(f"Built similarity matrix for {len(self.product_ids)} products")
 
     def create_user_profile(self, user_id, procurement_history):
-        """Создание расширенного профиля пользователя"""
         user_profile = {
             'product_frequencies': Counter(),
             'preferred_categories': Counter(),
@@ -640,7 +619,6 @@ class HybridProcurementRecommender:
         return user_profile
 
     def calculate_product_score(self, product_id, user_profile):
-        """Расчет комплексного скора для товара с новыми весами"""
         product_info = self.get_product_info(product_id)
         
         scores = {
@@ -714,7 +692,6 @@ class HybridProcurementRecommender:
         }
 
     def _get_product_similarity(self, product_id1, product_id2):
-        """Получение схожести между двумя товарами"""
         if (product_id1 in self.product_to_index and 
             product_id2 in self.product_to_index):
             
@@ -726,7 +703,6 @@ class HybridProcurementRecommender:
         return 0
 
     def _generate_score_explanation(self, scores, product_info):
-        """Генерация объяснения рекомендации"""
         explanations = []
         
         if scores['purchase_history'] > 0.6:
@@ -748,7 +724,6 @@ class HybridProcurementRecommender:
         return "; ".join(explanations) if explanations else "рекомендовано на основе анализа закупок"
 
     def get_recommendations(self, user_id, top_n=15, diversity=True):
-        """Получение рекомендаций с учетом всех критериев"""
         if user_id not in self.user_profiles:
             return []
         
@@ -794,7 +769,6 @@ class HybridProcurementRecommender:
             return candidate_scores[:top_n]
 
     def _apply_diversification(self, candidates, top_n):
-        """Улучшенная диверсификация рекомендаций"""
         selected = []
         selected_categories = Counter()
         
@@ -823,7 +797,6 @@ class HybridProcurementRecommender:
         return selected[:top_n]
 
     def print_recommendation_stats(self, recommendations):
-        """Анализ статистики рекомендаций"""
         categories = Counter()
         price_ranges = []
         price_sources = Counter()
@@ -846,7 +819,6 @@ class HybridProcurementRecommender:
             print(f"Средняя доступность: {np.mean(availability_scores):.2f}")
 
     def get_product_info(self, product_id):
-        """Получение информации о товаре"""
         if product_id in self.product_catalog_info:
             return self.product_catalog_info[product_id]
         
@@ -858,7 +830,6 @@ class HybridProcurementRecommender:
         }
 
     def generate_procurement_bundle(self, user_id, target_budget=50000, max_items=10):
-        """Генерация набора для закупки"""
         recommendations = self.get_recommendations(user_id, max_items * 2)
         
         if not recommendations:
@@ -909,9 +880,7 @@ def test_hybrid_recommender():
     # Получаем рекомендации
     recommendations = recommender.get_recommendations('test_user', top_n=10)
     
-    print("\n" + "="*80)
     print("ГИБРИДНЫЕ РЕКОМЕНДАЦИИ (приоритет: история → наличие → семантика → цена)")
-    print("="*80)
     
     if not recommendations:
         print("Нет рекомендаций. Возможно, не удалось сопоставить товары.")
@@ -935,9 +904,7 @@ def test_hybrid_recommender():
     # Генерация набора
     bundle = recommender.generate_procurement_bundle('test_user', target_budget=30000, max_items=6)
     
-    print("\n" + "="*80)
     print("ОПТИМАЛЬНЫЙ НАБОР ДЛЯ ЗАКУПКИ")
-    print("="*80)
     
     if 'error' in bundle:
         print(f"Ошибка: {bundle['error']}")

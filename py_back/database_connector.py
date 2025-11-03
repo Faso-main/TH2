@@ -10,10 +10,9 @@ class DatabaseConnector:
         self.pool = None
         
     async def connect(self):
-        """Подключение к PostgreSQL БД"""
         try:
             self.pool = await asyncpg.create_pool(
-                user='store_app1',
+                user='faso_user',
                 host='localhost',
                 database='pc_db',
                 password='1234',
@@ -27,7 +26,6 @@ class DatabaseConnector:
             raise
     
     async def get_user_procurements(self, user_id: str) -> List[Dict]:
-        """Получить историю закупок пользователя"""
         try:
             query = """
             SELECT 
@@ -74,7 +72,6 @@ class DatabaseConnector:
             return []
     
     async def get_available_products(self, limit: int = 15000) -> List[Dict]:
-        """Получить доступные товары с реальными ценами"""
         try:
             query = """
             SELECT 
@@ -111,7 +108,7 @@ class DatabaseConnector:
                     'is_available': row['is_available']
                 })
             
-            logger.info(f"📦 Loaded {len(products)} available products from database")
+            logger.info(f"Loaded {len(products)} available products from database")
             return products
             
         except Exception as e:
@@ -119,7 +116,6 @@ class DatabaseConnector:
             return []
     
     async def get_category_name(self, category_id: str) -> str:
-        """Получить название категории по ID"""
         if not category_id:
             return "Другое"
             
@@ -131,7 +127,6 @@ class DatabaseConnector:
             return "Другое"
     
     async def get_popular_products(self, limit: int = 100) -> List[Dict]:
-        """Получить популярные товары (часто закупаемые)"""
         try:
             query = """
             SELECT 

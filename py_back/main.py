@@ -168,8 +168,8 @@ class DatabaseService:
             
             # Логируем статистику
             category_dist = Counter(p['category_name'] for p in products)
-            logger.info(f"📦 Loaded {len(products)} unique available products")
-            logger.info(f"📊 Category distribution: {dict(category_dist.most_common(8))}")
+            logger.info(f"Loaded {len(products)} unique available products")
+            logger.info(f"Category distribution: {dict(category_dist.most_common(8))}")
             
             return products
             
@@ -447,9 +447,9 @@ class SmartRecommendationEngine:
             explanations.append("востребованный выбор")
         
         if explanations:
-            return "💡 " + ", ".join(explanations)
+            return explanations
         else:
-            return "🌟 Интересное предложение из каталога"
+            return "Интересное предложение из каталога"
 
 # Global services
 db_service = DatabaseService()
@@ -459,7 +459,7 @@ recommendation_engine = SmartRecommendationEngine(db_service)
 @app.on_event("startup")
 async def startup_event():
     await db_service.connect()
-    logger.info("✅ Smart recommendation engine initialized")
+    logger.info("Smart recommendation engine initialized")
 
 # API Endpoints
 @app.get("/")

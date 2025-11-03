@@ -8,3 +8,4 @@ old/
 __pycache__/
 py_back/invalid/
 py_back/__pycache__/
+front_app/dist/

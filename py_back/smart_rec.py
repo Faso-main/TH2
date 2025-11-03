@@ -27,7 +27,7 @@ class SmartRecommendationEngine:
     async def initialize(self):
         """Инициализация - загрузка популярных товаров"""
         self.popular_products = await self.db.get_popular_products(200)
-        logger.info(f"📈 Loaded {len(self.popular_products)} popular products")
+        logger.info(f"Loaded {len(self.popular_products)} popular products")
     
     def _analyze_user_behavior(self, user_procurements: List[Dict]) -> Dict:
         """Анализ поведения пользователя"""
@@ -219,7 +219,7 @@ class SmartRecommendationEngine:
         recommendations.sort(key=lambda x: x['total_score'], reverse=True)
         final_recommendations = recommendations[:limit]
         
-        logger.info(f"🎯 Generated {len(final_recommendations)} recommendations for user {user_id}")
-        logger.info(f"📊 Score range: {final_recommendations[0]['total_score'] if final_recommendations else 0:.3f} - {final_recommendations[-1]['total_score'] if final_recommendations else 0:.3f}")
+        logger.info(f"Generated {len(final_recommendations)} recommendations for user {user_id}")
+        logger.info(f"Score range: {final_recommendations[0]['total_score'] if final_recommendations else 0:.3f} - {final_recommendations[-1]['total_score'] if final_recommendations else 0:.3f}")
         
         return final_recommendations
