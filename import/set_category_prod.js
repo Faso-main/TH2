@@ -5,7 +5,7 @@ const fs = require('fs');
 class DataRestorer {
     constructor() {
         this.client = new Client({
-            user: 'store_app1',
+            user: 'faso_user',
             host: 'localhost',
             database: 'pc_db',
             password: '1234',
@@ -15,16 +15,16 @@ class DataRestorer {
 
     async connect() {
         await this.client.connect();
-        console.log('✅ Подключение к БД установлено');
+        console.log('Подключение к БД установлено');
     }
 
     async disconnect() {
         await this.client.end();
-        console.log('✅ Подключение к БД закрыто');
+        console.log('Подключение к БД закрыто');
     }
 
     async checkData() {
-        console.log('🔍 Проверка данных в БД...');
+        console.log('Проверка данных в БД...');
         
         const tables = {
             'products': 'SELECT COUNT(*) as count FROM products',
@@ -45,31 +45,29 @@ class DataRestorer {
     }
 
     async importData() {
-        console.log('\n🔄 Запуск импорта данных через ProcurementDataImporter...');
+        console.log('\nЗапуск импорта данных через ProcurementDataImporter...');
         
         try {
-            // Динамически импортируем ваш класс
             const { ProcurementDataImporter } = require('./set_prod.js');
             const importer = new ProcurementDataImporter();
             
-            // Запускаем импорт но только товаров и категорий
             await importer.connect();
             await importer.disableConstraints();
             await importer.createTestUser();
             
-            console.log('\n📥 Импорт категорий...');
+            console.log('\nИмпорт категорий...');
             await importer.importCategories();
             
-            console.log('\n📥 Импорт товаров...');
+            console.log('\nИмпорт товаров...');
             await importer.importProducts();
             
             await importer.enableConstraints();
             await importer.disconnect();
             
-            console.log('✅ Импорт данных завершен');
+            console.log('Импорт данных завершен');
             
         } catch (error) {
-            console.error('❌ Ошибка импорта:', error.message);
+            console.error('Ошибка импорта:', error.message);
             throw error;
         }
     }
@@ -79,23 +77,22 @@ class DataRestorer {
         
         const data = await this.checkData();
         
-        // Если товаров мало или нет, запускаем импорт
         if (data.products < 1000) {
-            console.log(`\n⚠️  Обнаружено мало товаров (${data.products}), запускаем импорт...`);
+            console.log(`\nОбнаружено мало товаров (${data.products}), запускаем импорт...`);
             await this.importData();
         } else {
-            console.log('\n✅ Данные присутствуют в достаточном количестве');
+            console.log('\nДанные присутствуют в достаточном количестве');
         }
         
         await this.disconnect();
-        return data.products > 1000; // true если данные есть
+        return data.products > 1000; 
     }
 }
 
 class CategoryManager {
     constructor() {
         this.client = new Client({
-            user: 'store_app1',
+            user: 'faso_user',
             host: 'localhost',
             database: 'pc_db',
             password: '1234',
@@ -108,22 +105,22 @@ class CategoryManager {
 
     async connect() {
         await this.client.connect();
-        console.log('✅ Подключение к БД установлено');
+        console.log('Подключение к БД установлено');
     }
 
     async disconnect() {
         await this.client.end();
-        console.log('✅ Подключение к БД закрыто');
+        console.log('Подключение к БД закрыто');
     }
 
     loadCategoryHierarchy() {
-        console.log('📁 Загрузка иерархии категорий...');
+        console.log('Загрузка иерархии категорий...');
         try {
             const flatCategories = JSON.parse(fs.readFileSync('flat_category_hierarchy.json', 'utf8'));
-            console.log(`✅ Загружено ${flatCategories.length} категорий`);
+            console.log(`Загружено ${flatCategories.length} категорий`);
             return flatCategories;
         } catch (error) {
-            console.error('❌ Ошибка загрузки категорий:', error.message);
+            console.error('Ошибка загрузки категорий:', error.message);
             throw error;
         }
     }
@@ -135,7 +132,7 @@ class CategoryManager {
     }
 
     async importCategories(flatCategories) {
-        console.log('📁 Импорт категорий в БД...');
+        console.log('Импорт категорий в БД...');
         
         try {
             let importedCount = 0;
@@ -163,7 +160,6 @@ class CategoryManager {
                     });
                 }
                 
-                // Проверяем существование категории
                 const checkResult = await this.client.query(
                     'SELECT category_id FROM categories WHERE category_id = $1',
                     [categoryId]
@@ -203,12 +199,12 @@ class CategoryManager {
                 }
             }
             
-            console.log(`✅ Импортировано ${importedCount} новых категорий`);
-            console.log(`✅ Обновлено ${updatedCount} существующих категорий`);
-            console.log(`✅ Создано ${this.keywordToCategory.size} ключевых слов`);
+            console.log(`Импортировано ${importedCount} новых категорий`);
+            console.log(`Обновлено ${updatedCount} существующих категорий`);
+            console.log(`Создано ${this.keywordToCategory.size} ключевых слов`);
             
         } catch (error) {
-            console.error('❌ Ошибка импорта категорий:', error.message);
+            console.error('Ошибка импорта категорий:', error.message);
             throw error;
         }
     }
@@ -218,16 +214,13 @@ class CategoryManager {
         
         const nameLower = productName.toLowerCase();
         
-        // Приоритетный поиск по точным совпадениям
         for (const [keyword, categoryId] of this.keywordToCategory.entries()) {
-            // Используем границы слов для более точного поиска
             const regex = new RegExp(`\\b${keyword}\\b`, 'i');
             if (regex.test(productName)) {
                 return categoryId;
             }
         }
         
-        // Поиск по частичным совпадениям
         for (const [keyword, categoryId] of this.keywordToCategory.entries()) {
             if (nameLower.includes(keyword)) {
                 return categoryId;
@@ -238,23 +231,21 @@ class CategoryManager {
     }
 
     async categorizeProducts() {
-        console.log('🏷️ Присвоение категорий товарам...');
+        console.log('Присвоение категорий товарам...');
         
         try {
-            // Получаем ВСЕ товары
             const result = await this.client.query(`
                 SELECT product_id, name, category_id 
                 FROM products 
                 ORDER BY product_id
             `);
             
-            console.log(`📊 Найдено ${result.rows.length.toLocaleString()} товаров всего`);
+            console.log(`Найдено ${result.rows.length.toLocaleString()} товаров всего`);
             
             let newCategoriesCount = 0;
             let updatedCategoriesCount = 0;
             const batchSize = 500;
             
-            // Обрабатываем батчами для эффективности
             for (let i = 0; i < result.rows.length; i += batchSize) {
                 const batch = result.rows.slice(i, i + batchSize);
                 const updates = [];
@@ -271,7 +262,6 @@ class CategoryManager {
                     }
                 }
                 
-                // Выполняем обновления для этого батча
                 if (updates.length > 0) {
                     const updateQuery = `
                         UPDATE products 
@@ -290,27 +280,24 @@ class CategoryManager {
                     }
                 }
                 
-                // Прогресс каждые 5000 товаров
                 if ((i + batchSize) % 5000 === 0) {
                     console.log(`   ... обработано ${Math.min(i + batchSize, result.rows.length).toLocaleString()} товаров`);
                 }
             }
             
-            console.log(`🎉 Категории присвоены для ${newCategoriesCount.toLocaleString()} новых товаров`);
-            console.log(`🔄 Обновлены категории для ${updatedCategoriesCount.toLocaleString()} товаров`);
+            console.log(`Категории присвоены для ${newCategoriesCount.toLocaleString()} новых товаров`);
+            console.log(`Обновлены категории для ${updatedCategoriesCount.toLocaleString()} товаров`);
             
             // Финальная статистика
             await this.showFinalStats();
             
         } catch (error) {
-            console.error('❌ Ошибка присвоения категорий:', error.message);
+            console.error('Ошибка присвоения категорий:', error.message);
             throw error;
         }
     }
 
     async showFinalStats() {
-        console.log('\n📊 ФИНАЛЬНАЯ СТАТИСТИКА:');
-        console.log('='.repeat(50));
         
         const stats = await this.client.query(`
             SELECT 
@@ -321,12 +308,11 @@ class CategoryManager {
         `);
         
         const row = stats.rows[0];
-        console.log(`📦 Всего товаров: ${parseInt(row.total_products).toLocaleString()}`);
-        console.log(`✅ С категориями: ${parseInt(row.with_category).toLocaleString()}`);
-        console.log(`❌ Без категорий: ${parseInt(row.without_category).toLocaleString()}`);
-        console.log(`📈 Процент категоризации: ${((row.with_category / row.total_products) * 100).toFixed(1)}%`);
+        console.log(`Всего товаров: ${parseInt(row.total_products).toLocaleString()}`);
+        console.log(`С категориями: ${parseInt(row.with_category).toLocaleString()}`);
+        console.log(`Без категорий: ${parseInt(row.without_category).toLocaleString()}`);
+        console.log(`Процент категоризации: ${((row.with_category / row.total_products) * 100).toFixed(1)}%`);
         
-        // Топ-10 категорий
         const topCategories = await this.client.query(`
             SELECT c.name, COUNT(p.product_id) as product_count
             FROM categories c
@@ -336,12 +322,10 @@ class CategoryManager {
             LIMIT 10
         `);
         
-        console.log('\n🏆 Топ-10 категорий по количеству товаров:');
         topCategories.rows.forEach((category, index) => {
             console.log(`   ${index + 1}. ${category.name}: ${parseInt(category.product_count).toLocaleString()} товаров`);
         });
         
-        // Примеры успешной категоризации
         const examples = await this.client.query(`
             SELECT p.name, c.name as category_name
             FROM products p
@@ -351,10 +335,10 @@ class CategoryManager {
             LIMIT 5
         `);
         
-        console.log('\n🔍 Примеры категоризации:');
+        console.log('\nПримеры категоризации:');
         examples.rows.forEach(example => {
             const shortName = example.name.length > 50 ? example.name.substring(0, 47) + '...' : example.name;
-            console.log(`   📦 "${shortName}"`);
+            console.log(`   "${shortName}"`);
             console.log(`      → ${example.category_name}`);
         });
     }
@@ -365,7 +349,7 @@ class CategoryManager {
         try {
             await this.connect();
             
-            console.log('🚀 ЗАПУСК КАТЕГОРИЗАЦИИ...\n');
+            console.log('ЗАПУСК КАТЕГОРИЗАЦИИ...\n');
             
             // 1. Загружаем иерархию
             const flatCategories = this.loadCategoryHierarchy();
@@ -377,10 +361,10 @@ class CategoryManager {
             await this.categorizeProducts();
             
             const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`\n🎉 КАТЕГОРИЗАЦИЯ ЗАВЕРШЕНА за ${duration} секунд!`);
+            console.log(`\nКАТЕГОРИЗАЦИЯ ЗАВЕРШЕНА за ${duration} секунд!`);
             
         } catch (error) {
-            console.error('💥 Ошибка:', error.message);
+            console.error('Ошибка:', error.message);
             throw error;
         } finally {
             await this.disconnect();
@@ -390,31 +374,28 @@ class CategoryManager {
 
 // Главная функция
 async function main() {
-    console.log('🎯 ВОССТАНОВЛЕНИЕ ДАННЫХ И КАТЕГОРИЗАЦИЯ\n');
+    console.log('ВОССТАНОВЛЕНИЕ ДАННЫХ И КАТЕГОРИЗАЦИЯ\n');
     
     try {
-        // 1. Проверяем и восстанавливаем данные
         console.log('1. ПРОВЕРКА И ВОССТАНОВЛЕНИЕ ДАННЫХ');
-        console.log('='.repeat(40));
         const restorer = new DataRestorer();
         const hasData = await restorer.restoreIfNeeded();
         
         if (!hasData) {
-            console.log('\n⚠️  Данные не были восстановлены. Проверьте файлы и скрипты импорта.');
+            console.log('\nДанные не были восстановлены. Проверьте файлы и скрипты импорта.');
             return;
         }
         
         // 2. Запускаем категоризацию
         console.log('\n2. КАТЕГОРИЗАЦИЯ ТОВАРОВ');
-        console.log('='.repeat(40));
         const categorizer = new CategoryManager();
         await categorizer.execute();
         
-        console.log('\n✅ ВСЕ ЗАДАЧИ ВЫПОЛНЕНЫ!');
-        console.log('🎉 Система готова к работе с полной категоризацией товаров');
+        console.log('\nВСЕ ЗАДАЧИ ВЫПОЛНЕНЫ!');
+        console.log('Система готова к работе с полной категоризацией товаров');
         
     } catch (error) {
-        console.error('\n❌ Критическая ошибка:', error.message);
+        console.error('\nКритическая ошибка:', error.message);
         process.exit(1);
     }
 }
@@ -429,7 +410,7 @@ function validateFiles() {
     const missingFiles = requiredFiles.filter(file => !fs.existsSync(file));
     
     if (missingFiles.length > 0) {
-        console.error('❌ Отсутствуют необходимые файлы:');
+        console.error('Отсутствуют необходимые файлы:');
         missingFiles.forEach(file => console.log(`   - ${file}`));
         return false;
     }

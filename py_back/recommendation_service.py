@@ -20,15 +20,15 @@ class PGRecommendationService:
     
     async def init_recommender(self):
         """Инициализация рекомендателя с данными из PostgreSQL"""
-        print("🔄 Initializing recommender from PostgreSQL...")
+        print("Initializing recommender from PostgreSQL...")
         
         # Загружаем шаблоны из БД
         templates = await self.load_templates_from_pg()
-        print(f"📋 Loaded {len(templates)} templates")
+        print(f"Loaded {len(templates)} templates")
         
         # Загружаем товары из БД
         products_df = await self.load_products_from_pg()
-        print(f"📦 Loaded {len(products_df)} products")
+        print(f"Loaded {len(products_df)} products")
         
         # Создаем временные файлы для инициализации
         templates_path = "temp_templates.json"
@@ -47,7 +47,7 @@ class PGRecommendationService:
             procurement_data_path=None  # Можно добавить историю закупок
         )
         
-        print("✅ Recommender initialized successfully")
+        print("Recommender initialized successfully")
     
     async def load_templates_from_pg(self):
         """Загрузка шаблонов из PostgreSQL"""
@@ -114,7 +114,7 @@ class PGRecommendationService:
             return templates
             
         except Exception as e:
-            print(f"❌ Error loading templates: {e}")
+            print(f"Error loading templates: {e}")
             return {}
         finally:
             await conn.close()
@@ -155,11 +155,11 @@ class PGRecommendationService:
                     'category_name': row['category_name'] or 'Другое'
                 })
             
-            print(f"✅ Загружено {len(products_data)} реальных товаров из БД")
+            print(f"Загружено {len(products_data)} реальных товаров из БД")
             return pd.DataFrame(products_data)
             
         except Exception as e:
-            print(f"❌ Ошибка загрузки товаров: {e}")
+            print(f"Ошибка загрузки товаров: {e}")
             return await self.load_minimal_products()
     
     async def get_user_recommendations(self, user_id, limit=15):
@@ -169,16 +169,16 @@ class PGRecommendationService:
         if cache_key in self.user_cache:
             cached_data = self.user_cache[cache_key]
             if datetime.now() - cached_data['timestamp'] < timedelta(hours=1):
-                print(f"🎯 Using cached recommendations for user {user_id}")
+                print(f"Using cached recommendations for user {user_id}")
                 return cached_data['recommendations']
         
-        print(f"🔄 Generating new recommendations for user {user_id}")
+        print(f"Generating new recommendations for user {user_id}")
         
         # Загружаем историю закупок пользователя
         user_history = await self.get_user_procurement_history(user_id)
         
         if not user_history:
-            print(f"📊 No history for user {user_id}, returning popular items")
+            print(f"No history for user {user_id}, returning popular items")
             return await self.get_popular_recommendations(limit)
         
         # Создаем профиль и получаем рекомендации
@@ -204,7 +204,7 @@ class PGRecommendationService:
             'timestamp': datetime.now()
         }
         
-        print(f"✅ Generated {len(serializable_recs)} recommendations for user {user_id}")
+        print(f"Generated {len(serializable_recs)} recommendations for user {user_id}")
         return serializable_recs
     
     async def get_user_procurement_history(self, user_id):
@@ -237,7 +237,7 @@ class PGRecommendationService:
             return history
             
         except Exception as e:
-            print(f"❌ Error loading user history: {e}")
+            print(f"Error loading user history: {e}")
             return []
         finally:
             await conn.close()
@@ -282,7 +282,7 @@ class PGRecommendationService:
             return recommendations
             
         except Exception as e:
-            print(f"❌ Error loading popular items: {e}")
+            print(f"Error loading popular items: {e}")
             return []
         finally:
             await conn.close()

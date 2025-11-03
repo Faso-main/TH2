@@ -1,8 +1,7 @@
 -- =============================================
 -- СТРУКТУРА БАЗЫ ДАННЫХ PC_DB
 -- =============================================
-
--- 📊 ОБЩАЯ СТАТИСТИКА:
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Товары: 1,119,111 записей
 -- Закупки: 80,542 записей  
 -- Позиции закупок: 341,137 записей
@@ -15,7 +14,7 @@
 -- ОСНОВНЫЕ ТАБЛИЦЫ И СХЕМА
 -- =============================================
 
--- 👥 ПОЛЬЗОВАТЕЛИ
+-- ПОЛЬЗОВАТЕЛИ
 CREATE TABLE users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -28,7 +27,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 📂 КАТЕГОРИИ ТОВАРОВ
+-- КАТЕГОРИИ ТОВАРОВ
 CREATE TABLE categories (
     category_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     parent_category_id UUID REFERENCES categories(category_id),
@@ -39,7 +38,7 @@ CREATE TABLE categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🏷️ ТОВАРЫ
+-- ТОВАРЫ
 CREATE TABLE products (
     product_id VARCHAR(100) PRIMARY KEY,  -- ID из внешней системы
     name VARCHAR(1000) NOT NULL,
@@ -54,7 +53,7 @@ CREATE TABLE products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 📋 ЗАКУПКИ
+-- ЗАКУПКИ
 CREATE TABLE procurements (
     procurement_id VARCHAR(100) PRIMARY KEY,  -- ID закупки
     user_id UUID REFERENCES users(user_id),
@@ -69,7 +68,7 @@ CREATE TABLE procurements (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🛒 ПОЗИЦИИ В ЗАКУПКАХ
+-- ПОЗИЦИИ В ЗАКУПКАХ
 CREATE TABLE procurement_items (
     procurement_item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     procurement_id VARCHAR(100) REFERENCES procurements(procurement_id),
@@ -79,7 +78,7 @@ CREATE TABLE procurement_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 📝 ШАБЛОНЫ ЗАКУПОК
+-- ШАБЛОНЫ ЗАКУПОК
 CREATE TABLE procurement_templates (
     template_id VARCHAR(100) PRIMARY KEY,
     name VARCHAR(500) NOT NULL,
@@ -92,7 +91,7 @@ CREATE TABLE procurement_templates (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🏷️ ТОВАРЫ В ШАБЛОНАХ
+-- ТОВАРЫ В ШАБЛОНАХ
 CREATE TABLE template_products (
     template_id VARCHAR(100) REFERENCES procurement_templates(template_id),
     product_id VARCHAR(100) REFERENCES products(product_id),
@@ -102,7 +101,7 @@ CREATE TABLE template_products (
     PRIMARY KEY (template_id, product_id)
 );
 
--- 💡 РЕКОМЕНДАЦИИ
+-- РЕКОМЕНДАЦИИ
 CREATE TABLE recommendations (
     recommendation_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id),
@@ -156,13 +155,13 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- ПОЛЕЗНЫЕ ЗАПРОСЫ ДЛЯ РАБОТЫ
 -- =============================================
 
--- 🔍 ПОИСК ТОВАРОВ ПО НАЗВАНИЮ
+-- ПОИСК ТОВАРОВ ПО НАЗВАНИЮ
 -- SELECT * FROM products 
 -- WHERE name ILIKE '%дырокол%' 
 -- ORDER BY average_price DESC 
 -- LIMIT 10;
 
--- 📊 СТАТИСТИКА ПО КАТЕГОРИЯМ
+-- СТАТИСТИКА ПО КАТЕГОРИЯМ
 -- SELECT c.name, COUNT(p.product_id) as product_count, 
 --        AVG(p.average_price) as avg_price
 -- FROM categories c 
@@ -170,7 +169,7 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- GROUP BY c.category_id, c.name 
 -- ORDER BY product_count DESC;
 
--- 🛒 ИСТОРИЯ ЗАКУПОК ПОЛЬЗОВАТЕЛЯ
+-- ИСТОРИЯ ЗАКУПОК ПОЛЬЗОВАТЕЛЯ
 -- SELECT p.name, pi.quantity, pi.unit_price, pr.procurement_date
 -- FROM procurements pr
 -- JOIN procurement_items pi ON pr.procurement_id = pi.procurement_id
@@ -178,7 +177,7 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- WHERE pr.user_id = '11111111-1111-1111-1111-111111111111'
 -- ORDER BY pr.procurement_date DESC;
 
--- 💡 РЕКОМЕНДАЦИИ ДЛЯ ПОЛЬЗОВАТЕЛЯ
+-- РЕКОМЕНДАЦИИ ДЛЯ ПОЛЬЗОВАТЕЛЯ
 -- SELECT p.*, r.score, r.reason 
 -- FROM recommendations r
 -- JOIN products p ON r.product_id = p.product_id
@@ -186,7 +185,7 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- ORDER BY r.score DESC
 -- LIMIT 10;
 
--- 📈 ТОП ТОВАРОВ ПО ЧАСТОТЕ ЗАКУПОК
+
 -- SELECT p.product_id, p.name, COUNT(pi.procurement_id) as purchase_count
 -- FROM products p
 -- JOIN procurement_items pi ON p.product_id = pi.product_id
@@ -198,12 +197,12 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 -- КЛЮЧЕВЫЕ ХАРАКТЕРИСТИКИ ДАННЫХ
 -- =============================================
 
--- ✅ Товары: 1.1M+ записей с ценами, производителями, характеристиками
--- ✅ Закупки: 80K+ исторических закупок с детализацией по товарам
--- ✅ Связи: товары ↔ закупки ↔ пользователи ↔ категории
--- ✅ JSONB: технические характеристики товаров в структурированном виде
--- ✅ Полнотекстовый поиск: по названиям товаров
--- ✅ Рекомендательная система: готова к интеграции ML-моделей
+-- Товары: 1.1M+ записей с ценами, производителями, характеристиками
+-- Закупки: 80K+ исторических закупок с детализацией по товарам
+-- Связи: товары ↔ закупки ↔ пользователи ↔ категории
+-- JSONB: технические характеристики товаров в структурированном виде
+-- Полнотекстовый поиск: по названиям товаров
+-- Рекомендательная система: готова к интеграции ML-моделей
 
 -- =============================================
 -- ДАННЫЕ ДЛЯ ПОДКЛЮЧЕНИЯ
@@ -221,7 +220,7 @@ CREATE INDEX idx_template_products_product ON template_products(product_id);
 
 -- Добавить в конец DB.sql
 
--- 📝 ЧЕРНОВИКИ ЗАКУПОК
+-- ЧЕРНОВИКИ ЗАКУПОК
 CREATE TABLE procurement_drafts (
     draft_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,

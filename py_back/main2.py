@@ -99,7 +99,7 @@ class DatabaseService:
     async def connect(self):
         try:
             self.pool = await asyncpg.create_pool(
-                user='store_app1',
+                user='faso_user',
                 host='localhost',
                 database='pc_db',
                 password='1234',
@@ -720,4 +720,8 @@ async def ml_recommendations(request: RecommendationRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    uvicorn.run(app,
+                 host="127.0.0.1", 
+                 port=8000,
+                 reload=False,
+                 log_level="info")

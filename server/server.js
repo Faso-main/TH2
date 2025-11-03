@@ -8,9 +8,6 @@ const { Pool } = pkg;
 const app = express();
 const PORT = 5000;
 
-// =============================================
-// КОНФИГУРАЦИЯ
-// =============================================
 
 const corsOptions = {
   origin: [
@@ -35,7 +32,7 @@ const corsOptions = {
 
 // PostgreSQL connection
 const pool = new Pool({
-  user: 'store_app1',
+  user: 'faso_user',
   host: 'localhost',
   database: 'pc_db',
   password: '1234',
@@ -93,9 +90,6 @@ const errorHandler = (error, req, res, next) => {
   });
 };
 
-// =============================================
-// УМНЫЙ ПОИСК
-// =============================================
 
 // Анализ поискового запроса
 function analyzeSearchQuery(query) {
@@ -451,9 +445,6 @@ async function generateSearchSuggestions(query, results) {
   return suggestions;
 }
 
-// =============================================
-// API ENDPOINTS - ПОИСК
-// =============================================
 
 // Умный поиск по всей базе данных
 app.get('/api/search/smart', async (req, res) => {
@@ -644,9 +635,6 @@ app.get('/api/search/suggestions', async (req, res) => {
   }
 });
 
-// =============================================
-// API ENDPOINTS - АУТЕНТИФИКАЦИЯ
-// =============================================
 
 // Регистрация
 app.post('/api/auth/register', async (req, res) => {
@@ -755,10 +743,6 @@ app.post('/api/auth/logout', checkSession, (req, res) => {
   console.log('User logged out:', { sessionId });
   res.json({ message: 'Успешный выход' });
 });
-
-// =============================================
-// API ENDPOINTS - ПОЛЬЗОВАТЕЛЬ
-// =============================================
 
 // Получить профиль пользователя
 app.get('/api/user/profile', checkSession, async (req, res) => {
@@ -872,9 +856,6 @@ app.get('/api/user/my-participations', checkSession, async (req, res) => {
   }
 });
 
-// =============================================
-// API ENDPOINTS - ИЗБРАННОЕ
-// =============================================
 
 // Получить избранное пользователя
 app.get('/api/user/favorites', checkSession, async (req, res) => {
@@ -1042,9 +1023,6 @@ app.get('/api/user/favorites/check', checkSession, async (req, res) => {
   }
 });
 
-// =============================================
-// API ENDPOINTS - ТОВАРЫ И ЗАКУПКИ
-// =============================================
 
 // Получение категорий
 app.get('/api/categories', async (req, res) => {
@@ -1362,10 +1340,6 @@ app.post('/api/procurements', checkSession, async (req, res) => {
   }
 });
 
-// =============================================
-// API ENDPOINTS - ЧЕРНОВИКИ
-// =============================================
-
 // Получить черновики пользователя
 app.get('/api/user/my-drafts', checkSession, async (req, res) => {
   try {
@@ -1587,9 +1561,6 @@ app.get('/api/procurement-drafts/:id', checkSession, async (req, res) => {
   }
 });
 
-// =============================================
-// API ENDPOINTS - ML И РЕКОМЕНДАЦИИ
-// =============================================
 
 // Прокси для ML сервиса
 app.get("/api/ml/health", async (req, res) => {
@@ -1619,9 +1590,6 @@ app.post("/api/ml/recommendations", async (req, res) => {
   }
 });
 
-// =============================================
-// СЛУЖЕБНЫЕ ENDPOINTS
-// =============================================
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -1670,9 +1638,6 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// =============================================
-// ОБРАБОТКА ОШИБОК И ЗАПУСК
-// =============================================
 
 // Обработка 404 для API
 app.use('/api/*', (req, res) => {
