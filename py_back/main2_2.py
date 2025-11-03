@@ -1,4 +1,4 @@
-# main2.py - Полностью переписанная стабильная версия
+# main2.py - Исправленная версия с правильной валидацией
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -61,7 +61,7 @@ class ProductRecommendation(BaseModel):
     total_score: float
     explanation: str
     confidence: float
-    price_range: Dict[str, float]
+    price_range: Dict[str, float]  # ТОЛЬКО числовые поля!
     in_catalog: bool = True
     is_available: bool = True
     purchase_count: int = 0
@@ -308,11 +308,10 @@ class RecommendationService:
                         'total_score': round(score_data['total_score'], 4),
                         'explanation': score_data['explanation'],
                         'confidence': score_data['confidence'],
-                        'price_range': {
+                        'price_range': {  # ИСПРАВЛЕНО: только числовые поля
                             'avg': product['average_price'],
                             'min': product['average_price'] * 0.8,
-                            'max': product['average_price'] * 1.2,
-                            'source': 'database'
+                            'max': product['average_price'] * 1.2
                         },
                         'in_catalog': True,
                         'is_available': True,
@@ -440,29 +439,6 @@ class RecommendationService:
 # ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
 # =============================================
 
-app = FastAPI(
-    title="Procurement ML API",
-    description="API для рекомендаций в системе закупок",
-    version="2.0.0"
-)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Глобальные сервисы
-db_service = DatabaseService()
-recommendation_service = RecommendationService(db_service)
-
-# =============================================
-# LIFESPAN (замена устаревшему on_event)
-# =============================================
-
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -480,7 +456,25 @@ async def lifespan(app: FastAPI):
     await db_service.disconnect()
     logger.info("🔴 Приложение остановлено")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Procurement ML API",
+    description="API для рекомендаций в системе закупок", 
+    version="2.0.1",
+    lifespan=lifespan
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Глобальные сервисы
+db_service = DatabaseService()
+recommendation_service = RecommendationService(db_service)
 
 # =============================================
 # API ЭНДПОИНТЫ
@@ -491,7 +485,7 @@ async def root():
     return {
         "message": "Procurement ML API", 
         "status": "running", 
-        "version": "2.0.0"
+        "version": "2.0.1"
     }
 
 @app.get("/health")
